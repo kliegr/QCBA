@@ -1,0 +1,17 @@
+Package: rMARC
+Version: 0.0-9
+Date: 2014-09-03
+Title: rMARC
+Author: Tomas Kliegr
+Maintainer: Tomas Kliegr <tomas.kliegr@kliegr.eu>
+Description: rMARC .
+Depends:
+    R (>= 2.7.0),
+    rJava (>= 0.5-0)
+SystemRequirements: Java (>= 1.5)
+License: GPL-3
+Packaged: 2014-09-04 13:17:36 UTC; tverbeke
+Repository: CRAN
+Date/Publication: 2014-09-04 15:41:44
+NeedsCompilation: no
+RoxygenNote: 5.0.1
