@@ -66,6 +66,10 @@ marcIris <- function()
 
 marcExtend <- function(cbaRuleModel,  datadf)
 {
+  #ensure that any NA or null values are replaced by empty string
+  datadf[is.na(datadf)] <- ''
+  datadf[is.null(datadf)] <- ''
+  
   rules=cbaRuleModel@rules
   classAtt=cbaRuleModel@classAtt
   
@@ -79,13 +83,14 @@ marcExtend <- function(cbaRuleModel,  datadf)
   dataArray <-  .jarray(lapply(datadfConverted, .jarray))
   cNames <- .jarray(colnames(datadf))
   
-  attTypes <- mapDataTypes(rmCBA@attTypes)
+  attTypes <- mapDataTypes(cbaRuleModel@attTypes)
   attTypesArray <- .jarray(unname(attTypes))
   
   
   #pass data to MARC in Java
   idAtt <- ""
-  hjw <- .jnew("eu.kliegr.ac1.R.RinterfaceExtend", attTypesArray,classAtt,idAtt)
+  loglevel <- "INFO"
+  hjw <- .jnew("eu.kliegr.ac1.R.RinterfaceExtend", attTypesArray,classAtt,idAtt, loglevel)
   out <- .jcall(hjw, , "addDataFrame", dataArray,cNames)
   out <- .jcall(hjw, , "addRuleFrame", rulesArray)
   
@@ -135,12 +140,15 @@ predict.MARCRuleModel <- function(object, newdata,...)
 {
   ruleModel <- object
   
+  newdata[is.na(newdata)] <- ''
+  newdata[is.null(newdata)] <- ''
+  
   #reshape and cast test data to Java structures
   testConverted <- data.frame(lapply(newdata, as.character), stringsAsFactors=FALSE)
   cNames <- .jarray(colnames(newdata))
   
   #reusing attribute types from training data
-  attTypes <- mapDataTypes(rmCBA@attTypes)
+  attTypes <- ruleModel@attTypes
   attTypesArray <- .jarray(unname(attTypes))
   
   #attTypesArray <- .jarray(unname(sapply(newdata, class)))
@@ -150,7 +158,8 @@ predict.MARCRuleModel <- function(object, newdata,...)
   #pass data to MARC Java
   #the reason why we cannot use e.g. predict.RuleModel in arc package is that the items in the rules do not match the itemMatrix after R extend
   idAtt <- ""
-  jPredict <- .jnew("eu.kliegr.ac1.R.RinterfacePredict", attTypesArray, ruleModel@classAtt, idAtt)
+  loglevel <- "INFO"
+  jPredict <- .jnew("eu.kliegr.ac1.R.RinterfacePredict", attTypesArray, ruleModel@classAtt, idAtt,loglevel)
   .jcall(jPredict, , "addDataFrame", testArray,cNames)
   .jcall(jPredict, , "addRuleFrame", extRulesJArray)
   
