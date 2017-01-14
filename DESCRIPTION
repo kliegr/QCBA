@@ -1,9 +1,9 @@
 Package: rMARC
-Version: 0.0-9
-Date: 2014-09-03
+Title: MARC R Wrapper
+Version: 0.0-1
 Title: rMARC
 Author: Tomas Kliegr
-Maintainer: Tomas Kliegr <tomas.kliegr@kliegr.eu>
+Maintainer: Tomas Kliegr <kliegr@gmail.com>
 Description: rMARC .
 Depends:
     R (>= 2.7.0),
@@ -11,9 +11,5 @@ Depends:
     rJava (>= 0.5-0),
     arc (>= 1.0.1)
 SystemRequirements: Java (>= 8)
-License: GPL-3
-Packaged: 2014-09-04 13:17:36 UTC; tverbeke
-Repository: CRAN
-Date/Publication: 2014-09-04 15:41:44
-NeedsCompilation: no
+License: AGPL-3
 RoxygenNote: 5.0.1

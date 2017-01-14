@@ -16,10 +16,12 @@ library(arc)
 #' @exportClass MARCRuleModel
 #' @slot rules an object of class rules from arules package enhanced by MARC
 #' @slot classAtt name of the target class attribute
+#' @slot attTypes attribute types
 MARCRuleModel <- setClass("MARCRuleModel",
                       slots = c(
                         rules = "data.frame",
-                        classAtt ="character"
+                        classAtt ="character",
+                        attTypes = "vector"
                       )
 )
 
@@ -76,11 +78,14 @@ marcExtend <- function(cbaRuleModel,  datadf)
   #cast R data to Java structures
   dataArray <-  .jarray(lapply(datadfConverted, .jarray))
   cNames <- .jarray(colnames(datadf))
-  attTypes <- .jarray(unname(sapply(datadf, class)))
+  
+  attTypes <- mapDataTypes(rmCBA@attTypes)
+  attTypesArray <- .jarray(unname(attTypes))
+  
   
   #pass data to MARC in Java
   idAtt <- ""
-  hjw <- .jnew("eu.kliegr.ac1.R.RinterfaceExtend", attTypes,classAtt,idAtt)
+  hjw <- .jnew("eu.kliegr.ac1.R.RinterfaceExtend", attTypesArray,classAtt,idAtt)
   out <- .jcall(hjw, , "addDataFrame", dataArray,cNames)
   out <- .jcall(hjw, , "addRuleFrame", rulesArray)
   
@@ -98,6 +103,7 @@ marcExtend <- function(cbaRuleModel,  datadf)
   rm <- MARCRuleModel()
   rm@rules <- extRulesFrame
   rm@classAtt <- classAtt
+  rm@attTypes <- attTypes
   return(rm)
 }
 
@@ -132,19 +138,44 @@ predict.MARCRuleModel <- function(object, newdata,...)
   #reshape and cast test data to Java structures
   testConverted <- data.frame(lapply(newdata, as.character), stringsAsFactors=FALSE)
   cNames <- .jarray(colnames(newdata))
-  attTypes <- .jarray(unname(sapply(newdata, class)))
+  
+  #reusing attribute types from training data
+  attTypes <- mapDataTypes(rmCBA@attTypes)
+  attTypesArray <- .jarray(unname(attTypes))
+  
+  #attTypesArray <- .jarray(unname(sapply(newdata, class)))
   testArray <-  .jarray(lapply(testConverted, .jarray))
   extRulesJArray <- .jarray(lapply(ruleModel@rules, .jarray))
   
   #pass data to MARC Java
   #the reason why we cannot use e.g. predict.RuleModel in arc package is that the items in the rules do not match the itemMatrix after R extend
   idAtt <- ""
-  jPredict <- .jnew("eu.kliegr.ac1.R.RinterfacePredict", attTypes, ruleModel@classAtt, idAtt)
+  jPredict <- .jnew("eu.kliegr.ac1.R.RinterfacePredict", attTypesArray, ruleModel@classAtt, idAtt)
   .jcall(jPredict, , "addDataFrame", testArray,cNames)
   .jcall(jPredict, , "addRuleFrame", extRulesJArray)
   
   #execute predict
   prediction <- .jcall(jPredict, "[Ljava/lang/String;", "predict")
-  return(prediction)  
+  return(prediction)
 }
 
+
+#' @title Map R types to MARC
+#' @description Maps  data types from R data frame to data types used in R
+#' @export
+#' @param Rtypes a vector with R data  types
+#'
+#' @return Vector with MARC data types
+#'
+#' @examples
+#' mapDataTypes(unname(sapply(iris, class)))
+
+
+mapDataTypes<- function (Rtypes)
+{
+  newTypes<-Rtypes
+  newTypes[TRUE]<-"nominal"
+  newTypes[Rtypes=="numeric"] <-"numerical"
+  newTypes[Rtypes=="integer"] <-"numerical"
+  return(newTypes)
+}
