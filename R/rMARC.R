@@ -95,12 +95,18 @@ marcIris2 <- function()
 
 marcExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, loglevel = "FINEST")
 {
+  
+  if (fuzzification & !annotate)
+  {
+    stop("Fuzzification without annotation is not supported")
+  }
   if (missing(ruleOutputPath) & ( annotate | fuzzification))
   {
     print("ruleOutputPath must be set when annotation or fuzzification is enabled")
     ruleOutputPath <- tempfile(pattern = "marc-rules", tmpdir = tempdir(),fileext=".xml")
     print(paste("setting it to '",ruleOutputPath,"'"))
   }
+  
   
   #ensure that any NA or null values are replaced by empty string
   datadf[is.na(datadf)] <- ''
