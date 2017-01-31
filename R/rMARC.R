@@ -63,10 +63,10 @@ marcIris2 <- function()
   trainFold <- allData[1:100,]
   testFold <- allData[101:nrow(datasets::iris),]
   rmCBA <- cba(trainFold, classAtt="Species")
-  rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=TRUE, annotate=TRUE)
+  rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=TRUE, annotate=TRUE,ruleOutputPath="rules.xml")
   prediction <- predict(rmMARC,testFold,"mixture")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmMARC@classAtt]])
-  print(rmMARC@rules)
+
   return(acc)
 }
 
@@ -93,7 +93,7 @@ marcIris2 <- function()
 #' rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold)
 #' print(rmMARC@rules)
 
-marcExtend <- function(cbaRuleModel,  datadf, continuousPruning, postpruning, fuzzification, annotate, ruleOutputPath, loglevel = "FINEST")
+marcExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, loglevel = "FINEST")
 {
   if (missing(ruleOutputPath) & ( annotate | fuzzification))
   {
@@ -223,7 +223,7 @@ predict.MARCRuleModel <- function(object, newdata, testingType, loglevel = "INFO
   
   if (nchar(ruleModel@rulePath)>0)
   {
-    print("Loading rule model from file.")
+    print(paste("Loading rule model from file:",ruleModel@rulePath ))
     prediction <- .jcall(jPredict, "[Ljava/lang/String;", "predictWithRulesFromFile", ruleModel@rulePath, testingType)
   }
   else
