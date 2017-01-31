@@ -17,11 +17,13 @@ library(arc)
 #' @slot rules an object of class rules from arules package enhanced by MARC
 #' @slot classAtt name of the target class attribute
 #' @slot attTypes attribute types
+#' @slot rulePath path to file with rules, has priority over the rules slot
 MARCRuleModel <- setClass("MARCRuleModel",
                       slots = c(
                         rules = "data.frame",
                         classAtt ="character",
-                        attTypes = "vector"
+                        attTypes = "vector",
+                        rulePath ="character"
                       )
 )
 
@@ -41,7 +43,7 @@ marcIris <- function()
   testFold <- allData[101:nrow(datasets::iris),]
   rmCBA <- cba(trainFold, classAtt="Species")
   rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold)
-  prediction <- predict(rmMARC,testFold)
+  prediction <- predict(rmMARC,testFold,"mixture")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmMARC@classAtt]])
   print(rmMARC@rules)
   return(acc)
@@ -53,6 +55,10 @@ marcIris <- function()
 #' @export
 #' @param cbaRuleModel a \link{CBARuleModel}
 #' @param datadf data frame with training data
+#' @param continuousPruning boolean indicating if transactions covered by an extended rule should be removed and thus not available for extensionn of rules with lower priority
+#' @param postpruning boolean indicating if rules should be pruned after extension and before annotation
+#' @param annotate boolean indicating if rules should be annotated with distributions
+#' @param loglevel logger level from java.util.logging
 #'
 #' @return Object of class \link{MARCRuleModel}.
 #'
@@ -64,7 +70,7 @@ marcIris <- function()
 #' rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold)
 #' print(rmMARC@rules)
 
-marcExtend <- function(cbaRuleModel,  datadf)
+marcExtend <- function(cbaRuleModel,  datadf, loglevel = "FINEST")
 {
   #ensure that any NA or null values are replaced by empty string
   datadf[is.na(datadf)] <- ''
@@ -89,7 +95,7 @@ marcExtend <- function(cbaRuleModel,  datadf)
   
   #pass data to MARC in Java
   idAtt <- ""
-  loglevel <- "INFO"
+  
   hjw <- .jnew("eu.kliegr.ac1.R.RinterfaceExtend", attTypesArray,classAtt,idAtt, loglevel)
   out <- .jcall(hjw, , "addDataFrame", dataArray,cNames)
   out <- .jcall(hjw, , "addRuleFrame", rulesArray)
@@ -97,20 +103,38 @@ marcExtend <- function(cbaRuleModel,  datadf)
   #execute MARC extend
   out <- .jcall(hjw, , "extend")  
   
-  #parse results into R structures
-  extRulesArray <- .jcall(hjw, "[[Ljava/lang/String;", "getRules", evalArray=FALSE)
-  extRules <- .jevalArray(extRulesArray,simplify=TRUE)   
-  colnames(extRules) <- c("rules","support","confidence")
-  extRulesFrame<-as.data.frame(extRules,stringsAsFactors=FALSE)
-  extRulesFrame$support<-as.numeric(extRulesFrame$support)
-  extRulesFrame$confidence<-as.numeric(extRulesFrame$confidence)
-  
   rm <- MARCRuleModel()
-  rm@rules <- extRulesFrame
+  
   rm@classAtt <- classAtt
   rm@attTypes <- attTypes
+  
+  if (annotate)
+  {
+    rulePath <-"rules.xml"
+    #annotate
+    out <- .jcall(hjw, , "annotate")  
+    
+    #save to file
+    out <- .jcall(hjw, , "saveToFile", rulePath)    
+    rm@rulePath <- rulePath
+  }
+  else
+  {
+    
+    #parse results into R structures
+    extRulesArray <- .jcall(hjw, "[[Ljava/lang/String;", "getRules", evalArray=FALSE)
+    extRules <- .jevalArray(extRulesArray,simplify=TRUE)   
+    colnames(extRules) <- c("rules","support","confidence")
+    extRulesFrame<-as.data.frame(extRules,stringsAsFactors=FALSE)
+    extRulesFrame$support<-as.numeric(extRulesFrame$support)
+    extRulesFrame$confidence<-as.numeric(extRulesFrame$confidence)
+    
+    rm@rules <- extRulesFrame
+  }
+  
   return(rm)
 }
+
 
 
 #' Apply Rule Model
@@ -118,6 +142,8 @@ marcExtend <- function(cbaRuleModel,  datadf)
 #'
 #' @param object a \link{MARCRuleModel} class instance
 #' @param newdata a data frame with data
+#' @param testingType either "mixture" or "firstRule", applicable only when rule set is an annotated model stored in a file
+#' @param loglevel logger level from java.util.logging
 #' @param ... other arguments (currently not used)
 #' @return A vector with predictions.
 #' @export
@@ -136,7 +162,7 @@ marcExtend <- function(cbaRuleModel,  datadf)
 #' @seealso \link{marcExtend}
 #'
 #'
-predict.MARCRuleModel <- function(object, newdata,...) 
+predict.MARCRuleModel <- function(object, newdata, testingType, loglevel = "INFO", ...) 
 {
   ruleModel <- object
   
@@ -153,20 +179,33 @@ predict.MARCRuleModel <- function(object, newdata,...)
   
   #attTypesArray <- .jarray(unname(sapply(newdata, class)))
   testArray <-  .jarray(lapply(testConverted, .jarray))
-  extRulesJArray <- .jarray(lapply(ruleModel@rules, .jarray))
+  
   
   #pass data to MARC Java
   #the reason why we cannot use e.g. predict.RuleModel in arc package is that the items in the rules do not match the itemMatrix after R extend
   idAtt <- ""
-  loglevel <- "INFO"
   jPredict <- .jnew("eu.kliegr.ac1.R.RinterfacePredict", attTypesArray, ruleModel@classAtt, idAtt,loglevel)
   .jcall(jPredict, , "addDataFrame", testArray,cNames)
-  .jcall(jPredict, , "addRuleFrame", extRulesJArray)
   
-  #execute predict
-  prediction <- .jcall(jPredict, "[Ljava/lang/String;", "predict")
+  
+  if (!is.null(ruleModel@rulePath))
+  {
+    print("Loading rule model from file.")
+    prediction <- .jcall(jPredict, "[Ljava/lang/String;", "predictWithRulesFromFile", ruleModel@rulePath, testingType)
+  }
+  else
+  {
+    # using ruls stored in  ruleModel
+    extRulesJArray <- .jarray(lapply(ruleModel@rules, .jarray))
+    .jcall(jPredict, , "addRuleFrame", extRulesJArray)
+    #execute predict
+    prediction <- .jcall(jPredict, "[Ljava/lang/String;", "predict")
+  }
+
   return(prediction)
 }
+
+
 
 
 #' @title Map R types to MARC
