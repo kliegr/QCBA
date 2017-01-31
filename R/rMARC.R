@@ -28,7 +28,7 @@ MARCRuleModel <- setClass("MARCRuleModel",
 )
 
 
-#' @title Test MARC Workflow with CBA input on Iris Dataset
+#' @title Test simple MARC Workflow with CBA input on Iris Dataset, , the result of MARC is printed
 #' @description Test workflow on iris dataset: learns a cba classifier on one "train set" fold , and applies it to the second  "test set" fold.
 #'
 #' @return Accuracy.
@@ -42,7 +42,28 @@ marcIris <- function()
   trainFold <- allData[1:100,]
   testFold <- allData[101:nrow(datasets::iris),]
   rmCBA <- cba(trainFold, classAtt="Species")
-  rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold)
+  rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE)
+  prediction <- predict(rmMARC,testFold,"mixture")
+  acc <- CBARuleModelAccuracy(prediction, testFold[[rmMARC@classAtt]])
+  print(rmMARC@rules)
+  return(acc)
+}
+
+#' @title Test MARC more complex workflow with annotation and fuzzification, the result of MARC is saved to file
+#' @description Test workflow on iris dataset: learns a CBA classifier on one "train set" fold, and applies it to the second  "test set" fold.
+#'
+#' @return Accuracy.
+#' @export
+#'
+#'
+marcIris2 <- function()
+{
+  set.seed(111)
+  allData <- datasets::iris[sample(nrow(datasets::iris)),]
+  trainFold <- allData[1:100,]
+  testFold <- allData[101:nrow(datasets::iris),]
+  rmCBA <- cba(trainFold, classAtt="Species")
+  rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=TRUE, annotate=TRUE)
   prediction <- predict(rmMARC,testFold,"mixture")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmMARC@classAtt]])
   print(rmMARC@rules)
@@ -57,7 +78,9 @@ marcIris <- function()
 #' @param datadf data frame with training data
 #' @param continuousPruning boolean indicating if transactions covered by an extended rule should be removed and thus not available for extensionn of rules with lower priority
 #' @param postpruning boolean indicating if rules should be pruned after extension and before annotation
+#' @param fuzzification boolean indicating if rules should be fuzzified after extension and before annotation
 #' @param annotate boolean indicating if rules should be annotated with distributions
+#' @param ruleOutputPath path to write resulting rules to
 #' @param loglevel logger level from java.util.logging
 #'
 #' @return Object of class \link{MARCRuleModel}.
@@ -70,8 +93,15 @@ marcIris <- function()
 #' rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold)
 #' print(rmMARC@rules)
 
-marcExtend <- function(cbaRuleModel,  datadf, loglevel = "FINEST")
+marcExtend <- function(cbaRuleModel,  datadf, continuousPruning, postpruning, fuzzification, annotate, ruleOutputPath, loglevel = "FINEST")
 {
+  if (missing(ruleOutputPath) & ( annotate | fuzzification))
+  {
+    print("ruleOutputPath must be set when annotation or fuzzification is enabled")
+    ruleOutputPath <- tempfile(pattern = "marc-rules", tmpdir = tempdir(),fileext=".xml")
+    print(paste("setting it to '",ruleOutputPath,"'"))
+  }
+  
   #ensure that any NA or null values are replaced by empty string
   datadf[is.na(datadf)] <- ''
   datadf[is.null(datadf)] <- ''
@@ -101,7 +131,7 @@ marcExtend <- function(cbaRuleModel,  datadf, loglevel = "FINEST")
   out <- .jcall(hjw, , "addRuleFrame", rulesArray)
   
   #execute MARC extend
-  out <- .jcall(hjw, , "extend")  
+  out <- .jcall(hjw, , "extend", continuousPruning, postpruning, fuzzification, annotate)  
   
   rm <- MARCRuleModel()
   
@@ -110,13 +140,8 @@ marcExtend <- function(cbaRuleModel,  datadf, loglevel = "FINEST")
   
   if (annotate)
   {
-    rulePath <-"rules.xml"
-    #annotate
-    out <- .jcall(hjw, , "annotate")  
-    
-    #save to file
-    out <- .jcall(hjw, , "saveToFile", rulePath)    
-    rm@rulePath <- rulePath
+    out <- .jcall(hjw, , "saveToFile", ruleOutputPath)    
+    rm@rulePath <- ruleOutputPath
   }
   else
   {
@@ -129,7 +154,15 @@ marcExtend <- function(cbaRuleModel,  datadf, loglevel = "FINEST")
     extRulesFrame$support<-as.numeric(extRulesFrame$support)
     extRulesFrame$confidence<-as.numeric(extRulesFrame$confidence)
     
+    rm@rulePath <- ""
     rm@rules <- extRulesFrame
+    
+    if (!missing(ruleOutputPath))
+    {
+      write.csv(extRulesFrame, ruleOutputPath, row.names=TRUE,quote = TRUE)
+      
+    }
+    
   }
   
   return(rm)
@@ -188,7 +221,7 @@ predict.MARCRuleModel <- function(object, newdata, testingType, loglevel = "INFO
   .jcall(jPredict, , "addDataFrame", testArray,cNames)
   
   
-  if (!is.null(ruleModel@rulePath))
+  if (nchar(ruleModel@rulePath)>0)
   {
     print("Loading rule model from file.")
     prediction <- .jcall(jPredict, "[Ljava/lang/String;", "predictWithRulesFromFile", ruleModel@rulePath, testingType)
