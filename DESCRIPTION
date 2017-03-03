@@ -1,7 +1,6 @@
 Package: rMARC
-Title: MARC R Wrapper
+Title: Title: rMARC
 Version: 0.0-1
-Title: rMARC
 Author: Tomas Kliegr
 Maintainer: Tomas Kliegr <kliegr@gmail.com>
 Description: rMARC .
@@ -12,4 +11,4 @@ Depends:
     arc (>= 1.0.1)
 SystemRequirements: Java (>= 8)
 License: AGPL-3
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.0

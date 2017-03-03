@@ -1,7 +1,7 @@
 #' @import rJava 
 #' @import arules
 #' @import arc
-#' 
+
 library(arules)
 library(rJava)
 library(arc)
@@ -9,27 +9,27 @@ library(arc)
 #' MARCRuleModel
 #'
 #' @description  This class represents a MARC rule-based classifier.
-
-
 #' @name MARCRuleModel-class
 #' @rdname MARCRuleModel-class
 #' @exportClass MARCRuleModel
-#' @slot rules an object of class rules from arules package enhanced by MARC
+#' @slot rules object of class rules from arules package enhanced by MARC
 #' @slot classAtt name of the target class attribute
 #' @slot attTypes attribute types
 #' @slot rulePath path to file with rules, has priority over the rules slot
+#' @slot ruleCount number of rules
 MARCRuleModel <- setClass("MARCRuleModel",
                       slots = c(
                         rules = "data.frame",
                         classAtt ="character",
                         attTypes = "vector",
-                        rulePath ="character"
+                        rulePath ="character",
+                        ruleCount ="integer"
                       )
 )
 
 
-#' @title Test simple MARC Workflow with CBA input on Iris Dataset, , the result of MARC is printed
-#' @description Test workflow on iris dataset: learns a cba classifier on one "train set" fold , and applies it to the second  "test set" fold.
+#' @title  Use the Iris dataset to test to test one rule classification MARC workflow.
+#' @description Learns a CBA classifier, performs MARC Extension with continuous pruning and postpruning. Applies the model in one rule classification.
 #'
 #' @return Accuracy.
 #' @export
@@ -43,14 +43,16 @@ marcIris <- function()
   testFold <- allData[101:nrow(datasets::iris),]
   rmCBA <- cba(trainFold, classAtt="Species")
   rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE)
-  prediction <- predict(rmMARC,testFold,"mixture")
+  prediction <- predict(rmMARC,testFold,"firstRule")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmMARC@classAtt]])
   print(rmMARC@rules)
+  print(paste("Rule count:",rmMARC@ruleCount))
   return(acc)
 }
 
-#' @title Test MARC more complex workflow with annotation and fuzzification, the result of MARC is saved to file
-#' @description Test workflow on iris dataset: learns a CBA classifier on one "train set" fold, and applies it to the second  "test set" fold.
+#' @title Use the Iris dataset to test multi rule MARC workflow. 
+#' @description Learns a CBA classifier, performs MARC Extension with continuous pruning, postpruning, annotation and fuzzification. Applies the model in one rule classification.
+#' The model  is saved to a temporary file. 
 #'
 #' @return Accuracy.
 #' @export
@@ -66,21 +68,21 @@ marcIris2 <- function()
   rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=TRUE, annotate=TRUE,ruleOutputPath="rules.xml")
   prediction <- predict(rmMARC,testFold,"mixture")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmMARC@classAtt]])
-
+  print(paste("Rule count:",rmMARC@ruleCount))
   return(acc)
 }
 
 
-#' @title MARC extend and prune
-#' @description Processes CBA rule set  with MARC (extend+prune).
+#' @title MARC Extension with pruning options
+#' @description Creates MARC one rule or multi rule classication model from a CBA rule model
 #' @export
 #' @param cbaRuleModel a \link{CBARuleModel}
 #' @param datadf data frame with training data
-#' @param continuousPruning boolean indicating if transactions covered by an extended rule should be removed and thus not available for extensionn of rules with lower priority
-#' @param postpruning boolean indicating if rules should be pruned after extension and before annotation
-#' @param fuzzification boolean indicating if rules should be fuzzified after extension and before annotation
-#' @param annotate boolean indicating if rules should be annotated with distributions
-#' @param ruleOutputPath path to write resulting rules to
+#' @param continuousPruning indicating  if continuous pruning is enabled
+#' @param postpruning boolean indicating if postpruning is enabled
+#' @param fuzzification boolean indicating if fuzzification is enabled. Multi rule classification model is produced if enabled. Fuzzification without annotation is not supported.
+#' @param annotate boolean indicating if annotation with probability distributions is enabled, multi rule classification model is produced if enabled 
+#' @param ruleOutputPath path of file to which model will be saved. Must be set if multi rule classification is produced.
 #' @param loglevel logger level from java.util.logging
 #'
 #' @return Object of class \link{MARCRuleModel}.
@@ -95,7 +97,6 @@ marcIris2 <- function()
 
 marcExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, loglevel = "FINEST")
 {
-  
   if (fuzzification & !annotate)
   {
     stop("Fuzzification without annotation is not supported")
@@ -106,7 +107,6 @@ marcExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruni
     ruleOutputPath <- tempfile(pattern = "marc-rules", tmpdir = tempdir(),fileext=".xml")
     print(paste("setting it to '",ruleOutputPath,"'"))
   }
-  
   
   #ensure that any NA or null values are replaced by empty string
   datadf[is.na(datadf)] <- ''
@@ -128,7 +128,6 @@ marcExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruni
   attTypes <- mapDataTypes(cbaRuleModel@attTypes)
   attTypesArray <- .jarray(unname(attTypes))
   
-  
   #pass data to MARC in Java
   idAtt <- ""
   
@@ -137,12 +136,16 @@ marcExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruni
   out <- .jcall(hjw, , "addRuleFrame", rulesArray)
   
   #execute MARC extend
+  start.time <- Sys.time()
   out <- .jcall(hjw, , "extend", continuousPruning, postpruning, fuzzification, annotate)  
+  end.time <- Sys.time()
+  message (paste("MARC Model building took:", round(end.time - start.time, 2), " seconds"))  
   
   rm <- MARCRuleModel()
   
   rm@classAtt <- classAtt
   rm@attTypes <- attTypes
+  rm@ruleCount <- .jcall(hjw, "I" , "getRuleCount")
   
   if (annotate)
   {
@@ -168,23 +171,19 @@ marcExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruni
       write.csv(extRulesFrame, ruleOutputPath, row.names=TRUE,quote = TRUE)
       
     }
-    
   }
-  
   return(rm)
 }
 
-
-
-#' Apply Rule Model
-#' @description Method that matches rule model against test data.
+#' @title Aplies MARCRuleModel
+#' @description Method that matches MARC rule model. Supports both one rule and multi rule classification.
 #'
-#' @param object a \link{MARCRuleModel} class instance
-#' @param newdata a data frame with data
-#' @param testingType either "mixture" or "firstRule", applicable only when rule set is an annotated model stored in a file
+#' @param object \link{MARCRuleModel} class instance
+#' @param newdata data frame with data
+#' @param testingType either "mixture" for multi rule classification or "firstRule" for one rule classification. Applicable only when model is loaded from file.
 #' @param loglevel logger level from java.util.logging
 #' @param ... other arguments (currently not used)
-#' @return A vector with predictions.
+#' @return vector with predictions.
 #' @export
 #' @method predict MARCRuleModel
 #' @examples
@@ -203,6 +202,7 @@ marcExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruni
 #'
 predict.MARCRuleModel <- function(object, newdata, testingType, loglevel = "INFO", ...) 
 {
+  start.time <- Sys.time()
   ruleModel <- object
   
   newdata[is.na(newdata)] <- ''
@@ -221,7 +221,7 @@ predict.MARCRuleModel <- function(object, newdata, testingType, loglevel = "INFO
   
   
   #pass data to MARC Java
-  #the reason why we cannot use e.g. predict.RuleModel in arc package is that the items in the rules do not match the itemMatrix after R extend
+  #the reason why we cannot use predict.RuleModel in arc package is that the items in the rules do not match the itemMatrix after R extend
   idAtt <- ""
   jPredict <- .jnew("eu.kliegr.ac1.R.RinterfacePredict", attTypesArray, ruleModel@classAtt, idAtt,loglevel)
   .jcall(jPredict, , "addDataFrame", testArray,cNames)
@@ -234,23 +234,20 @@ predict.MARCRuleModel <- function(object, newdata, testingType, loglevel = "INFO
   }
   else
   {
-    # using ruls stored in  ruleModel
+    print("Using rules stored in the passed model")
     extRulesJArray <- .jarray(lapply(ruleModel@rules, .jarray))
     .jcall(jPredict, , "addRuleFrame", extRulesJArray)
-    #execute predict
     prediction <- .jcall(jPredict, "[Ljava/lang/String;", "predict")
   }
-
+  end.time <- Sys.time()
+  message (paste("Prediction (MARC model application) took:", round(end.time - start.time, 2), " seconds"))  
   return(prediction)
 }
 
-
-
-
 #' @title Map R types to MARC
-#' @description Maps  data types from R data frame to data types used in R
+#' @description Map data types between R and MARC
 #' @export
-#' @param Rtypes a vector with R data  types
+#' @param Rtypes Vector with R data types
 #'
 #' @return Vector with MARC data types
 #'
