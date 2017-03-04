@@ -79,8 +79,8 @@ If we actived the continuousPruning option, it would result in aggressive prunin
 
 Output
 ```
-[1] CBA Model with  18  rules and accuracy  0.92156862745098
-[1] MARC Model with  18  rules and accuracy  0.941176470588235
+[1] CBA Model with  14  rules and accuracy  0.941176470588235
+[1] MARC Model with  14  rules and accuracy  0.96078431372549
 ```
 
 MARC improved accuracy while keeping the number of rules.
