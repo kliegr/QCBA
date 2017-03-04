@@ -37,8 +37,8 @@ devtools::install_github("kliegr/marc")
   prediction <- predict(rmCBA,testFold)
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmCBA@classAtt]])
   print(paste("CBA Model with ",length(rmCBA@rules), " rules and accuracy ",acc))
-  rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=FALSE, annotate=TRUE,ruleOutputPath="rules.xml")
-  prediction <- predict(rmMARC,testFold,"mixture")
+  rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE,ruleOutputPath="rules.xml")
+  prediction <- predict(rmMARC,testFold,"oneRule")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmMARC@classAtt]])
   print(paste("MARC Model with ",rmMARC@ruleCount, " rules and accuracy ",acc))
   print(rmMARC@rules)
@@ -46,11 +46,15 @@ devtools::install_github("kliegr/marc")
 
 Output
 ```
-[1] "CBA Model with  19  rules and accuracy  0.742537313432836"
-[1] "MARC Model with  16  rules and accuracy  0.742537313432836"
+[1] CBA Model with  53  rules and accuracy  0.753731343283582
+[1] MARC Model with  47  rules and accuracy  0.753731343283582
 ```
 MARC decreased the number of rules while keeping same accuracy.
 
+If we actived the continuousPruning option, it would result in aggressive pruning:
+```
+[1] MARC Model with  28  rules and accuracy  0.67910447761194
+```
 ### Multi rule classification
 ```R
   library(rMARC)
