@@ -2,7 +2,9 @@
 
 This package for R implements the MARC algorithm aimed at postprocesing output of a CBA classifier.
 
- ```Liu, B. Hsu, W. and Ma, Y (1998). Integrating Classification and Association Rule Mining. Proceedings KDD-98, New York, 27-31 August. AAAI. pp 80-86.```
+ ```
+ Liu, B. Hsu, W. and Ma, Y (1998). Integrating Classification and Association Rule Mining. Proceedings KDD-98, New York, 27-31 August. AAAI. pp 80-86.
+ ```
  
 The [arc](https://github.com/kliegr/arc) package is used for generation of the CBA classifier.
 
@@ -85,3 +87,6 @@ Output
 
 MARC improved accuracy while keeping the number of rules.
 Rules in MARC multi rule model cannot be currently  visualized - they are stored in a file.
+
+### Evaluation
+A lightweight benchmarking framework for MARC is available as [marcbench](https://github.com/kliegr/marcbench).
