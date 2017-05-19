@@ -63,10 +63,9 @@ If we actived the continuousPruning option, it would result in aggressive prunin
 ```
 ### Multi rule classification (Experimental)
 ```R
-  library(rMARC)
+  library(qCBA)
   library(mlbench)
   data("Ionosphere")
-  library(rMARC)
   set.seed(111)
   allData <- Ionosphere[sample(nrow(Ionosphere)),]
   trainFold <- allData[1:300,]
