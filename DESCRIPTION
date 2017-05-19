@@ -1,9 +1,9 @@
-Package: rMARC
-Title: Title: rMARC
+Package: qCBA
+Title: Title: qcba
 Version: 0.0-1
 Author: Tomas Kliegr
 Maintainer: Tomas Kliegr <kliegr@gmail.com>
-Description: rMARC .
+Description: qCBA .
 Depends:
     R (>= 2.7.0),
     arules,

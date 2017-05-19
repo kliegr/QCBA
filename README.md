@@ -1,6 +1,10 @@
 # Monotonicity Exploiting Association Rule Classification
 
-This package for R implements the MARC algorithm aimed at postprocesing output of a CBA classifier.
+# Quasi Quantitative CBA
+
+This package for R implements the Quasi Quantitative CBA, which postprocesses the output of CBA to refit discretized attributes with respect to original data.
+
+The reference for CBA:
 
  ```
  Liu, B. Hsu, W. and Ma, Y (1998). Integrating Classification and Association Rule Mining. Proceedings KDD-98, New York, 27-31 August. AAAI. pp 80-86.
@@ -27,7 +31,7 @@ devtools::install_github("kliegr/marc")
 
 ### One rule classification
 ```R
-  library(rMARC)
+  library(qCBA)
   library(mlbench)
   data("PimaIndiansDiabetes")
   
@@ -39,10 +43,10 @@ devtools::install_github("kliegr/marc")
   prediction <- predict(rmCBA,testFold)
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmCBA@classAtt]])
   print(paste("CBA Model with ",length(rmCBA@rules), " rules and accuracy ",acc))
-  rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE,ruleOutputPath="rules.xml")
+  rmMARC <- qcbaExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE,ruleOutputPath="rules.xml")
   prediction <- predict(rmMARC,testFold,"oneRule")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmMARC@classAtt]])
-  print(paste("MARC Model with ",rmMARC@ruleCount, " rules and accuracy ",acc))
+  print(paste("QCBA Model with ",rmMARC@ruleCount, " rules and accuracy ",acc))
   print(rmMARC@rules)
 ```
 
@@ -57,7 +61,7 @@ If we actived the continuousPruning option, it would result in aggressive prunin
 ```
 [1] MARC Model with  28  rules and accuracy  0.67910447761194
 ```
-### Multi rule classification
+### Multi rule classification (Experimental)
 ```R
   library(rMARC)
   library(mlbench)
@@ -71,7 +75,7 @@ If we actived the continuousPruning option, it would result in aggressive prunin
   prediction <- predict(rmCBA,testFold)
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmCBA@classAtt]])
   print(paste("CBA Model with ",length(rmCBA@rules), " rules and accuracy ",acc))
-  rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=FALSE, annotate=TRUE,ruleOutputPath="rules.xml")
+  rmMARC <- qcbaExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=FALSE, annotate=TRUE,ruleOutputPath="rules.xml")
   prediction <- predict(rmMARC,testFold,"mixture")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmMARC@classAtt]])
   print(paste("MARC Model with ",rmMARC@ruleCount, " rules and accuracy ",acc))

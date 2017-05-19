@@ -6,18 +6,18 @@ library(arules)
 library(rJava)
 library(arc)
 
-#' MARCRuleModel
+#' qCBARuleModel
 #'
-#' @description  This class represents a MARC rule-based classifier.
-#' @name MARCRuleModel-class
-#' @rdname MARCRuleModel-class
-#' @exportClass MARCRuleModel
-#' @slot rules object of class rules from arules package enhanced by MARC
+#' @description  This class represents a qCBA rule-based classifier.
+#' @name qCBARuleModel-class
+#' @rdname qCBARuleModel-class
+#' @exportClass qCBARuleModel
+#' @slot rules object of class rules from arules package enhanced by qCBA
 #' @slot classAtt name of the target class attribute
 #' @slot attTypes attribute types
 #' @slot rulePath path to file with rules, has priority over the rules slot
 #' @slot ruleCount number of rules
-MARCRuleModel <- setClass("MARCRuleModel",
+qCBARuleModel <- setClass("qCBARuleModel",
                       slots = c(
                         rules = "data.frame",
                         classAtt ="character",
@@ -28,53 +28,53 @@ MARCRuleModel <- setClass("MARCRuleModel",
 )
 
 
-#' @title  Use the Iris dataset to test to test one rule classification MARC workflow.
-#' @description Learns a CBA classifier, performs MARC Extension with continuous pruning and postpruning. Applies the model in one rule classification.
+#' @title  Use the Iris dataset to test to test one rule classification qCBA workflow.
+#' @description Learns a CBA classifier, performs qCBA Extension with continuous pruning and postpruning. Applies the model in one rule classification.
 #'
 #' @return Accuracy.
 #' @export
 #'
 #'
-marcIris <- function()
+qcbaIris <- function()
 {
   set.seed(111)
   allData <- datasets::iris[sample(nrow(datasets::iris)),]
   trainFold <- allData[1:100,]
   testFold <- allData[101:nrow(datasets::iris),]
   rmCBA <- cba(trainFold, classAtt="Species")
-  rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE)
-  prediction <- predict(rmMARC,testFold,"firstRule")
-  acc <- CBARuleModelAccuracy(prediction, testFold[[rmMARC@classAtt]])
-  print(rmMARC@rules)
-  print(paste("Rule count:",rmMARC@ruleCount))
+  rmqCBA <- qcbaExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE)
+  prediction <- predict(rmqCBA,testFold,"firstRule")
+  acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
+  print(rmqCBA@rules)
+  print(paste("Rule count:",rmqCBA@ruleCount))
   return(acc)
 }
 
-#' @title Use the Iris dataset to test multi rule MARC workflow. 
-#' @description Learns a CBA classifier, performs MARC Extension with continuous pruning, postpruning, annotation and fuzzification. Applies the model in one rule classification.
+#' @title Use the Iris dataset to test multi rule qCBA workflow. 
+#' @description Learns a CBA classifier, performs qCBA Extension with continuous pruning, postpruning, annotation and fuzzification. Applies the model in one rule classification.
 #' The model  is saved to a temporary file. 
 #'
 #' @return Accuracy.
 #' @export
 #'
 #'
-marcIris2 <- function()
+qcbaIris2 <- function()
 {
   set.seed(111)
   allData <- datasets::iris[sample(nrow(datasets::iris)),]
   trainFold <- allData[1:100,]
   testFold <- allData[101:nrow(datasets::iris),]
   rmCBA <- cba(trainFold, classAtt="Species")
-  rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=TRUE, annotate=TRUE,ruleOutputPath="rules.xml")
-  prediction <- predict(rmMARC,testFold,"mixture")
-  acc <- CBARuleModelAccuracy(prediction, testFold[[rmMARC@classAtt]])
-  print(paste("Rule count:",rmMARC@ruleCount))
+  rmqCBA <- qcbaExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=TRUE, annotate=TRUE,ruleOutputPath="rules.xml")
+  prediction <- predict(rmqCBA,testFold,"mixture")
+  acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
+  print(paste("Rule count:",rmqCBA@ruleCount))
   return(acc)
 }
 
 
-#' @title MARC Extension with pruning options
-#' @description Creates MARC one rule or multi rule classication model from a CBA rule model
+#' @title qCBA Extension with pruning options
+#' @description Creates qCBA one rule or multi rule classication model from a CBA rule model
 #' @export
 #' @param cbaRuleModel a \link{CBARuleModel}
 #' @param datadf data frame with training data
@@ -85,17 +85,17 @@ marcIris2 <- function()
 #' @param ruleOutputPath path of file to which model will be saved. Must be set if multi rule classification is produced.
 #' @param loglevel logger level from java.util.logging
 #'
-#' @return Object of class \link{MARCRuleModel}.
+#' @return Object of class \link{qCBARuleModel}.
 #'
 #' @examples
 #' allData <- datasets::iris[sample(nrow(datasets::iris)),]
 #' trainFold <- allData[1:100,]
 #' testFold <- allData[101:nrow(datasets::iris),]
 #' rmCBA <- cba(trainFold, classAtt="Species")
-#' rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold)
-#' print(rmMARC@rules)
+#' rmqCBA <- qcbaExtend(cbaRuleModel=rmCBA,datadf=trainFold)
+#' print(rmqCBA@rules)
 
-marcExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, loglevel = "FINEST")
+qcbaExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, loglevel = "FINEST")
 {
   if (fuzzification & !annotate)
   {
@@ -104,7 +104,7 @@ marcExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruni
   if (missing(ruleOutputPath) & ( annotate | fuzzification))
   {
     print("ruleOutputPath must be set when annotation or fuzzification is enabled")
-    ruleOutputPath <- tempfile(pattern = "marc-rules", tmpdir = tempdir(),fileext=".xml")
+    ruleOutputPath <- tempfile(pattern = "qcba-rules", tmpdir = tempdir(),fileext=".xml")
     print(paste("setting it to '",ruleOutputPath,"'"))
   }
   
@@ -128,20 +128,20 @@ marcExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruni
   attTypes <- mapDataTypes(cbaRuleModel@attTypes)
   attTypesArray <- .jarray(unname(attTypes))
   
-  #pass data to MARC in Java
+  #pass data to qCBA in Java
   idAtt <- ""
   
   hjw <- .jnew("eu.kliegr.ac1.R.RinterfaceExtend", attTypesArray,classAtt,idAtt, loglevel)
   out <- .jcall(hjw, , "addDataFrame", dataArray,cNames)
   out <- .jcall(hjw, , "addRuleFrame", rulesArray)
   
-  #execute MARC extend
+  #execute qCBA extend
   start.time <- Sys.time()
   out <- .jcall(hjw, , "extend", continuousPruning, postpruning, fuzzification, annotate)  
   end.time <- Sys.time()
-  message (paste("MARC Model building took:", round(end.time - start.time, 2), " seconds"))  
+  message (paste("qCBA Model building took:", round(end.time - start.time, 2), " seconds"))  
   
-  rm <- MARCRuleModel()
+  rm <- qCBARuleModel()
   
   rm@classAtt <- classAtt
   rm@attTypes <- attTypes
@@ -175,32 +175,32 @@ marcExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruni
   return(rm)
 }
 
-#' @title Aplies MARCRuleModel
-#' @description Method that matches MARC rule model. Supports both one rule and multi rule classification.
+#' @title Aplies qCBARuleModel
+#' @description Method that matches qCBA rule model. Supports both one rule and multi rule classification.
 #'
-#' @param object \link{MARCRuleModel} class instance
+#' @param object \link{qCBARuleModel} class instance
 #' @param newdata data frame with data
 #' @param testingType either "mixture" for multi rule classification or "firstRule" for one rule classification. Applicable only when model is loaded from file.
 #' @param loglevel logger level from java.util.logging
 #' @param ... other arguments (currently not used)
 #' @return vector with predictions.
 #' @export
-#' @method predict MARCRuleModel
+#' @method predict qCBARuleModel
 #' @examples
 #' allData <- datasets::iris[sample(nrow(datasets::iris)),]
 #' trainFold <- allData[1:100,]
 #' testFold <- allData[101:nrow(datasets::iris),]
 #' rmCBA <- cba(trainFold, classAtt="Species")
-#' rmMARC <- marcExtend(cbaRuleModel=rmCBA,datadf=trainFold)
-#' print(rmMARC@rules)
-#' prediction <- predict(rmMARC,testFold)
-#' acc <- CBARuleModelAccuracy(prediction, testFold[[rmMARC@classAtt]])
+#' rmqCBA <- qcbaExtend(cbaRuleModel=rmCBA,datadf=trainFold)
+#' print(rmqCBA@rules)
+#' prediction <- predict(rmqCBA,testFold)
+#' acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
 #' message(acc)
 #' 
-#' @seealso \link{marcExtend}
+#' @seealso \link{qcbaExtend}
 #'
 #'
-predict.MARCRuleModel <- function(object, newdata, testingType, loglevel = "INFO", ...) 
+predict.qCBARuleModel <- function(object, newdata, testingType, loglevel = "INFO", ...) 
 {
   start.time <- Sys.time()
   ruleModel <- object
@@ -220,7 +220,7 @@ predict.MARCRuleModel <- function(object, newdata, testingType, loglevel = "INFO
   testArray <-  .jarray(lapply(testConverted, .jarray))
   
   
-  #pass data to MARC Java
+  #pass data to qCBA Java
   #the reason why we cannot use predict.RuleModel in arc package is that the items in the rules do not match the itemMatrix after R extend
   idAtt <- ""
   jPredict <- .jnew("eu.kliegr.ac1.R.RinterfacePredict", attTypesArray, ruleModel@classAtt, idAtt,loglevel)
@@ -240,16 +240,16 @@ predict.MARCRuleModel <- function(object, newdata, testingType, loglevel = "INFO
     prediction <- .jcall(jPredict, "[Ljava/lang/String;", "predict")
   }
   end.time <- Sys.time()
-  message (paste("Prediction (MARC model application) took:", round(end.time - start.time, 2), " seconds"))  
+  message (paste("Prediction (qCBA model application) took:", round(end.time - start.time, 2), " seconds"))  
   return(prediction)
 }
 
-#' @title Map R types to MARC
-#' @description Map data types between R and MARC
+#' @title Map R types to qCBA
+#' @description Map data types between R and qCBA
 #' @export
 #' @param Rtypes Vector with R data types
 #'
-#' @return Vector with MARC data types
+#' @return Vector with qCBA data types
 #'
 #' @examples
 #' mapDataTypes(unname(sapply(iris, class)))
