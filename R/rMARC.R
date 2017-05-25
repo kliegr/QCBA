@@ -28,6 +28,44 @@ qCBARuleModel <- setClass("qCBARuleModel",
 )
 
 
+#' @title  Use the Humidity-Temperature toy dataset to test one rule classification qCBA workflow.
+#' @description TODO
+#'
+#' @return QCBA model
+#' @export
+#'
+#'
+qcbaHumTemp <- function()
+{
+  #data<-read.csv("/home/tomas/Dropbox/KonferenceAakce/MARC/data-example.csv")
+  data(humtemp)
+  data_raw<-humtemp
+  data_discr <- humtemp
+  #custom discretization
+  data_discr[,1]<-cut(humtemp[,1],breaks=seq(from=15,to=45,by=5))
+  data_discr[,2]<-cut(humtemp[,2],breaks=c(0,40,60,80,100))
+  #change interval syntax from (15,20] to (15;20], which is required by MARC
+  data_discr[,1]<-as.factor(unlist(lapply(data_discr[,1], function(x) {gsub(",", ";", x)})))
+  data_discr[,2]<-as.factor(unlist(lapply(data_discr[,2], function(x) {gsub(",", ";", x)})))
+  
+  data_discr[,3] <- as.factor(humtemp[,3])
+  
+  txns <- as(data_discr, "transactions")
+  rules <- apriori(txns, parameter = list(confidence = 0.75, support= 3/nrow(data_discr), minlen=1, maxlen=5))
+  inspect(rules)
+  
+  classAtt="Class"
+  appearance <- getAppearance(data_discr, classAtt)
+  rmCBA <- cba_manual(data_raw,  rules, txns, appearance$rhs, classAtt, cutp= list(), pruning_options=NULL)
+  rmqCBA <- qcbaExtend(cbaRuleModel=rmCBA,datadf=data,continuousPruning=FALSE, postpruning=FALSE, fuzzification=FALSE, annotate=FALSE,minImprovement=0,minCondImprovement=-0.05)
+  #prediction <- predict(rmqCBA,testFold,"firstRule")
+  #acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
+  #print(rmqCBA@rules)
+  #print(paste("Rule count:",rmqCBA@ruleCount))
+  return(rmqCBA)
+}
+
+
 #' @title  Use the Iris dataset to test to test one rule classification qCBA workflow.
 #' @description Learns a CBA classifier, performs qCBA Extension with continuous pruning and postpruning. Applies the model in one rule classification.
 #'
@@ -83,6 +121,8 @@ qcbaIris2 <- function()
 #' @param fuzzification boolean indicating if fuzzification is enabled. Multi rule classification model is produced if enabled. Fuzzification without annotation is not supported.
 #' @param annotate boolean indicating if annotation with probability distributions is enabled, multi rule classification model is produced if enabled 
 #' @param ruleOutputPath path of file to which model will be saved. Must be set if multi rule classification is produced.
+#' @param minImprovement parameter ofqCBA extend procedure
+#' @param minCondImprovement parameter ofqCBA extend procedure
 #' @param loglevel logger level from java.util.logging
 #'
 #' @return Object of class \link{qCBARuleModel}.
@@ -95,7 +135,7 @@ qcbaIris2 <- function()
 #' rmqCBA <- qcbaExtend(cbaRuleModel=rmCBA,datadf=trainFold)
 #' print(rmqCBA@rules)
 
-qcbaExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, loglevel = "FINEST")
+qcbaExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-0.05,loglevel = "FINEST")
 {
   if (fuzzification & !annotate)
   {
@@ -137,7 +177,7 @@ qcbaExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruni
   
   #execute qCBA extend
   start.time <- Sys.time()
-  out <- .jcall(hjw, , "extend", continuousPruning, postpruning, fuzzification, annotate)  
+  out <- .jcall(hjw, , "extend", continuousPruning, postpruning, fuzzification, annotate,minImprovement,minCondImprovement)  
   end.time <- Sys.time()
   message (paste("qCBA Model building took:", round(end.time - start.time, 2), " seconds"))  
   
