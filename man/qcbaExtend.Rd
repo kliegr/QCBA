@@ -6,7 +6,8 @@
 \usage{
 qcbaExtend(cbaRuleModel, datadf, continuousPruning = FALSE,
   postpruning = TRUE, fuzzification = FALSE, annotate = FALSE,
-  ruleOutputPath, loglevel = "FINEST")
+  ruleOutputPath, minImprovement = 0, minCondImprovement = -0.05,
+  loglevel = "FINEST")
 }
 \arguments{
 \item{cbaRuleModel}{a \link{CBARuleModel}}
@@ -22,6 +23,10 @@ qcbaExtend(cbaRuleModel, datadf, continuousPruning = FALSE,
 \item{annotate}{boolean indicating if annotation with probability distributions is enabled, multi rule classification model is produced if enabled}
 
 \item{ruleOutputPath}{path of file to which model will be saved. Must be set if multi rule classification is produced.}
+
+\item{minImprovement}{parameter ofqCBA extend procedure}
+
+\item{minCondImprovement}{parameter ofqCBA extend procedure}
 
 \item{loglevel}{logger level from java.util.logging}
 }
