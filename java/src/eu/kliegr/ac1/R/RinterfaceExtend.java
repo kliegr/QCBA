@@ -20,6 +20,7 @@ package eu.kliegr.ac1.R;
 
 import eu.kliegr.ac1.rule.MMACRuleComparator;
 import eu.kliegr.ac1.rule.extend.ExtendRule;
+import eu.kliegr.ac1.rule.extend.ExtendRuleConfig;
 import eu.kliegr.ac1.rule.extend.ExtendRules;
 import eu.kliegr.ac1.rule.extend.ExtendType;
 import eu.kliegr.ac1.rule.parsers.GUHASimplifiedParser;
@@ -37,7 +38,7 @@ public class RinterfaceExtend extends Rinterface {
 
     Comparator ruleComparator = new MMACRuleComparator();
     ExtendType extType = ExtendType.numericOnly;
-
+    ExtendRuleConfig conf;
     ExtendRules extendRulesObj;
 
     /**
@@ -59,9 +60,11 @@ public class RinterfaceExtend extends Rinterface {
      * @param isPostPruningEnabled
      * @param isFuzzificationEnabled
      * @param isAnnotationEnabled
+     * @param minCondImprovement
+     * @param minImprovement
      * @throws Exception
      */
-    public void extend(boolean isContinuousPruningEnabled, boolean isPostPruningEnabled, boolean isFuzzificationEnabled, boolean isAnnotationEnabled) throws Exception {
+    public void extend(boolean isContinuousPruningEnabled, boolean isPostPruningEnabled, boolean isFuzzificationEnabled, boolean isAnnotationEnabled,double minImprovement,double minCondImprovement) throws Exception {
 
         this.isFuzzificationEnabled = isFuzzificationEnabled;
         this.isPostPruningEnabled = isPostPruningEnabled;
@@ -76,7 +79,8 @@ public class RinterfaceExtend extends Rinterface {
         if (rules == null) {
             throw new Exception("Load rules first");
         }
-        extendRulesObj = new ExtendRules(rules, ruleComparator, extType, data);
+        conf  = new ExtendRuleConfig(minImprovement,minCondImprovement);
+        extendRulesObj = new ExtendRules(rules, ruleComparator, extType, conf, data);
         extendRulesObj.sortRules();
         extendRulesObj.extendRules(isContinuousPruningEnabled, isFuzzificationEnabled, isPostPruningEnabled);
         if (isAnnotationEnabled) {

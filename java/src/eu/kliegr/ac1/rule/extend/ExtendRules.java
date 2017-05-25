@@ -59,12 +59,12 @@ public class ExtendRules {
      * @param type
      * @param data
      */
-    public ExtendRules(ArrayList<Rule> rules, Comparator ruleComparator, ExtendType type, Data data) {
+    public ExtendRules(ArrayList<Rule> rules, Comparator ruleComparator, ExtendType type, ExtendRuleConfig extConf,Data data) {
         //Create a Stream from the personList
         this.type = type;
         this.ruleComparator = ruleComparator;
         this.data = data;
-        this.seedRules = rules.stream().map((rule) -> new ExtendRule(rule, null, type)).collect(Collectors.toCollection(() -> Collections.synchronizedList(new ArrayList<ExtendRule>())));
+        this.seedRules = rules.stream().map((rule) -> new ExtendRule(rule, null, type,extConf)).collect(Collectors.toCollection(() -> Collections.synchronizedList(new ArrayList<ExtendRule>())));
         LOGGER.log(Level.INFO, "Rules loaded: {0}", seedRules.size());
     }
 
@@ -144,7 +144,7 @@ public class ExtendRules {
         int lastRuleRID = seedRules.get(seedRules.size() - 1).getRID();
         //cannot be parallel stream if pruning is performed in the same iteration
         extendedRules = seedRules.stream().map(rule -> {
-            LOGGER.log(Level.INFO, "Rules already extended:{0} ; out of {1}", new Object[]{processedRules.addAndGet(1), seedRules.size()});
+            LOGGER.log(Level.INFO, "Rules already extended:{0}  out of {1}", new Object[]{processedRules.addAndGet(1), seedRules.size()});
             int antLength = rule.getAntecedent().getItems().size();
 
             if (antLength == 0) {

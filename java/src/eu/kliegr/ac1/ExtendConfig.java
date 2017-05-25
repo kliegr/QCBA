@@ -20,6 +20,7 @@ package eu.kliegr.ac1;
 
 import eu.kliegr.ac1.data.AttributeType;
 import eu.kliegr.ac1.rule.MMACRuleComparator;
+import eu.kliegr.ac1.rule.extend.ExtendRuleConfig;
 import eu.kliegr.ac1.rule.extend.ExtendType;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -42,6 +43,7 @@ public class ExtendConfig extends BaseConfig {
 
     private Comparator ruleComparator ;
     private ExtendType extendType;
+    private ExtendRuleConfig extConf;
 
     /**
      *
@@ -111,6 +113,18 @@ public class ExtendConfig extends BaseConfig {
         {
             csvSeparator =  ",";
         }
+        
+        String _mci =prop.getProperty("MinCondImprovement");
+        String _mi =prop.getProperty("MinImprovement");
+        if (_mci != null && _mi!=null ) {
+            extConf = new ExtendRuleConfig(Double.valueOf(_mi),(Double.valueOf(_mci))); //default parameter values
+        }
+        else
+        {
+            extConf = new ExtendRuleConfig();
+        }
+        
+        
         attType = parseAttributeTypes(prop.getProperty("DataTypes").split(csvSeparator));
         targetAttribute = prop.getProperty("TargetAttribute");
         IDcolumnName = prop.getProperty("IDcolumnName");
@@ -125,6 +139,10 @@ public class ExtendConfig extends BaseConfig {
         return ruleComparator;
     }
 
+    public ExtendRuleConfig getExtendRuleConfig()
+    {
+        return extConf;
+    }
     /**
      *
      * @return

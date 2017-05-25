@@ -33,6 +33,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,7 +46,7 @@ public class ArulesParser {
     private final Pattern pattern = Pattern.compile("([^,]*?)=([^,]*)");
     private final Pattern intervalPattern = Pattern.compile("(\\[|\\()( ?-?(?:Inf|Infinity|\\d+(?:(?:\\.\\d+)?(?:[Ee][-+]?\\d+)?)?)); ?(-?(?:Inf|Infinity|(?:\\d+(?:(?:\\.\\d+)?(?:[Ee][-+]?\\d+)?)?)))(\\]|\\))");
     private final Data data;
-
+    private static final Logger LOG = Logger.getLogger(ArulesParser.class.getName());
     /**
      *
      * @param data
@@ -135,6 +136,9 @@ public class ArulesParser {
      */
     public Rule parseRule(String rule, float confidence, float support, int ruleid) throws AttributeNotFoundException,InvalidAttributeTypeException {        
     
+    LOG.log(Level.FINEST, "Starting to parse rule: {0}, confidence={1}, support={2}", new Object[]{rule, confidence, support});
+    
+    LOG.finest(rule);
     String[] ruleparts = rule.replace("\"","").split("\\} => \\{");
     for (int i = 0; i< ruleparts.length; i++)
     {
@@ -197,6 +201,6 @@ public class ArulesParser {
          }
     return out;
 }
-    private static final Logger LOG = Logger.getLogger(ArulesParser.class.getName());
+    
 
 }

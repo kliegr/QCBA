@@ -42,7 +42,12 @@ import org.w3c.dom.Node;
 public final class ExtendRule extends PruneRule implements RuleInt {
 
     private final static Logger LOGGER = Logger.getLogger(ExtendRule.class.getName());
+    private ExtendRuleConfig conf;
 
+    public ExtendRuleConfig getExtendRuleConfig()
+    {
+        return conf;
+    }
     private static Antecedent constructNewAntecedent(Antecedent antecedent, RuleMultiItem extension) {
         ArrayList<RuleMultiItem> newAntecedentItems = new ArrayList();
         antecedent.getItems().stream().forEach((multiitem) -> {
@@ -71,10 +76,12 @@ public final class ExtendRule extends PruneRule implements RuleInt {
      * @param rule
      * @param history
      * @param type
+     * @param conf
      */
-    public ExtendRule(Rule rule, History history, ExtendType type) {
+    public ExtendRule(Rule rule, History history, ExtendType type,ExtendRuleConfig conf) {
         super(rule);
         this.extendType = type;
+        this.conf = conf;
 
         updateQuality();
         if (history == null) {
@@ -92,10 +99,12 @@ public final class ExtendRule extends PruneRule implements RuleInt {
      * @param extension
      * @param history
      * @param type
+     * @param conf
      */
-    public ExtendRule(Rule rule, RuleMultiItem extension, History history, ExtendType type) {
+    public ExtendRule(Rule rule, RuleMultiItem extension, History history, ExtendType type,ExtendRuleConfig conf) {
         super(new Rule(constructNewAntecedent(rule.getAntecedent(), extension), rule.getConsequent(), null, null, Rule.getNextERID(), rule.getData()));
         this.extendType = type;
+        this.conf = conf;
         lastExtension = extension;
         LOGGER.fine(rule.toString());
         this.rule.setQuality(computeQuality());
@@ -116,9 +125,10 @@ public final class ExtendRule extends PruneRule implements RuleInt {
      * @param type
      * @param data
      */
-    public ExtendRule(Antecedent antecedent, Consequent cons, History history, ExtendType type, Data data) {
+    public ExtendRule(Antecedent antecedent, Consequent cons, History history, ExtendType type, Data data,ExtendRuleConfig conf) {
         super(new Rule(antecedent, cons, null, null, Rule.getNextERID(), data));
         this.extendType = type;
+        this.conf = conf;
         lastExtension = null;
 
         this.rule.setQuality(computeQuality());
@@ -151,7 +161,7 @@ public final class ExtendRule extends PruneRule implements RuleInt {
             //try to extend attribute
             return null;
         }
-        return new ExtendRule(rule, nextExtension, this.getHistory(), extendType);
+        return new ExtendRule(rule, nextExtension, this.getHistory(), extendType,conf);
     }
 
     /**
@@ -189,9 +199,6 @@ public final class ExtendRule extends PruneRule implements RuleInt {
         LOGGER.fine("*************************************");
         LOGGER.log(Level.FINE, "STARTED Extension on rule: {0}\n", curAcceptedExtension);
 
-        double minImprovement = 0;
-        double minCondImprovement = -0.05;
-        //double minCondidtionalImprovement = -0.05;
         do {
             LOGGER.finest("*************************************");
             //new extension candidates: neighbours of the currently best extension
@@ -207,14 +214,14 @@ public final class ExtendRule extends PruneRule implements RuleInt {
                 LOGGER.log(Level.FINEST, "Current extension candidate {0}", candExt);
                 LOGGER.finest("+++++++++++++++++++++++++++++++++++++");
 
-                if (candExt.getConfidence() - curAcceptedExtension.getConfidence() >= minImprovement && candExt.getSupport() - curAcceptedExtension.getSupport() > 0) {
+                if (candExt.getConfidence() - curAcceptedExtension.getConfidence() >=  conf.minImprovement && candExt.getSupport() - curAcceptedExtension.getSupport() > 0) {
                     LOGGER.finest("Improvement in confidence above threshold (with non zero support delta), accepting");
                     extensionSuccessful = true;
                     curAcceptedExtension = candExt;
                     // improvement over the current best was found, the other candidates will not be considered
                     // the system will now use the new best as the seed for improvement
                     break;
-                } else if ((candExt.getConfidence() - curAcceptedExtension.getConfidence() >= minCondImprovement)) {
+                } else if ((candExt.getConfidence() - curAcceptedExtension.getConfidence() >= conf.minCondImprovement)) {
                     LOGGER.finest("Change in confidence in conditional accept band, trying extensions");
 
                     ExtendRule candExtEnlargement = candExt;
@@ -230,12 +237,12 @@ public final class ExtendRule extends PruneRule implements RuleInt {
                         int supportDelta = candExtEnlargement.getSupport() - curAcceptedExtension.getSupport();
                         LOGGER.log(Level.FINEST, "Change in confidence:{0}, change in support: {1}", new Object[]{changeInConfidenceExt, supportDelta});
 
-                        if (changeInConfidenceExt >= minImprovement && supportDelta > 0) {
+                        if (changeInConfidenceExt >=  conf.minImprovement && supportDelta > 0) {
                             LOGGER.finest("Improvement in confidence above threshold (with non zero support delta), accepting");
                             curAcceptedExtension = candExtEnlargement;
                             extensionSuccessful = true;
                             break;
-                        } else if (changeInConfidenceExt >= minCondImprovement) {
+                        } else if (changeInConfidenceExt >=  conf.minCondImprovement) {
                             LOGGER.finest("This extension is in conditional accept band");
                         } else {
                             //newly added
@@ -280,7 +287,7 @@ public final class ExtendRule extends PruneRule implements RuleInt {
             }
         });
 
-        ExtendRule withfuzzyBorders = new ExtendRule(new Antecedent(newConsitutents), getConsequent(), getHistory(), extendType, rule.getData());
+        ExtendRule withfuzzyBorders = new ExtendRule(new Antecedent(newConsitutents), getConsequent(), getHistory(), extendType, rule.getData(),conf);
 
         return withfuzzyBorders;
     }
@@ -361,7 +368,7 @@ public final class ExtendRule extends PruneRule implements RuleInt {
         //neighborhood.addAll(ruleConstituent.getNeighbourhood().stream().map((multiitem)->new ExtendRule(rule,multiitem)).collect(Collectors.toCollection(ArrayList::new)));
         this.getAntecedent().getItems().stream().filter((ruleConstituent) -> !(extendType == ExtendType.numericOnly && ruleConstituent.getAttribute().getType() == AttributeType.nominal)).map((ruleConstituent) -> ruleConstituent.getNeighbourhood()).forEach((neighbourhood) -> {
             neighbourhood.stream().forEach((multiitem) -> {
-                neighborhood.add(new ExtendRule(rule, multiitem, this.getHistory(), extendType));
+                neighborhood.add(new ExtendRule(rule, multiitem, this.getHistory(), extendType,conf));
             });
         });
         return neighborhood;
