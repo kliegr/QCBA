@@ -37,31 +37,40 @@ qCBARuleModel <- setClass("qCBARuleModel",
 #'
 qcbaHumTemp <- function()
 {
-  #data<-read.csv("/home/tomas/Dropbox/KonferenceAakce/MARC/data-example.csv")
-  data(humtemp)
-  data_raw<-humtemp
-  data_discr <- humtemp
+  data(humtemp2)
+  data_raw<-humtemp2
+  data_discr <- humtemp2
   #custom discretization
-  data_discr[,1]<-cut(humtemp[,1],breaks=seq(from=15,to=45,by=5))
-  data_discr[,2]<-cut(humtemp[,2],breaks=c(0,40,60,80,100))
+  data_discr[,1]<-cut(data_raw[,1],breaks=seq(from=15,to=45,by=5))
+  data_discr[,2]<-cut(data_raw[,2],breaks=c(0,40,60,80,100))
   #change interval syntax from (15,20] to (15;20], which is required by MARC
   data_discr[,1]<-as.factor(unlist(lapply(data_discr[,1], function(x) {gsub(",", ";", x)})))
   data_discr[,2]<-as.factor(unlist(lapply(data_discr[,2], function(x) {gsub(",", ";", x)})))
   
-  data_discr[,3] <- as.factor(humtemp[,3])
+  data_discr[,3] <- as.factor(data_raw[,3])
   
   txns <- as(data_discr, "transactions")
   rules <- apriori(txns, parameter = list(confidence = 0.75, support= 3/nrow(data_discr), minlen=1, maxlen=5))
+  print("Seed list of rules")
   inspect(rules)
   
   classAtt="Class"
   appearance <- getAppearance(data_discr, classAtt)
   rmCBA <- cba_manual(data_raw,  rules, txns, appearance$rhs, classAtt, cutp= list(), pruning_options=NULL)
-  rmqCBA <- qcbaExtend(cbaRuleModel=rmCBA,datadf=data,continuousPruning=FALSE, postpruning=FALSE, fuzzification=FALSE, annotate=FALSE,minImprovement=0,minCondImprovement=-0.05)
-  #prediction <- predict(rmqCBA,testFold,"firstRule")
-  #acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
-  #print(rmqCBA@rules)
-  #print(paste("Rule count:",rmqCBA@ruleCount))
+  print("CBA classifier")
+  inspect(rmCBA@rules)
+  prediction_cba<-predict(rmCBA,data_discr,donotdiscretize=TRUE)
+  acc_cba <- CBARuleModelAccuracy(prediction_cba, data_discr[[classAtt]])
+  print(paste("Accuracy (CBA):",acc_cba))
+  
+  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,continuousPruning=FALSE, postpruning=FALSE, fuzzification=FALSE, annotate=FALSE,minImprovement=0,minCondImprovement=-0.15, minConf = 0.75,  extensionStrategy = "ConfImprovementAgainstLastConfirmedExtension")
+  prediction <- predict(rmqCBA,data_raw,"firstRule")
+  
+  acc <- CBARuleModelAccuracy(prediction, data_raw[[rmqCBA@classAtt]])
+  print("QCBA classifier")
+  print(rmqCBA@rules)
+  #print(paste("QCBA Rule count:",rmqCBA@ruleCount))
+  print(paste("Accuracy (QCBA):",acc))
   return(rmqCBA)
 }
 
@@ -80,7 +89,7 @@ qcbaIris <- function()
   trainFold <- allData[1:100,]
   testFold <- allData[101:nrow(datasets::iris),]
   rmCBA <- cba(trainFold, classAtt="Species")
-  rmqCBA <- qcbaExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE)
+  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE)
   prediction <- predict(rmqCBA,testFold,"firstRule")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
   print(rmqCBA@rules)
@@ -103,7 +112,7 @@ qcbaIris2 <- function()
   trainFold <- allData[1:100,]
   testFold <- allData[101:nrow(datasets::iris),]
   rmCBA <- cba(trainFold, classAtt="Species")
-  rmqCBA <- qcbaExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=TRUE, annotate=TRUE,ruleOutputPath="rules.xml")
+  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=TRUE, annotate=TRUE,ruleOutputPath="rules.xml")
   prediction <- predict(rmqCBA,testFold,"mixture")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
   print(paste("Rule count:",rmqCBA@ruleCount))
@@ -111,7 +120,7 @@ qcbaIris2 <- function()
 }
 
 
-#' @title qCBA Extension with pruning options
+#' @title qCBA Quantitative CBA
 #' @description Creates qCBA one rule or multi rule classication model from a CBA rule model
 #' @export
 #' @param cbaRuleModel a \link{CBARuleModel}
@@ -121,8 +130,11 @@ qcbaIris2 <- function()
 #' @param fuzzification boolean indicating if fuzzification is enabled. Multi rule classification model is produced if enabled. Fuzzification without annotation is not supported.
 #' @param annotate boolean indicating if annotation with probability distributions is enabled, multi rule classification model is produced if enabled 
 #' @param ruleOutputPath path of file to which model will be saved. Must be set if multi rule classification is produced.
-#' @param minImprovement parameter ofqCBA extend procedure
+#' @param minImprovement parameter ofqCBA extend procedure  (used when  extensionStrategy=ConfImprovementAgainstLastConfirmedExtension or ConfImprovementAgainstSeedRule)
 #' @param minCondImprovement parameter ofqCBA extend procedure
+#' @param minConf minimum confidence  to accept extension (used when  extensionStrategy=MinConf)
+#' @param extensionStrategy possible values: ConfImprovementAgainstLastConfirmedExtension, ConfImprovementAgainstSeedRule,MinConf
+
 #' @param loglevel logger level from java.util.logging
 #'
 #' @return Object of class \link{qCBARuleModel}.
@@ -132,10 +144,10 @@ qcbaIris2 <- function()
 #' trainFold <- allData[1:100,]
 #' testFold <- allData[101:nrow(datasets::iris),]
 #' rmCBA <- cba(trainFold, classAtt="Species")
-#' rmqCBA <- qcbaExtend(cbaRuleModel=rmCBA,datadf=trainFold)
+#' rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
 #' print(rmqCBA@rules)
 
-qcbaExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-0.05,loglevel = "FINEST")
+qcba <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-0.05,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "FINEST")
 {
   if (fuzzification & !annotate)
   {
@@ -177,7 +189,7 @@ qcbaExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruni
   
   #execute qCBA extend
   start.time <- Sys.time()
-  out <- .jcall(hjw, , "extend", continuousPruning, postpruning, fuzzification, annotate,minImprovement,minCondImprovement)  
+  out <- .jcall(hjw, , "extend", continuousPruning, postpruning, fuzzification, annotate,minImprovement,minCondImprovement,minConf,  extensionStrategy)  
   end.time <- Sys.time()
   message (paste("qCBA Model building took:", round(end.time - start.time, 2), " seconds"))  
   
@@ -231,16 +243,16 @@ qcbaExtend <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruni
 #' trainFold <- allData[1:100,]
 #' testFold <- allData[101:nrow(datasets::iris),]
 #' rmCBA <- cba(trainFold, classAtt="Species")
-#' rmqCBA <- qcbaExtend(cbaRuleModel=rmCBA,datadf=trainFold)
+#' rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
 #' print(rmqCBA@rules)
 #' prediction <- predict(rmqCBA,testFold)
 #' acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
 #' message(acc)
 #' 
-#' @seealso \link{qcbaExtend}
+#' @seealso \link{qcba}
 #'
 #'
-predict.qCBARuleModel <- function(object, newdata, testingType, loglevel = "INFO", ...) 
+predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "INFO", ...) 
 {
   start.time <- Sys.time()
   ruleModel <- object

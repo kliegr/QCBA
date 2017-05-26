@@ -22,6 +22,7 @@ import eu.kliegr.ac1.data.AttributeType;
 import eu.kliegr.ac1.rule.MMACRuleComparator;
 import eu.kliegr.ac1.rule.extend.ExtendRuleConfig;
 import eu.kliegr.ac1.rule.extend.ExtendType;
+import eu.kliegr.ac1.rule.extend.ExtensionStrategyEnum;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -116,8 +117,10 @@ public class ExtendConfig extends BaseConfig {
         
         String _mci =prop.getProperty("MinCondImprovement");
         String _mi =prop.getProperty("MinImprovement");
-        if (_mci != null && _mi!=null ) {
-            extConf = new ExtendRuleConfig(Double.valueOf(_mi),(Double.valueOf(_mci))); //default parameter values
+        String _mc =prop.getProperty("MinConfidence");
+        String _mt =prop.getProperty("ExtensionTypeEnum");
+        if (_mci != null && _mi!=null &&  _mc!=null && _mt !=null ) {
+            extConf = new ExtendRuleConfig(Double.valueOf(_mi),(Double.valueOf(_mci)),(Double.valueOf(_mc)), ExtensionStrategyEnum.valueOf(_mt) ); //default parameter values
         }
         else
         {

@@ -2,7 +2,7 @@
 
 S3method(predict,qCBARuleModel)
 export(mapDataTypes)
-export(qcbaExtend)
+export(qcba)
 export(qcbaHumTemp)
 export(qcbaIris)
 export(qcbaIris2)

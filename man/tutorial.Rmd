@@ -1,0 +1,113 @@
+---
+title: "qCBA tutorial"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data
+
+Let's look at sample data. There are two explanatory attributes (Temperature and Humidity). The target attribute is preference. 
+
+
+```{r results='hide', message=FALSE}
+library(qCBA)
+```
+
+
+```{r}
+attach(humtemp2)
+head(humtemp2)
+plot(Humidity,Temperature,pch=Class)
+```
+
+## Building a CBA classifier
+Association rule learning requires discretized data.
+
+
+```{r}
+  #custom discretization
+  data_raw<-humtemp2
+  data_discr <- humtemp2
+  data_discr[,1]<-cut(Temperature,breaks=seq(from=15,to=45,by=5))
+  data_discr[,2]<-cut(Humidity,breaks=c(0,40,60,80,100))
+  #change interval syntax from (15,20] to (15;20], which is required by MARC
+  data_discr[,1]<-as.factor(unlist(lapply(data_discr[,1], function(x) {gsub(",", ";", x)})))
+  data_discr[,2]<-as.factor(unlist(lapply(data_discr[,2], function(x) {gsub(",", ";", x)})))
+  
+  data_discr[,3] <- as.factor(Class)
+  head(data_discr)
+
+```
+The next step is mining association rules. The rule mining is constrained to rules that have values of the Class attribute in the consequent.
+
+```{r message=FALSE}
+txns <- as(data_discr, "transactions")
+  rules <- apriori(txns, parameter = list(confidence = 0.75, support= 3/nrow(data_discr), minlen=1, maxlen=5))
+  inspect(rules)
+```
+The two rules can be visualized in the feature space as rectangular regions. 
+
+```{r}
+plot(Humidity,Temperature,pch=Class,main="CBA model")
+rect(80, 0, 97, 50,border = "blue",col=rgb(0,0,1,alpha=0.3))
+rect(40, 25, 60, 30,border = "green",col=rgb(0,1,0,alpha=0.3))
+```
+
+
+Out of the two discovered rules, we will create a CBA classifier.
+```{r}
+classAtt="Class"
+  appearance <- getAppearance(data_discr, classAtt)
+  rmCBA <- cba_manual(data_raw,  rules, txns, appearance$rhs, classAtt, cutp= list(), pruning_options=NULL)
+```
+Note that we are calling `cba_manual()` instead of cba() because we want for demonstration purposes to construct the classifier from a user-generated rule list.
+
+This rule learning task was constructed so that the CBA data coverage pruning does not remove any rule from the classifier. CBA only added default rule to the end, which ensures that the rule list  covers every possible instance.
+
+```{r}
+inspect(rmCBA@rules)
+```
+The accuracy of this model on training data:
+```{r pressure, echo=FALSE}
+  prediction_cba<-predict(rmCBA,data_discr,donotdiscretize=TRUE)
+  acc_cba <- CBARuleModelAccuracy(prediction_cba, data_discr[[classAtt]])
+  print(paste("Accuracy (CBA):",acc_cba))
+```
+## Postprocessing CBA output with Quantitative CBA (QCBA)
+
+To build a model, `qcba` needs a cba model and raw (undiscretized) data. Note that number of additional parameters can be also specified - these were left to their default values.
+```{r}
+rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,loglevel = "WARNING")
+```
+The rule list 
+
+```{r}
+print(rmqCBA@rules)
+```
+*QCBA model*
+
+```{r}
+plot(Humidity,Temperature,pch=Class, main="QCBA model")
+rect(82, 0, 95, 50,border = "blue",col=rgb(0,0,1,alpha=0.3))
+rect(30, 26, 58, 33,border = "green",col=rgb(0,1,0,alpha=0.3))
+prediction <- predict(rmqCBA,data_raw,"firstRule")
+acc <- CBARuleModelAccuracy(prediction, data_raw[[rmqCBA@classAtt]])
+print(paste("Accuracy (QCBA):",acc))
+```
+By comparing CBA and QCBA output, we can see that on this particular data that the accuracy improved and the rule boundaries were adjusted to better fit the data. 
+
+### Compare CBA and QCBA*
+
+```{r echo=FALSE}
+plot(Humidity,Temperature,pch=Class, main="CBA model",sub=paste("Accuracy:",round(acc_cba,2)))
+rect(80, 0, 97, 50,border = "blue",col=rgb(0,0,1,alpha=0.3))
+rect(40, 25, 60, 30,border = "green",col=rgb(0,1,0,alpha=0.3))
+
+plot(Humidity,Temperature,pch=Class, main="QCBA model", ,sub=paste("Accuracy:",round(acc,2)))
+rect(82, 0, 95, 50,border = "blue",col=rgb(0,0,1,alpha=0.3))
+rect(30, 26, 58, 33,border = "green",col=rgb(0,1,0,alpha=0.3))
+
+```

@@ -23,6 +23,7 @@ import eu.kliegr.ac1.rule.extend.ExtendRule;
 import eu.kliegr.ac1.rule.extend.ExtendRuleConfig;
 import eu.kliegr.ac1.rule.extend.ExtendRules;
 import eu.kliegr.ac1.rule.extend.ExtendType;
+import eu.kliegr.ac1.rule.extend.ExtensionStrategyEnum;
 import eu.kliegr.ac1.rule.parsers.GUHASimplifiedParser;
 import java.util.Comparator;
 import java.util.logging.Logger;
@@ -64,7 +65,7 @@ public class RinterfaceExtend extends Rinterface {
      * @param minImprovement
      * @throws Exception
      */
-    public void extend(boolean isContinuousPruningEnabled, boolean isPostPruningEnabled, boolean isFuzzificationEnabled, boolean isAnnotationEnabled,double minImprovement,double minCondImprovement) throws Exception {
+    public void extend(boolean isContinuousPruningEnabled, boolean isPostPruningEnabled, boolean isFuzzificationEnabled, boolean isAnnotationEnabled,double minImprovement,double minCondImprovement, double minConf, String extensionStrategy) throws Exception {
 
         this.isFuzzificationEnabled = isFuzzificationEnabled;
         this.isPostPruningEnabled = isPostPruningEnabled;
@@ -79,7 +80,7 @@ public class RinterfaceExtend extends Rinterface {
         if (rules == null) {
             throw new Exception("Load rules first");
         }
-        conf  = new ExtendRuleConfig(minImprovement,minCondImprovement);
+        conf  = new ExtendRuleConfig(minImprovement,minCondImprovement,minConf, ExtensionStrategyEnum.valueOf(extensionStrategy));
         extendRulesObj = new ExtendRules(rules, ruleComparator, extType, conf, data);
         extendRulesObj.sortRules();
         extendRulesObj.extendRules(isContinuousPruningEnabled, isFuzzificationEnabled, isPostPruningEnabled);

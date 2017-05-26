@@ -17,6 +17,10 @@
 */
 package eu.kliegr.ac1.rule.extend;
 
+import java.text.MessageFormat;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  *
  * @author tomas
@@ -26,16 +30,52 @@ package eu.kliegr.ac1.rule.extend;
 public class ExtendRuleConfig {
     public final double minImprovement ;
     public final double  minCondImprovement;
-    public ExtendRuleConfig( double minImprovement, double minCondImprovement)
+    public final double  minConfidence;
+    public final  ExtensionStrategyEnum extType;
+    private final static Logger LOGGER = Logger.getLogger(ExtendRuleConfig.class.getName());
+    public ExtendRuleConfig( double minImprovement, double minCondImprovement, double minConfidence,ExtensionStrategyEnum extType)
     {
         this.minImprovement = minImprovement;
         this.minCondImprovement = minCondImprovement;
+        this.minConfidence = minConfidence;
+        this.extType = extType;
         
     }
     public ExtendRuleConfig()
     {
         this.minCondImprovement = -0.05;
         this.minImprovement=0;
+        this.minConfidence=0.5;
+        this.extType = ExtensionStrategyEnum.ConfImprovementAgainstLastConfirmedExtension;
+    }
+    public boolean acceptRule(double curRuleconfidence, double lastConfirmedRuleConfidence, double seedRuleConfidence, double curRuleSupport, double lastConfirmedRuleSupport)
+    {
+        LOGGER.log(Level.FINE, MessageFormat.format("Extension type: {0}, curRuleconfidence: {1}, lastConfirmedRuleConfidence: {2},  seedRuleConfidence:  {3}, curRuleSupport:  {4}, lastConfirmedRuleSupport: {5}", extType,curRuleconfidence,  lastConfirmedRuleConfidence,  seedRuleConfidence,  curRuleSupport,  lastConfirmedRuleSupport));
+
+        
+        if (curRuleSupport <= lastConfirmedRuleSupport)
+        {
+            return false;
+        }
+        switch (extType)
+        {
+            case ConfImprovementAgainstLastConfirmedExtension:
+                if ((curRuleconfidence - lastConfirmedRuleConfidence) >= minImprovement)
+                {
+                    return true;
+                }
+            case ConfImprovementAgainstSeedRule:
+                if ((curRuleconfidence - seedRuleConfidence) >= minImprovement)
+                {
+                    return true;
+                }
+            case MinConf:
+                if (curRuleconfidence>=minConfidence)
+                {
+                    return true;
+                }                            
+        }
+        return false;
     }
     
 }
