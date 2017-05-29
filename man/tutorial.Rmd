@@ -18,8 +18,8 @@ library(qCBA)
 
 
 ```{r}
-attach(humtemp2)
-head(humtemp2)
+attach(humtemp)
+head(humtemp)
 plot(Humidity,Temperature,pch=Class)
 ```
 
@@ -29,8 +29,8 @@ Association rule learning requires discretized data.
 
 ```{r}
   #custom discretization
-  data_raw<-humtemp2
-  data_discr <- humtemp2
+  data_raw<-humtemp
+  data_discr <- humtemp
   data_discr[,1]<-cut(Temperature,breaks=seq(from=15,to=45,by=5))
   data_discr[,2]<-cut(Humidity,breaks=c(0,40,60,80,100))
   #change interval syntax from (15,20] to (15;20], which is required by MARC
@@ -72,7 +72,7 @@ inspect(rmCBA@rules)
 ```
 The accuracy of this model on training data:
 ```{r pressure, echo=FALSE}
-  prediction_cba<-predict(rmCBA,data_discr,donotdiscretize=TRUE)
+  prediction_cba<-predict(rmCBA,data_discr,discretize=FALSE)
   acc_cba <- CBARuleModelAccuracy(prediction_cba, data_discr[[classAtt]])
   print(paste("Accuracy (CBA):",acc_cba))
 ```
@@ -80,7 +80,7 @@ The accuracy of this model on training data:
 
 To build a model, `qcba` needs a cba model and raw (undiscretized) data. Note that number of additional parameters can be also specified - these were left to their default values.
 ```{r}
-rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,loglevel = "WARNING")
+rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw)
 ```
 The rule list 
 
@@ -93,8 +93,15 @@ print(rmqCBA@rules)
 plot(Humidity,Temperature,pch=Class, main="QCBA model")
 rect(82, 0, 95, 50,border = "blue",col=rgb(0,0,1,alpha=0.3))
 rect(30, 26, 58, 33,border = "green",col=rgb(0,1,0,alpha=0.3))
+```
+
+```{r message=FALSE,warnings=FALSE,}
 prediction <- predict(rmqCBA,data_raw,"firstRule")
 acc <- CBARuleModelAccuracy(prediction, data_raw[[rmqCBA@classAtt]])
+print(paste("Accuracy (QCBA):",acc))
+```
+
+```{r}
 print(paste("Accuracy (QCBA):",acc))
 ```
 By comparing CBA and QCBA output, we can see that on this particular data that the accuracy improved and the rule boundaries were adjusted to better fit the data. 

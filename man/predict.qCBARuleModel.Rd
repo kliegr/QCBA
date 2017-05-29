@@ -5,7 +5,7 @@
 \title{Aplies qCBARuleModel}
 \usage{
 \method{predict}{qCBARuleModel}(object, newdata, testingType,
-  loglevel = "INFO", ...)
+  loglevel = "WARNING", ...)
 }
 \arguments{
 \item{object}{\link{qCBARuleModel} class instance}

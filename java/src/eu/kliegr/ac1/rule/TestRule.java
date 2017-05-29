@@ -82,7 +82,7 @@ public class TestRule implements RuleInt {
             if (antConOverlap == null) {
                 //antecedent is empty - it has no items, and is supported by all transactions
                 a_plus_b = rmi.getDataTable().getCurrentTransactionCount();
-                LOGGER.log(Level.SEVERE, "default rule coverage:{0}", a_plus_b);
+                LOGGER.log(Level.FINE, "Default rule coverage:{0}", a_plus_b);
             } else {
                 a_plus_b = antConOverlap.size();
             }

@@ -37,9 +37,8 @@ qCBARuleModel <- setClass("qCBARuleModel",
 #'
 qcbaHumTemp <- function()
 {
-  data(humtemp2)
-  data_raw<-humtemp2
-  data_discr <- humtemp2
+  data_raw<-arc::humtemp
+  data_discr <-arc::humtemp
   #custom discretization
   data_discr[,1]<-cut(data_raw[,1],breaks=seq(from=15,to=45,by=5))
   data_discr[,2]<-cut(data_raw[,2],breaks=c(0,40,60,80,100))
@@ -59,7 +58,7 @@ qcbaHumTemp <- function()
   rmCBA <- cba_manual(data_raw,  rules, txns, appearance$rhs, classAtt, cutp= list(), pruning_options=NULL)
   print("CBA classifier")
   inspect(rmCBA@rules)
-  prediction_cba<-predict(rmCBA,data_discr,donotdiscretize=TRUE)
+  prediction_cba<-predict(rmCBA,data_discr,discretize=FALSE)
   acc_cba <- CBARuleModelAccuracy(prediction_cba, data_discr[[classAtt]])
   print(paste("Accuracy (CBA):",acc_cba))
   
@@ -147,7 +146,7 @@ qcbaIris2 <- function()
 #' rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
 #' print(rmqCBA@rules)
 
-qcba <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-0.05,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "FINEST")
+qcba <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-0.05,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING")
 {
   if (fuzzification & !annotate)
   {
@@ -252,7 +251,7 @@ qcba <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRU
 #' @seealso \link{qcba}
 #'
 #'
-predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "INFO", ...) 
+predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNING", ...) 
 {
   start.time <- Sys.time()
   ruleModel <- object
