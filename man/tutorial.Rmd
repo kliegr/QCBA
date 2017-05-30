@@ -20,7 +20,7 @@ library(qCBA)
 ```{r}
 attach(humtemp)
 head(humtemp)
-plot(Humidity,Temperature,pch=Class)
+plot(Humidity,Temperature,pch=as.character(Class))
 ```
 
 ## Building a CBA classifier
@@ -31,8 +31,10 @@ Association rule learning requires discretized data.
   #custom discretization
   data_raw<-humtemp
   data_discr <- humtemp
-  data_discr[,1]<-cut(Temperature,breaks=seq(from=15,to=45,by=5))
-  data_discr[,2]<-cut(Humidity,breaks=c(0,40,60,80,100))
+  temp_breaks <- seq(from=15,to=45,by=5)
+  hum_breaks <- c(0,40,60,80,100)
+  data_discr[,1]<-cut(Temperature,breaks=temp_breaks)
+  data_discr[,2]<-cut(Humidity,breaks=hum_breaks)
   #change interval syntax from (15,20] to (15;20], which is required by MARC
   data_discr[,1]<-as.factor(unlist(lapply(data_discr[,1], function(x) {gsub(",", ";", x)})))
   data_discr[,2]<-as.factor(unlist(lapply(data_discr[,2], function(x) {gsub(",", ";", x)})))
@@ -41,6 +43,22 @@ Association rule learning requires discretized data.
   head(data_discr)
 
 ```
+The discretization split the data space into rectangular regions. Given that we have two attributes, the discovered rule can only correspond to a rectangular region with *borders aligned to the grid*.
+
+```{r}
+plot(Humidity,Temperature,pch=as.character(Class))
+for (i in temp_breaks[-1])
+{
+  abline(h=i, lty=2)
+}
+for (i in hum_breaks[-1])
+{
+  abline(v=i, lty=2)
+}
+
+```
+
+
 The next step is mining association rules. The rule mining is constrained to rules that have values of the Class attribute in the consequent.
 
 ```{r message=FALSE}
@@ -51,9 +69,51 @@ txns <- as(data_discr, "transactions")
 The two rules can be visualized in the feature space as rectangular regions. 
 
 ```{r}
-plot(Humidity,Temperature,pch=Class,main="CBA model")
-rect(80, 0, 97, 50,border = "blue",col=rgb(0,0,1,alpha=0.3))
-rect(40, 25, 60, 30,border = "green",col=rgb(0,1,0,alpha=0.3))
+plot(Humidity,Temperature,pch=as.character(Class),main="CBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+
+plotGrid <- function()
+{
+    for (i in temp_breaks[-1])
+  {
+    abline(h=i, lty=2)
+  }
+  for (i in hum_breaks[-1])
+  {
+    abline(v=i, lty=2)
+  }
+}
+
+plotGrid()
+
+plotHumTempRule<- function(rules, ruleIndex, border = "blue",col=rgb(0,0,1,alpha=0.3) )
+{
+  if (typeof(rules)=="S4")
+  {
+    # rules is a arules rule model
+    r <- inspect(rules)[ruleIndex,]
+    rule <- paste(unlist(r$lhs[1]),collapse='')
+  }
+  else
+  {
+    # rules is a list of rules output by qCBA
+    rule <- rules[ruleIndex,1]
+  }
+  temp_coordinates<-unlist(regmatches(rule,regexec("Temperature=.([0-9]+);([0-9]+).",rule)))
+  if (length(temp_coordinates)==0)
+  {
+    #if the temperature literal is missing in the rule, use the following coordinates
+    temp_coordinates=c(0,0,50)
+  }
+  
+  hum_coordinates<-unlist(regmatches(rule,regexec("Humidity=.([0-9]+);([0-9]+).",rule)))
+  rect(hum_coordinates[2], temp_coordinates[2], hum_coordinates[3], temp_coordinates[3],border=border,col=col)
+}
+plotHumTempRule(rules,1,border = "blue",col=rgb(0,0,1,alpha=0.3))
+plotHumTempRule(rules,2,border = "green",col=rgb(0,1,0,alpha=0.3))
+#rect(80, 0, 97, 50,border = "blue",col=rgb(0,0,1,alpha=0.3))
+#rect(40, 25, 60, 30,border = "green",col=rgb(0,1,0,alpha=0.3))
+dev.copy(png,filename="/home/tomas/Dropbox/KonferenceAakce/MARC/figures/cba.png")
+dev.off()
 ```
 
 
@@ -80,7 +140,7 @@ The accuracy of this model on training data:
 
 To build a model, `qcba` needs a cba model and raw (undiscretized) data. Note that number of additional parameters can be also specified - these were left to their default values.
 ```{r}
-rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw)
+rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,loglevel = "FINEST",extensionStrategy= "ConfImprovementAgainstLastConfirmedExtension",minImprovement=0,minCondImprovement=-0.15,minConf = 0.5)
 ```
 The rule list 
 
@@ -90,15 +150,21 @@ print(rmqCBA@rules)
 *QCBA model*
 
 ```{r}
-plot(Humidity,Temperature,pch=Class, main="QCBA model")
-rect(82, 0, 95, 50,border = "blue",col=rgb(0,0,1,alpha=0.3))
-rect(30, 26, 58, 33,border = "green",col=rgb(0,1,0,alpha=0.3))
+plot(Humidity,Temperature,pch=as.character(Class), main="QCBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+plotGrid()
+plotHumTempRule(rmqCBA@rules,1,border = "blue",col=rgb(0,0,1,alpha=0.3))
+plotHumTempRule(rmqCBA@rules,2,border = "green",col=rgb(0,1,0,alpha=0.3))
+#rect(82, 0, 95, 50,border = "blue",col=rgb(0,0,1,alpha=0.3))
+#rect(30, 26, 58, 33,border = "green",col=rgb(0,1,0,alpha=0.3))
+dev.copy(png,filename="/home/tomas/Dropbox/KonferenceAakce/MARC/figures/qcba.png")
+dev.off()
+
 ```
 
 ```{r message=FALSE,warnings=FALSE,}
 prediction <- predict(rmqCBA,data_raw,"firstRule")
 acc <- CBARuleModelAccuracy(prediction, data_raw[[rmqCBA@classAtt]])
-print(paste("Accuracy (QCBA):",acc))
+# print(paste("Accuracy (QCBA):",acc))
 ```
 
 ```{r}
@@ -109,11 +175,11 @@ By comparing CBA and QCBA output, we can see that on this particular data that t
 ### Compare CBA and QCBA*
 
 ```{r echo=FALSE}
-plot(Humidity,Temperature,pch=Class, main="CBA model",sub=paste("Accuracy:",round(acc_cba,2)))
+plot(Humidity,Temperature,pch=as.character(Class), main="CBA model",sub=paste("Accuracy:",round(acc_cba,2)))
 rect(80, 0, 97, 50,border = "blue",col=rgb(0,0,1,alpha=0.3))
 rect(40, 25, 60, 30,border = "green",col=rgb(0,1,0,alpha=0.3))
 
-plot(Humidity,Temperature,pch=Class, main="QCBA model", ,sub=paste("Accuracy:",round(acc,2)))
+plot(Humidity,Temperature,pch=as.character(Class), main="QCBA model", ,sub=paste("Accuracy:",round(acc,2)))
 rect(82, 0, 95, 50,border = "blue",col=rgb(0,0,1,alpha=0.3))
 rect(30, 26, 58, 33,border = "green",col=rgb(0,1,0,alpha=0.3))
 
