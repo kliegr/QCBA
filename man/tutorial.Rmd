@@ -158,7 +158,25 @@ plotHumTempRule(rmqCBA@rules,2,border = "green",col=rgb(0,1,0,alpha=0.3))
 #rect(30, 26, 58, 33,border = "green",col=rgb(0,1,0,alpha=0.3))
 dev.copy(png,filename="/home/tomas/Dropbox/KonferenceAakce/MARC/figures/qcba.png")
 dev.off()
+```
 
+
+
+```{r clock2, fig.width=7, fig.height=6, fig.show='animate'}
+extendHistory <- as.data.frame(matrix(ncol=3, nrow=4))
+extendHistory[1,] <-  c("RID=1:{Temperature=[26;30],Humidity=[42;58]} => {Class=4}",0.0882353,0.75)
+extendHistory[2,] <-  c("RID=5:{Temperature=[26;30],Humidity=[38;58]} => {Class=4}",0.14705883,0.8333333)
+extendHistory[3,] <-  c("RID=6:{Temperature=[26;31],Humidity=[38;58]} => {Class=4}",0.14705883,0.8333333)
+extendHistory[4,] <-  c("RID=13:{Temperature=[26;31],Humidity=[35;58]} => {Class=4}",0.1764706,0.85714287)
+extendHistory[,2]<-as.numeric(extendHistory[,2])
+extendHistory[,3]<-as.numeric(extendHistory[,3])
+for (i in 1:nrow(extendHistory)) {
+  print(i)
+  plot(Humidity,Temperature,pch=as.character(Class), main="QCBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1, sub=paste("Conf:",round(extendHistory[i,3],2)," Supp:",round(extendHistory[i,2],2)))
+  plotGrid()
+  plotHumTempRule(extendHistory,i,border = "blue",col=rgb(0,0,1,alpha=0.3))
+  }
+  
 ```
 
 ```{r message=FALSE,warnings=FALSE,}
