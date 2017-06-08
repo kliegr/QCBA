@@ -57,6 +57,7 @@ public class ExtendRules {
      * @param rules
      * @param ruleComparator
      * @param type
+     * @param extConf
      * @param data
      */
     public ExtendRules(ArrayList<Rule> rules, Comparator ruleComparator, ExtendType type, ExtendRuleConfig extConf,Data data) {
@@ -129,6 +130,7 @@ public class ExtendRules {
         return consequents;
     }
 
+
     /**
      *
      * @param isContinuousPruningEnabled
@@ -161,11 +163,14 @@ public class ExtendRules {
             if (data.getDataTable().getCurrentTransactionCount() == 0) {
                 return null;
             }
+            
+            ExtendRule trimmed = rule.trim();
+            
             if (isContinuousPruningEnabled) {
                 //we want the quality to be computed only on the subset of transactions not covered by rules so far
                 rule.updateQuality();
             }
-            ExtendRule ex = rule.extend();
+            ExtendRule ex = trimmed.extend();
 
             if (isContinuousPruningEnabled) {
                 //and now remove the transactions covered by the extended rule
@@ -211,6 +216,7 @@ public class ExtendRules {
             LOGGER.info("FINISHED PRUNING phase\n");
             //}
         }
+        
     }
 
     /**

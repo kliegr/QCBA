@@ -25,6 +25,9 @@ import eu.kliegr.ac1.rule.extend.ExtendRules;
 import eu.kliegr.ac1.rule.extend.ExtendType;
 import eu.kliegr.ac1.rule.extend.ExtensionStrategyEnum;
 import eu.kliegr.ac1.rule.parsers.GUHASimplifiedParser;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.logging.Logger;
 
@@ -146,6 +149,28 @@ public class RinterfaceExtend extends Rinterface {
 
         return df;
     }
+    
+    public String[][] getRuleHistory() throws Exception {
+        int ruleCount = extendRulesObj.getExtendedRules().size();
+        ArrayList<String[]> histories  = new ArrayList();
+        int totalHistorySize =0;
+        int columns= extendRulesObj.getExtendedRules().get(0).getHistory().historyTableHeader().length;
+        for (int i=0; i<ruleCount;i++)
+        {
+            Collection<String[]> curHistory = extendRulesObj.getExtendedRules().get(i).getHistory().toCollection();
+            totalHistorySize = totalHistorySize + curHistory.size();
+            histories.addAll(curHistory);
+        }
+        
+
+        String[][] result =  new String[totalHistorySize][columns];
+        int i=0;
+        for (String[] ch :histories )
+        {
+                result[i++] = ch;        
+        }
+        return result;
+    }    
 
     /**
      *

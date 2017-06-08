@@ -33,6 +33,8 @@ Association rule learning requires discretized data.
   data_discr <- humtemp
   temp_breaks <- seq(from=15,to=45,by=5)
   hum_breaks <- c(0,40,60,80,100)
+  temp_unique_vals <- setdiff(unique(Temperature),temp_breaks)
+  hum_unique_vals <- setdiff(unique(Humidity),hum_breaks)
   data_discr[,1]<-cut(Temperature,breaks=temp_breaks)
   data_discr[,2]<-cut(Humidity,breaks=hum_breaks)
   #change interval syntax from (15,20] to (15;20], which is required by MARC
@@ -46,15 +48,30 @@ Association rule learning requires discretized data.
 The discretization split the data space into rectangular regions. Given that we have two attributes, the discovered rule can only correspond to a rectangular region with *borders aligned to the grid*.
 
 ```{r}
+plotGrid <- function()
+{
+  for (i in temp_breaks[-1])
+  {
+    abline(h=i, lty=2)
+  }
+  for (i in hum_breaks[-1])
+  {
+    abline(v=i, lty=2)
+  }
+  
+  for (i in temp_unique_vals[-1])
+  {
+    abline(h=i, lty=3, col="grey")
+  }
+  for (i in hum_unique_vals[-1])
+  {
+    abline(v=i, lty=3, col="grey")
+  }  
+}
+
 plot(Humidity,Temperature,pch=as.character(Class))
-for (i in temp_breaks[-1])
-{
-  abline(h=i, lty=2)
-}
-for (i in hum_breaks[-1])
-{
-  abline(v=i, lty=2)
-}
+plotGrid()
+
 
 ```
 
@@ -69,19 +86,10 @@ txns <- as(data_discr, "transactions")
 The two rules can be visualized in the feature space as rectangular regions. 
 
 ```{r}
-plot(Humidity,Temperature,pch=as.character(Class),main="CBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+#as.character(Class)
+plot(Humidity,Temperature,pch=Class,main="CBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
 
-plotGrid <- function()
-{
-    for (i in temp_breaks[-1])
-  {
-    abline(h=i, lty=2)
-  }
-  for (i in hum_breaks[-1])
-  {
-    abline(v=i, lty=2)
-  }
-}
+
 
 plotGrid()
 
@@ -96,7 +104,8 @@ plotHumTempRule<- function(rules, ruleIndex, border = "blue",col=rgb(0,0,1,alpha
   else
   {
     # rules is a list of rules output by qCBA
-    rule <- rules[ruleIndex,1]
+    #rule <- rules[ruleIndex,1]
+    rule <- rules$rules[ruleIndex]
   }
   temp_coordinates<-unlist(regmatches(rule,regexec("Temperature=.([0-9]+);([0-9]+).",rule)))
   if (length(temp_coordinates)==0)
@@ -140,7 +149,7 @@ The accuracy of this model on training data:
 
 To build a model, `qcba` needs a cba model and raw (undiscretized) data. Note that number of additional parameters can be also specified - these were left to their default values.
 ```{r}
-rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,loglevel = "FINEST",extensionStrategy= "ConfImprovementAgainstLastConfirmedExtension",minImprovement=0,minCondImprovement=-0.15,minConf = 0.5)
+rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,loglevel = "WARNING",extensionStrategy= "ConfImprovementAgainstLastConfirmedExtension",minImprovement=0,minCondImprovement=-0.15,minConf = 0.5, createHistorySlot=TRUE)
 ```
 The rule list 
 
@@ -150,7 +159,7 @@ print(rmqCBA@rules)
 *QCBA model*
 
 ```{r}
-plot(Humidity,Temperature,pch=as.character(Class), main="QCBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+plot(Humidity,Temperature,pch=Class, main="QCBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
 plotGrid()
 plotHumTempRule(rmqCBA@rules,1,border = "blue",col=rgb(0,0,1,alpha=0.3))
 plotHumTempRule(rmqCBA@rules,2,border = "green",col=rgb(0,1,0,alpha=0.3))
@@ -160,24 +169,17 @@ dev.copy(png,filename="/home/tomas/Dropbox/KonferenceAakce/MARC/figures/qcba.png
 dev.off()
 ```
 
-
-
 ```{r clock2, fig.width=7, fig.height=6, fig.show='animate'}
-extendHistory <- as.data.frame(matrix(ncol=3, nrow=4))
-extendHistory[1,] <-  c("RID=1:{Temperature=[26;30],Humidity=[42;58]} => {Class=4}",0.0882353,0.75)
-extendHistory[2,] <-  c("RID=5:{Temperature=[26;30],Humidity=[38;58]} => {Class=4}",0.14705883,0.8333333)
-extendHistory[3,] <-  c("RID=6:{Temperature=[26;31],Humidity=[38;58]} => {Class=4}",0.14705883,0.8333333)
-extendHistory[4,] <-  c("RID=13:{Temperature=[26;31],Humidity=[35;58]} => {Class=4}",0.1764706,0.85714287)
-extendHistory[,2]<-as.numeric(extendHistory[,2])
-extendHistory[,3]<-as.numeric(extendHistory[,3])
+extendHistory <- rmqCBA@history[rmqCBA@history$RID=="1",]
 for (i in 1:nrow(extendHistory)) {
   print(i)
-  plot(Humidity,Temperature,pch=as.character(Class), main="QCBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1, sub=paste("Conf:",round(extendHistory[i,3],2)," Supp:",round(extendHistory[i,2],2)))
+  plot(Humidity,Temperature,pch=Class, main="QCBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1, sub=paste(extendHistory[i,3], "Conf:",round(extendHistory[i,4],2)," Supp:",round(extendHistory[i,5],2)))
   plotGrid()
   plotHumTempRule(extendHistory,i,border = "blue",col=rgb(0,0,1,alpha=0.3))
   }
   
 ```
+
 
 ```{r message=FALSE,warnings=FALSE,}
 prediction <- predict(rmqCBA,data_raw,"firstRule")

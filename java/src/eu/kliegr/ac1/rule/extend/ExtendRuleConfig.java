@@ -48,34 +48,59 @@ public class ExtendRuleConfig {
         this.minConfidence=0.5;
         this.extType = ExtensionStrategyEnum.ConfImprovementAgainstLastConfirmedExtension;
     }
+    
+    public boolean conditionalAcceptRule(double curRuleconfidence, double lastConfirmedRuleConfidence)
+    {
+        if (curRuleconfidence - lastConfirmedRuleConfidence  >= minCondImprovement)
+        {
+            LOGGER.finest("Change in confidence in conditional accept band, trying extensions");
+            return true;
+        }
+        else
+        {
+            LOGGER.finest("Change in confidence outside conditional accept band, NOT trying extensions");
+            return false;
+        }
+    }
+        
     public boolean acceptRule(double curRuleconfidence, double lastConfirmedRuleConfidence, double seedRuleConfidence, double curRuleSupport, double lastConfirmedRuleSupport)
     {
         LOGGER.log(Level.FINE, MessageFormat.format("Extension type: {0}, curRuleconfidence: {1}, lastConfirmedRuleConfidence: {2},  seedRuleConfidence:  {3}, curRuleSupport:  {4}, lastConfirmedRuleSupport: {5}", extType,curRuleconfidence,  lastConfirmedRuleConfidence,  seedRuleConfidence,  curRuleSupport,  lastConfirmedRuleSupport));
 
-        
+        boolean returnVal=false;
         if (curRuleSupport <= lastConfirmedRuleSupport)
         {
-            return false;
+            returnVal= false;
         }
         switch (extType)
         {
             case ConfImprovementAgainstLastConfirmedExtension:
                 if ((curRuleconfidence - lastConfirmedRuleConfidence) >= minImprovement)
-                {
-                    return true;
+                {                    
+                    returnVal= true;                    
                 }
+                break;
             case ConfImprovementAgainstSeedRule:
                 if ((curRuleconfidence - seedRuleConfidence) >= minImprovement)
                 {
-                    return true;
+                    returnVal= true;
                 }
+                break;
             case MinConf:
                 if (curRuleconfidence>=minConfidence)
                 {
-                    return true;
-                }                            
+                    returnVal= true;
+                }     
+                break;
         }
-        return false;
+        if (returnVal)
+        {
+            LOGGER.finest("Improvement in confidence meeting criteria, not accepting");            
+        }
+        else{
+            LOGGER.finest("Improvement in confidence NOT meeting criteria, not accepting");            
+        }        
+        return returnVal;
     }
     
 }

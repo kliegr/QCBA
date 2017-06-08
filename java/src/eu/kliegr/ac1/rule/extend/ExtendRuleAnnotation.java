@@ -118,7 +118,7 @@ public class ExtendRuleAnnotation {
         Antecedent newAnt = new Antecedent(itemsForAntecedent);
 
         //prepare rule
-        Rule r = new Rule(newAnt, consequent, null, null, seedRule.getRID(), seedRule.getRule().getData());
+        Rule r = new Rule(newAnt, consequent, null, null, seedRule.getRID(), null,seedRule.getRule().getData());
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.fine("Creating new Extend rule within narrow rule procedure");
         }

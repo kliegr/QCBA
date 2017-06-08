@@ -25,6 +25,11 @@ import eu.kliegr.ac1.data.Transaction;
 import eu.kliegr.ac1.rule.*;
 import eu.kliegr.ac1.rule.parsers.GUHASerializerWithAnnotationSupport;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -54,11 +59,17 @@ public final class ExtendRule extends PruneRule implements RuleInt {
     {
         return extensionConfig;
     }
+    
     private static Antecedent constructNewAntecedent(Antecedent antecedent, RuleMultiItem extension) {
+        HashMap<Attribute,RuleMultiItem> extensionMap = new HashMap();
+        extensionMap.put(extension.getAttribute(), extension);
+        return constructNewAntecedent(antecedent,extensionMap);
+    }
+    private static Antecedent constructNewAntecedent(Antecedent antecedent, HashMap<Attribute,RuleMultiItem> extension) {
         ArrayList<RuleMultiItem> newAntecedentItems = new ArrayList();
         antecedent.getItems().stream().forEach((multiitem) -> {
-            if (multiitem.getAttribute() == extension.getAttribute()) {
-                newAntecedentItems.add(extension);
+            if (extension.containsKey(multiitem.getAttribute())) {
+                newAntecedentItems.add(extension.get(multiitem.getAttribute()));
             } else {
                 newAntecedentItems.add(multiitem);
             }
@@ -94,11 +105,11 @@ public final class ExtendRule extends PruneRule implements RuleInt {
         //we are in constructor for seed rule
         this.confidenceOfSeedRule = rule.getConfidence();
         if (history == null) {
-            this.history = new History();
+            this.history = new History(this.rule.getRID());
         } else {
             this.history = history;
         }
-        this.history.addRuleIdentifiers(this.rule.getRID(), this.rule.getERID());
+        this.history.addRuleIdentifiers(this.rule.getERID(), this.rule.toArray());
         LOGGER.fine(rule.toString());
     }
 
@@ -110,23 +121,44 @@ public final class ExtendRule extends PruneRule implements RuleInt {
      * @param type
      * @param extensionConfig
      */
-    public ExtendRule(Rule rule, RuleMultiItem extension, History history, ExtendType type,ExtendRuleConfig extensionConfig, float seedRuleConfidence) {
-        super(new Rule(constructNewAntecedent(rule.getAntecedent(), extension), rule.getConsequent(), null, null, Rule.getNextERID(), rule.getData()));
+    public ExtendRule(Rule rule, HashMap<Attribute, RuleMultiItem> extension, History history, ExtendType type,ExtendRuleConfig extensionConfig, float seedRuleConfidence) {
+        super(new Rule(constructNewAntecedent(rule.getAntecedent(), extension), rule.getConsequent(), null, null, rule.getRID(), Rule.getNextERID(), rule.getData()));
         this.extendType = type;
         this.extensionConfig = extensionConfig;
         this.confidenceOfSeedRule = seedRuleConfidence;
-        lastExtension = extension;
+
+        lastExtension=null;
+
         LOGGER.fine(rule.toString());
         this.rule.setQuality(computeQuality());
 
         if (history == null) {
-            this.history = new History();
+            this.history = new History(this.getRID());
         } else {
             this.history = history;
         }
-        this.history.addRuleIdentifiers(this.rule.getRID(), rule.getERID());
+        this.history.addRuleIdentifiers(rule.getERID(), rule.toArray());
     }
 
+        public ExtendRule(Rule rule, RuleMultiItem extension, History history, ExtendType type,ExtendRuleConfig extensionConfig, float seedRuleConfidence) {
+        super(new Rule(constructNewAntecedent(rule.getAntecedent(), extension), rule.getConsequent(), null, null, rule.getRID(), Rule.getNextERID(), rule.getData()));
+        this.extendType = type;
+        this.extensionConfig = extensionConfig;
+        this.confidenceOfSeedRule = seedRuleConfidence;
+
+        lastExtension=extension;
+
+        LOGGER.fine(rule.toString());
+        this.rule.setQuality(computeQuality());
+
+        if (history == null) {
+            this.history = new History(this.getRID());
+        } else {
+            this.history = history;
+        }
+        this.history.addRuleIdentifiers(rule.getERID(), rule.toArray());
+    }
+        
     /**
      * constructor for rule with fuzzy borders
      * @param antecedent
@@ -135,19 +167,19 @@ public final class ExtendRule extends PruneRule implements RuleInt {
      * @param type
      * @param data
      */
-    public ExtendRule(Antecedent antecedent, Consequent cons, History history, ExtendType type, Data data,ExtendRuleConfig conf) {
-        super(new Rule(antecedent, cons, null, null, Rule.getNextERID(), data));
+    public ExtendRule(Antecedent antecedent, Consequent cons, History history, ExtendType type, Data data,ExtendRuleConfig conf, int seedRuleRID) {
+        super(new Rule(antecedent, cons, null, null, seedRuleRID, Rule.getNextERID(), data));
         this.extendType = type;
         this.extensionConfig = conf;
         lastExtension = null;
         
         this.rule.setQuality(computeQuality());
         if (history == null) {
-            this.history = new History();
+            this.history = new History(this.getRID());
         } else {
             this.history = history;
         }
-        this.history.addRuleIdentifiers(this.rule.getRID(), this.rule.getERID());
+        this.history.addRuleIdentifiers(this.rule.getERID(), this.rule.toArray());
         LOGGER.fine(rule.toString());
     }
 
@@ -225,15 +257,15 @@ public final class ExtendRule extends PruneRule implements RuleInt {
                 LOGGER.log(Level.FINEST, "Current extension candidate {0}", candExt);
                 LOGGER.finest("+++++++++++++++++++++++++++++++++++++");
 
-                if (candExt.getConfidence() - curAcceptedExtension.getConfidence() >=  extensionConfig.minImprovement && candExt.getSupport() - curAcceptedExtension.getSupport() > 0) {
-                    LOGGER.finest("Improvement in confidence above threshold (with non zero support delta), accepting");
+                if (extensionConfig.acceptRule(candExt.getConfidence(), curAcceptedExtension.getConfidence(), getConfidenceOfSeedRule(), candExt.getSupport(), curAcceptedExtension.getSupport())){
+//                if (candExt.getConfidence() - curAcceptedExtension.getConfidence() >=  extensionConfig.minImprovement && candExt.getSupport() - curAcceptedExtension.getSupport() > 0) {
                     extensionSuccessful = true;
                     curAcceptedExtension = candExt;
                     // improvement over the current best was found, the other candidates will not be considered
                     // the system will now use the new best as the seed for improvement
                     break;
-                } else if ((candExt.getConfidence() - curAcceptedExtension.getConfidence() >= extensionConfig.minCondImprovement)) {
-                    LOGGER.finest("Change in confidence in conditional accept band, trying extensions");
+                } else if (extensionConfig.conditionalAcceptRule(candExt.getConfidence(), curAcceptedExtension.getConfidence())) {
+                    LOGGER.finest("Trying additional extensions to reach crisp accept");
 
                     ExtendRule candExtEnlargement = candExt;
                     do {
@@ -243,18 +275,16 @@ public final class ExtendRule extends PruneRule implements RuleInt {
                             break;
                         }
                         LOGGER.log(Level.FINEST, "Evaluating extension: {0}", candExtEnlargement);
-                        // see what the improvement is over the current best
-                        double changeInConfidenceExt = candExtEnlargement.getConfidence() - curAcceptedExtension.getConfidence();
-                        int supportDelta = candExtEnlargement.getSupport() - curAcceptedExtension.getSupport();
-                        LOGGER.log(Level.FINEST, "Change in confidence:{0}, change in support: {1}", new Object[]{changeInConfidenceExt, supportDelta});
-
+                        // see what the improvement is over the current best                       
                         if (extensionConfig.acceptRule(candExtEnlargement.getConfidence(), curAcceptedExtension.getConfidence(), getConfidenceOfSeedRule(), candExtEnlargement.getSupport(), curAcceptedExtension.getSupport())){
-                            LOGGER.finest("Improvement in confidence above threshold (with non zero support delta), accepting");
+                            if (LOGGER.isLoggable(Level.FINE))
+                            {
+                                LOGGER.log(Level.FINE, "Accepting:{0}", candExtEnlargement);
+                            }                            
                             curAcceptedExtension = candExtEnlargement;
                             extensionSuccessful = true;
                             break;
-                        } else if (changeInConfidenceExt >=  extensionConfig.minCondImprovement) {
-                            LOGGER.finest("This extension is in conditional accept band");
+                        } else if (extensionConfig.conditionalAcceptRule(candExtEnlargement.getConfidence(), curAcceptedExtension.getConfidence())) {
                         } else {
                             //newly added
                             break;
@@ -270,11 +300,15 @@ public final class ExtendRule extends PruneRule implements RuleInt {
                 }
 
             }
-            LOGGER.finest("Candidates exhausted");
+            LOGGER.finest("Candidates exhausted or candidate accepted");
         } while (extensionSuccessful == true);
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.log(Level.FINE, "-->Finished extension on rule {0}<--", rule);
             LOGGER.log(Level.FINE, "*Result: {0}", curAcceptedExtension);            
+            if (LOGGER.isLoggable(Level.FINE)){
+                LOGGER.log(Level.FINE, "*History: \n {0}", curAcceptedExtension.history.toString());            
+                LOGGER.log(Level.FINE, "*End of history");            
+            }
         }
 
         return curAcceptedExtension;
@@ -297,7 +331,7 @@ public final class ExtendRule extends PruneRule implements RuleInt {
             }
         });
 
-        ExtendRule withfuzzyBorders = new ExtendRule(new Antecedent(newConsitutents), getConsequent(), getHistory(), extendType, rule.getData(),extensionConfig);
+        ExtendRule withfuzzyBorders = new ExtendRule(new Antecedent(newConsitutents), getConsequent(), getHistory(), extendType, rule.getData(),extensionConfig, rule.getRID());
 
         return withfuzzyBorders;
     }
@@ -397,11 +431,93 @@ public final class ExtendRule extends PruneRule implements RuleInt {
         StringBuilder sb = new StringBuilder();
         sb.append(rule.toString(true));
         sb.append(history.toString());
-
         return sb.toString();
 
     }
 
+
+    public ExtendRule trim(){
+        
+        LOGGER.log(Level.FINE, "STARTED TRIMMING on rule: {0}\n", rule);
+        //determine correctly covered transactions in the current rule
+        Set<Transaction> correctlyCoveredTrans = getAntecedent().getSupportingTransactions();
+        Set<Transaction> conTran = getConsequent().getSupportingTransactions();        
+        HashMap<Attribute,RuleMultiItem> newLiterals = new HashMap();
+        if (correctlyCoveredTrans == null| correctlyCoveredTrans.isEmpty()) {
+            LOGGER.info("Rule does not cover any transactions, leaving as is");     
+        } else {            
+            correctlyCoveredTrans.retainAll(conTran);                
+            if (correctlyCoveredTrans.isEmpty()) {
+                LOGGER.info("Rule does not CORRECTLY cover any transactions, leaving as is");     
+            }
+            //determine minimum and maximum value appearing in individual attributes in the current rule
+            else if (rule.getAntecedent().getItems().isEmpty()) {
+                LOGGER.fine("Rules with empty antecedent cannot be trimmed.");                        
+            }
+            else{                       
+                for (RuleMultiItem rmi : rule.getAntecedent().getItems()) {
+                    
+                    Attribute at = rmi.getAttribute();
+                    LOGGER.log(Level.FINE, "Processing attribute: {0}", at.getName());
+                    if (at.getType()==AttributeType.nominal)
+                    {
+                        LOGGER.fine("Skipping nominal attribute.");
+                        newLiterals.put(rmi.getAttribute(),rmi);
+                        continue;
+                    }
+                    ArrayList<AttributeValue> attVals = rmi.getAttributeValues();
+                    if (attVals.size()==1)
+                    {
+                        LOGGER.fine("Literals with single value cannot be trimmed.");
+                        newLiterals.put(rmi.getAttribute(),rmi);
+                        continue;
+                    }
+                    else if (attVals.isEmpty())
+                    {
+                        LOGGER.warning("Literal with no value!");
+                        newLiterals.put(rmi.getAttribute(),rmi);
+                        continue;
+                    }            
+
+                    //get maximum value of transactions in this attribute            
+                    ArrayList<AttributeValue> coveredValues = new ArrayList();
+
+                    correctlyCoveredTrans.stream().forEach((t) -> {
+                        coveredValues.add(t.getValue(at));
+                    });
+
+                    LOGGER.log(Level.FINE, "correctlyCoveredTrans: {0}", correctlyCoveredTrans.size());
+                    Collections.sort(coveredValues, new Comparator<AttributeValue>() {
+                        @Override
+                        public int compare(AttributeValue o1, AttributeValue o2) {
+                            return Float.compare(o1.getNumericalValue(),o2.getNumericalValue());
+                        }
+                    });            
+                    AttributeValue lowestValue = coveredValues.get(0);
+                    AttributeValue highestValue = coveredValues.get(coveredValues.size()-1);
+
+                    //get all values between lowest and highest and create a new literal (RuleMultiItem)
+                    ArrayList<AttributeValue> list = new ArrayList(at.getValuesInRange(lowestValue.getNumericalValue(), true, highestValue.getNumericalValue(), true));            
+                    ArrayList<ValueOrigin> valOriginAsArray = new ArrayList();
+                    for (AttributeValue av : list)
+                    {
+                        valOriginAsArray.add(ValueOrigin.core);
+                    }            
+
+                    RuleMultiItem replacement = rule.getData().makeRuleItem(list, valOriginAsArray, at, ValueOrigin.trim);
+                    newLiterals.put(replacement.getAttribute(),replacement);
+
+                }
+            }
+        }
+                        
+        
+         ExtendRule newRule = new ExtendRule(rule, newLiterals, this.getHistory(), ExtendType.trim,extensionConfig, this.getConfidenceOfSeedRule());
+         LOGGER.log(Level.FINE, "FINISHED TRIMMING, result: {0}\n", newRule);
+         return newRule;
+        
+   
+    }
     /*
     @TODO:  Check if the following return codes are o.k.
     returns number of supporting transaction  removed,

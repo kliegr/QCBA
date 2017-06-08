@@ -11,4 +11,4 @@ Depends:
     arc (>= 1.0.1)
 SystemRequirements: Java (>= 8)
 License: AGPL-3
-RoxygenNote: 6.0.0
+RoxygenNote: 6.0.1

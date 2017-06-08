@@ -343,7 +343,7 @@ public class GUHASimplifiedParser {
             throw new Exception("Rule quality parsing failed");
         }
 
-        return new Rule(ant, con, qm, ruleAnnot, ruleid, data);
+        return new Rule(ant, con, qm, ruleAnnot, ruleid, null,data);
     }
 
     private ArrayList<AnnotatedRuleMultiItem> parseAntecedent(Node node) throws Exception {

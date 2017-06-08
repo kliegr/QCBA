@@ -41,7 +41,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import java.util.logging.Handler;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 
@@ -86,6 +88,13 @@ private final static Logger LOGGER = Logger.getLogger(AC1.class.getName());
         if (JAVA_VERSION < 1.8) {
             LOGGER.info("Only Java 1.8+ supported");
             return;
+        }
+        Level level =  Level.FINEST;
+        System.out.println("Setting log level to " + level);
+        Logger rootLogger = LogManager.getLogManager().getLogger("");
+        rootLogger.setLevel( level);
+        for (Handler h : rootLogger.getHandlers()) {
+            h.setLevel(level);
         }
 
         String path;

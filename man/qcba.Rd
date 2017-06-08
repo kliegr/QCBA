@@ -8,7 +8,7 @@ qcba(cbaRuleModel, datadf, continuousPruning = FALSE, postpruning = TRUE,
   fuzzification = FALSE, annotate = FALSE, ruleOutputPath,
   minImprovement = 0, minCondImprovement = -0.05, minConf = 0.5,
   extensionStrategy = "ConfImprovementAgainstLastConfirmedExtension",
-  loglevel = "WARNING")
+  loglevel = "WARNING", createHistorySlot = FALSE)
 }
 \arguments{
 \item{cbaRuleModel}{a \link{CBARuleModel}}

@@ -95,7 +95,7 @@ public class Rule implements RuleInt {
      * @param RID
      * @param data
      */
-    public Rule(Antecedent antecedent, Consequent consequent, RuleQuality quality, ExtendRuleAnnotation annot, int RID, Data data) {
+    public Rule(Antecedent antecedent, Consequent consequent, RuleQuality quality, ExtendRuleAnnotation annot, int RID, Integer ERID, Data data) {
         this.data = data;
         this.antecedent = antecedent;
         this.consequent = consequent;
@@ -103,7 +103,12 @@ public class Rule implements RuleInt {
         //        this.sourceXML = sourceXML;
         this.annot = annot;
         this.RID = RID;
-        LOGGER.log(Level.FINE, "Created rule RID:{0}", RID);
+        if (ERID!=null)
+        {
+            this.ERID = ERID;            
+        }
+
+        LOGGER.log(Level.FINE, "Created rule RID:{0}, ERID:{1}", new Object[]{RID,ERID});
     }
 
     /**
@@ -196,12 +201,30 @@ public class Rule implements RuleInt {
      * @param printAnnotation
      * @return
      */
-    public String toString(boolean printAnnotation) {
+    
+    public String[] toArray() {
+        String[] array = new String[5];
+        array[0] = String.valueOf(RID);
+        array[1] = String.valueOf(ERID);    
+        array[2] = getRuleText(true);
+        array[3] = String.valueOf(quality.getRelativeSupport());
+        array[4] = String.valueOf(quality.getConfidence());
+    return array;
+    }
+    
+    public String getRuleText(boolean succint)
+    {
         StringBuilder sb = new StringBuilder();
-        sb.append("RID=").append(RID).append(":");
-        sb.append(antecedent.toString());
+        sb.append(antecedent.toString(succint));
         sb.append(" => ");
         sb.append(consequent.toString());
+        return sb.toString();
+    }
+    public String toString(boolean printAnnotation) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("RID=").append(RID).append(",");
+        sb.append("ERID=").append(ERID).append(":");
+        sb.append(getRuleText(false));
         sb.append(",");
         sb.append(quality.toString());
         if (printAnnotation && getAnnotation() != null) {
@@ -259,7 +282,7 @@ public class Rule implements RuleInt {
      * @return
      */
     public int getERID() {
-        return RID;
+        return ERID;
     }
 
     /**

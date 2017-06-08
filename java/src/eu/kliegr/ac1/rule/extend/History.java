@@ -19,16 +19,39 @@
 package eu.kliegr.ac1.rule.extend;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map.Entry;
+import java.util.logging.Logger;
 
 public final class History {
-
-    ArrayList<Integer> historyRID = new ArrayList();
-    ArrayList<Integer> historyERID = new ArrayList();
+    private final static Logger LOGGER = Logger.getLogger(ExtendRules.class.getName());
+    private int RID;
+    //ArrayList<Integer> historyRID = new ArrayList();
+    LinkedHashMap<Integer,String[]> history = new LinkedHashMap();
+    //ArrayList<Integer> historyERID = new ArrayList();
+    //ArrayList<String> historyText = new ArrayList();
 
     /**
      *
      */
-    public History() {
+    public History(int RID) {
+        this.RID = RID;
+    }
+    
+    public String[][] toArray() {
+        String[][] array  = new String[history.size()+1][];
+        //array[0] = historyTableHeader();
+        int i=0;
+        for (Entry<Integer,String[]> e : history.entrySet()) {
+            array[i] = e.getValue();
+            i++;
+        }
+        return array;
+
+    }
+        public Collection<String[]> toCollection() {
+            return history.values();        
 
     }
 
@@ -36,9 +59,11 @@ public final class History {
      *
      * @param RID
      * @param ERID
+     * @param text
      */
-    public History(int RID, int ERID) {
-        addRuleIdentifiers(RID, ERID);
+    public History(int RID, int ERID,String[] text) {
+        this.RID = RID;
+        addRuleIdentifiers(ERID,text);
     }
 
     /**
@@ -46,9 +71,9 @@ public final class History {
      * @return
      */
     public History copy() {
-        History copy = new History();
-        for (int i = 0; i < historyRID.size(); i++) {
-            copy.addRuleIdentifiers(historyRID.get(i), historyERID.get(i));
+        History copy = new History(RID);
+        for (Entry<Integer,String[]> e : history.entrySet()) {
+            copy.addRuleIdentifiers(e.getKey(), e.getValue());
         }
         return copy;
     }
@@ -57,19 +82,32 @@ public final class History {
      *
      * @param RID
      * @param ERID
+     * @param text
      */
-    public void addRuleIdentifiers(int RID, int ERID) {
-        historyRID.add(RID);
-        historyERID.add(ERID);
+    public void addRuleIdentifiers(int ERID,String[] text) {
+        //historyRID.add(RID);
+
+        history.put(ERID, text);
+        //historyERID.add(ERID);
+        //historyText.add(text);
     }
 
+    public String[] historyTableHeader() {
+        String[] header =  {"RID","ERID","rule","supp","conf"};
+        return header;
+    }
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("\nHistory:");
-        for (int i = 0; i < historyRID.size(); i++) {
-            sb.append(historyRID.get(i)).append("(ERID=").append(historyERID.get(i)).append(") ->");
+        sb.append("\nExtend history for rule: " + RID);
+        for (Entry<Integer,String[]> e : history.entrySet()) {
+            sb.append("(ERID=").append(e.getKey()).append(") ->");
         }
-        sb.append("current");
+        sb.append("current\n");
+        sb.append(String.join(",",historyTableHeader()));
+        sb.append("\n");
+        for (Entry<Integer,String[]> e : history.entrySet()) {
+            sb.append(String.join(",",e.getValue())).append("\n");
+        }
         return sb.toString();
     }
 }

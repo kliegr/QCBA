@@ -120,7 +120,7 @@ public class ArulesParser {
     float support = Float.parseFloat(ruleQualityParts[0]);
     float confidence = Float.parseFloat(ruleQualityParts[1]);
     RuleQuality qm = new RuleQuality(support,confidence,data.getDataTable().getCurrentTransactionCount());
-    Rule r = new Rule(ant, con, qm,  null,ruleid,data); 
+    Rule r = new Rule(ant, con, qm,  null,ruleid,null,data); 
     return r;
 }
     
@@ -152,7 +152,7 @@ public class ArulesParser {
     
     //convert relative counts to absolute
     RuleQuality qm = new RuleQuality(support,confidence,data.getDataTable().getCurrentTransactionCount());
-    Rule r = new Rule(ant, con, qm,  null,ruleid,data); 
+    Rule r = new Rule(ant, con, qm,  null,ruleid,null,data); 
     return r;
 }
     private ArrayList<RuleMultiItem>  parseRulePart(String part) throws AttributeNotFoundException,InvalidAttributeTypeException {

@@ -61,5 +61,7 @@ public enum ValueOrigin {
     /**
      *
      */
-    aggregation
+    aggregation,
+    
+    trim
 }

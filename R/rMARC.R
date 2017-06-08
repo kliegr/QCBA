@@ -20,6 +20,7 @@ library(arc)
 qCBARuleModel <- setClass("qCBARuleModel",
                       slots = c(
                         rules = "data.frame",
+                        history = "data.frame",
                         classAtt ="character",
                         attTypes = "vector",
                         rulePath ="character",
@@ -146,7 +147,7 @@ qcbaIris2 <- function()
 #' rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
 #' print(rmqCBA@rules)
 
-qcba <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-0.05,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING")
+qcba <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-0.05,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE)
 {
   if (fuzzification & !annotate)
   {
@@ -214,6 +215,16 @@ qcba <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRU
     extRulesFrame$support<-as.numeric(extRulesFrame$support)
     extRulesFrame$confidence<-as.numeric(extRulesFrame$confidence)
     
+    if (createHistorySlot)
+    {
+      extRulesHistoryArray <- .jcall(hjw, "[[Ljava/lang/String;", "getRuleHistory", evalArray=FALSE)
+      extRulesHistory <- .jevalArray(extRulesHistoryArray,simplify=TRUE)   
+      colnames(extRulesHistory) <- c("RID","ERID","rules","support","confidence")
+      extRulesHistoryFrame<-as.data.frame(extRulesHistory,stringsAsFactors=FALSE)
+      extRulesHistoryFrame$support<-as.numeric(extRulesHistoryFrame$support)
+      extRulesHistoryFrame$confidence<-as.numeric(extRulesHistoryFrame$confidence)
+      rm@history <- extRulesHistoryFrame
+    }
     rm@rulePath <- ""
     rm@rules <- extRulesFrame
     
