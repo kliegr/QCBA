@@ -31,7 +31,6 @@ public enum ExtendType {
     /**
      *
      */
-    numericOnly,
-    trim
+    numericOnly
 
 }

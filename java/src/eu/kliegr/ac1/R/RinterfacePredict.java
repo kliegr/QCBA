@@ -71,6 +71,7 @@ public class RinterfacePredict extends Rinterface {
      */
     public String[] predict() throws Exception {
         TestingType ttype = TestingType.firstMatch;
+        LOGGER.log(Level.INFO, "Predict invoked");
         LOGGER.log(Level.INFO, "Transaction count:{0}", data.getDataTable().getCurrentTransactionCount());
         if (data.getDataTable() == null) {
             throw new Exception("Load data first");
@@ -78,10 +79,19 @@ public class RinterfacePredict extends Rinterface {
         if (rules == null) {
             throw new Exception("Load rules first");
         }
-        TestRules testRulesObj = new TestRules(rules, ruleComparator, data);
-        testRulesObj.sortRules();
-        testRulesObj.classifyData(ttype);
-        String[] result = testRulesObj.getResult();
+        String[] result = null;
+        try {
+            TestRules testRulesObj = new TestRules(rules, ruleComparator, data);
+            testRulesObj.sortRules();
+            testRulesObj.classifyData(ttype);
+            result = testRulesObj.getResult();
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+            throw e;
+        }
+        
         LOGGER.log(Level.INFO, "Result dimensionality:{0}", result.length);
         return result;
     }

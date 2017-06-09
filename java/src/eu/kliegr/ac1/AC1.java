@@ -155,7 +155,7 @@ private final static Logger LOGGER = Logger.getLogger(AC1.class.getName());
                 extendRulesObj.sortRules();
                 performance.stopStopWatch("Sort rules");
                 performance.startStopWatch("Extend rules");
-                extendRulesObj.extendRules(conf.isContinuousPruningEnabled(),conf.isFuzzificationEnabled(),conf.isPostPruningEnabled());
+                extendRulesObj.extendRules(conf.isTrimmingEnabled(), conf.isContinuousPruningEnabled(),conf.isFuzzificationEnabled(),conf.isPostPruningEnabled());
                 performance.stopStopWatch("Extend rules");
                 if (conf.isAnnotationEnabled())
                 {

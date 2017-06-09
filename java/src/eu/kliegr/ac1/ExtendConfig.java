@@ -41,7 +41,7 @@ public class ExtendConfig extends BaseConfig {
     private boolean pruneAfterExtend = true;
     private boolean continuosPruning= true;
     private boolean performFuzzification = false;
-
+    private boolean isTrimmingEnabled = true;
     private Comparator ruleComparator ;
     private ExtendType extendType;
     private ExtendRuleConfig extConf;
@@ -64,6 +64,7 @@ public class ExtendConfig extends BaseConfig {
         annotate=false;
         pruneAfterExtend=true;
         continuosPruning=false;
+        isTrimmingEnabled = true;
         performFuzzification=false;
         this.attType= attType;
         this.targetAttribute = targetAttribute;
@@ -101,6 +102,10 @@ public class ExtendConfig extends BaseConfig {
         if (_prune_cont != null) {
             continuosPruning= Boolean.valueOf(_prune_cont);
         }
+        String _trim =prop.getProperty("Trimming");
+        if (_trim != null) {
+            isTrimmingEnabled= Boolean.valueOf(_trim);
+        }        
         String _fuzz =prop.getProperty("Fuzzification");
         if (_fuzz != null) {
             performFuzzification= Boolean.valueOf(_prune_cont);
@@ -164,6 +169,12 @@ public class ExtendConfig extends BaseConfig {
         return continuosPruning;
     }  
 
+    public Boolean isTrimmingEnabled()
+    {
+        return isTrimmingEnabled;
+    }  
+
+    
     /**
      *
      * @return

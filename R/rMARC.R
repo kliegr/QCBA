@@ -147,7 +147,7 @@ qcbaIris2 <- function()
 #' rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
 #' print(rmqCBA@rules)
 
-qcba <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-0.05,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE)
+qcba <- function(cbaRuleModel,  datadf, trimming=TRUE, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-0.05,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE, timeExecution=FALSE)
 {
   if (fuzzification & !annotate)
   {
@@ -189,9 +189,13 @@ qcba <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRU
   
   #execute qCBA extend
   start.time <- Sys.time()
-  out <- .jcall(hjw, , "extend", continuousPruning, postpruning, fuzzification, annotate,minImprovement,minCondImprovement,minConf,  extensionStrategy)  
+  out <- .jcall(hjw, , "extend", trimming, continuousPruning, postpruning, fuzzification, annotate,minImprovement,minCondImprovement,minConf,  extensionStrategy)  
   end.time <- Sys.time()
-  message (paste("qCBA Model building took:", round(end.time - start.time, 2), " seconds"))  
+  if (timeExecution)
+  {
+    message (paste("qCBA Model building took:", round(end.time - start.time, 2), " seconds"))  
+  }
+  
   
   rm <- qCBARuleModel()
   
@@ -206,7 +210,6 @@ qcba <- function(cbaRuleModel,  datadf, continuousPruning=FALSE, postpruning=TRU
   }
   else
   {
-    
     #parse results into R structures
     extRulesArray <- .jcall(hjw, "[[Ljava/lang/String;", "getRules", evalArray=FALSE)
     extRules <- .jevalArray(extRulesArray,simplify=TRUE)   
@@ -291,12 +294,12 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
   
   if (nchar(ruleModel@rulePath)>0)
   {
-    print(paste("Loading rule model from file:",ruleModel@rulePath ))
+    message(paste("Loading rule model from file:",ruleModel@rulePath ))
     prediction <- .jcall(jPredict, "[Ljava/lang/String;", "predictWithRulesFromFile", ruleModel@rulePath, testingType)
   }
   else
   {
-    print("Using rules stored in the passed model")
+    message("Using rules stored in the passed model")
     extRulesJArray <- .jarray(lapply(ruleModel@rules, .jarray))
     .jcall(jPredict, , "addRuleFrame", extRulesJArray)
     prediction <- .jcall(jPredict, "[Ljava/lang/String;", "predict")

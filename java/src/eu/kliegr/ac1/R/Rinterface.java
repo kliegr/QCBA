@@ -112,7 +112,7 @@ public abstract class Rinterface {
     }
 
     private void setLoggerLevelGlobaly(Level level) {
-        System.out.println("Setting log level to " + level);
+        //System.out.println("Setting log level to " + level);
         Logger rootLogger = LogManager.getLogManager().getLogger("");
         rootLogger.setLevel(level);
         for (Handler h : rootLogger.getHandlers()) {
@@ -179,7 +179,7 @@ public abstract class Rinterface {
                             : ((int[]) dataFrame[2])[i];
                     double support = (dataFrame[1] instanceof double[]) ? ((double[]) dataFrame[1])[i]
                             : ((int[]) dataFrame[1])[i];
-                    LOGGER.log(Level.INFO, "Rule  '{0}', confidence={1} support={2}", new Object[]{rule, confidence, support});
+                    LOGGER.log(Level.INFO, "Rule  {0}, confidence={1} support={2}", new Object[]{rule, confidence, support});
                     Rule r = parser.parseRule(rule, (float) confidence, (float) support, i);
                     LOGGER.info(r.toString());
                     rules.add(r);
@@ -187,6 +187,8 @@ public abstract class Rinterface {
             }
             LOGGER.info("addRuleFrame finished");
         } catch (Exception e) {
+            LOGGER.severe(e.toString());
+            e.printStackTrace();
             throw new Exception(e);
         }
 

@@ -137,7 +137,7 @@ public class ExtendRules {
      * @param isFuzzificationEnabled
      * @param isPostPruningEnabled
      */
-    public void extendRules(boolean isContinuousPruningEnabled, boolean isFuzzificationEnabled, boolean isPostPruningEnabled) {
+    public void extendRules(boolean isTrimmingEnabled, boolean isContinuousPruningEnabled, boolean isFuzzificationEnabled, boolean isPostPruningEnabled) {
         LOGGER.info("STARTED Extension phase\n");
         //TODO change to parallel stream
         //extendedRules = seedRules.stream().map((r)->r.extend()).collect(Collectors.toCollection(ArrayList::new));
@@ -164,13 +164,23 @@ public class ExtendRules {
                 return null;
             }
             
-            ExtendRule trimmed = rule.trim();
+            
+            ExtendRule ruleAfterOptionalTrimming;
+            if (isTrimmingEnabled)
+            {
+                ruleAfterOptionalTrimming = rule.trim();
+            }
+            else
+            {
+                ruleAfterOptionalTrimming = rule;
+            }
+            
             
             if (isContinuousPruningEnabled) {
                 //we want the quality to be computed only on the subset of transactions not covered by rules so far
-                rule.updateQuality();
+                ruleAfterOptionalTrimming.updateQuality();
             }
-            ExtendRule ex = trimmed.extend();
+            ExtendRule ex = ruleAfterOptionalTrimming.extend();
 
             if (isContinuousPruningEnabled) {
                 //and now remove the transactions covered by the extended rule

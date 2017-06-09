@@ -68,7 +68,7 @@ public class RinterfaceExtend extends Rinterface {
      * @param minImprovement
      * @throws Exception
      */
-    public void extend(boolean isContinuousPruningEnabled, boolean isPostPruningEnabled, boolean isFuzzificationEnabled, boolean isAnnotationEnabled,double minImprovement,double minCondImprovement, double minConf, String extensionStrategy) throws Exception {
+    public void extend(boolean isTrimmingEnabled,boolean isContinuousPruningEnabled, boolean isPostPruningEnabled, boolean isFuzzificationEnabled, boolean isAnnotationEnabled,double minImprovement,double minCondImprovement, double minConf, String extensionStrategy) throws Exception {
 
         this.isFuzzificationEnabled = isFuzzificationEnabled;
         this.isPostPruningEnabled = isPostPruningEnabled;
@@ -86,7 +86,7 @@ public class RinterfaceExtend extends Rinterface {
         conf  = new ExtendRuleConfig(minImprovement,minCondImprovement,minConf, ExtensionStrategyEnum.valueOf(extensionStrategy));
         extendRulesObj = new ExtendRules(rules, ruleComparator, extType, conf, data);
         extendRulesObj.sortRules();
-        extendRulesObj.extendRules(isContinuousPruningEnabled, isFuzzificationEnabled, isPostPruningEnabled);
+        extendRulesObj.extendRules(isTrimmingEnabled,isContinuousPruningEnabled, isFuzzificationEnabled, isPostPruningEnabled);
         if (isAnnotationEnabled) {
             extendRulesObj.annotateRules();
         }

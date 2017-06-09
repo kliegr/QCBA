@@ -49,7 +49,6 @@ public final class ExtendRule extends PruneRule implements RuleInt {
     private final static Logger LOGGER = Logger.getLogger(ExtendRule.class.getName());
     private ExtendRuleConfig extensionConfig;
     private Float confidenceOfSeedRule;
-    
     public float getConfidenceOfSeedRule()
     {
             return confidenceOfSeedRule;
@@ -438,7 +437,7 @@ public final class ExtendRule extends PruneRule implements RuleInt {
 
     public ExtendRule trim(){
         
-        LOGGER.log(Level.FINE, "STARTED TRIMMING on rule: {0}\n", rule);
+        LOGGER.log(Level.INFO, "STARTED TRIMMING on rule: {0}\n", rule);
         //determine correctly covered transactions in the current rule
         Set<Transaction> correctlyCoveredTrans = getAntecedent().getSupportingTransactions();
         Set<Transaction> conTran = getConsequent().getSupportingTransactions();        
@@ -512,8 +511,8 @@ public final class ExtendRule extends PruneRule implements RuleInt {
         }
                         
         
-         ExtendRule newRule = new ExtendRule(rule, newLiterals, this.getHistory(), ExtendType.trim,extensionConfig, this.getConfidenceOfSeedRule());
-         LOGGER.log(Level.FINE, "FINISHED TRIMMING, result: {0}\n", newRule);
+         ExtendRule newRule = new ExtendRule(rule, newLiterals, this.getHistory(), this.getExtendType(),extensionConfig, this.getConfidenceOfSeedRule());
+         LOGGER.log(Level.INFO, "FINISHED TRIMMING, result: {0}\n", newRule);
          return newRule;
         
    
