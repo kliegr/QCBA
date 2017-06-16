@@ -20,9 +20,12 @@ package eu.kliegr.ac1.rule.extend;
 
 import eu.kliegr.ac1.data.AttributeValue;
 import eu.kliegr.ac1.performance.StopWatches;
+import eu.kliegr.ac1.rule.Antecedent;
 import eu.kliegr.ac1.rule.Consequent;
 import eu.kliegr.ac1.rule.Data;
+import eu.kliegr.ac1.rule.PruneRule;
 import eu.kliegr.ac1.rule.PruneRules;
+import eu.kliegr.ac1.rule.PruneType;
 import eu.kliegr.ac1.rule.Rule;
 import eu.kliegr.ac1.rule.RuleMultiItem;
 import java.io.BufferedOutputStream;
@@ -33,6 +36,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -151,8 +155,8 @@ public class ExtendRules {
 
             if (antLength == 0) {
                 if (rule.getRID() == lastRuleRID) {
-                    LOGGER.info("Leaving default rule unchanged");
-                    return rule;
+                    LOGGER.info("Skipping default rule ");
+                    return null;
                 } else {
                     LOGGER.severe("Unexpected rule with empty antecedent on other than last position, leaving out this rule");
                     return null;
@@ -201,6 +205,12 @@ public class ExtendRules {
             return ex;
         }).filter(out -> out != null).collect(Collectors.toList());
 
+         if (!isPostPruningEnabled)
+        {
+            //insert default rule because it will not be done during postpruning
+            ExtendRule finalDefRule = createNewDefaultRule(getDefaultRuleClass());
+            extendedRules.add(finalDefRule);
+        }
         if (isContinuousPruningEnabled) {
             //rule metrics computed during continous pruning are computed on subset of data
             // and thus are not valid metrics for ordering the rule set in a test setting`
@@ -210,22 +220,26 @@ public class ExtendRules {
             });
 
         }
+                
 
         LOGGER.info("FINISHED Extension phase\n");
-        //TODO: this is unnecessary
+        
+        LOGGER.info("STARTED Resorting rules\n");
+        extendedRules.sort(ruleComparator);
+        LOGGER.info("FINSIHED Resorting rules\n");        
+                
+
         if (isPostPruningEnabled) {
             LOGGER.info("STARTED PRUNING phase\n");
             LOGGER.log(Level.INFO, "Rules before pruning:{0}", extendedRules.size());
-            PruneRules pruneRulesObj = new PruneRules(extendedRules);
-
-            //hideTransaction set to true, because we want to be able to unhide the transactions for possible follow-up annotation
-            pruneRulesObj.pruneRules(true);
+            pruneRules();
             data.getDataTable().unhideAllTransactions();
 
             LOGGER.log(Level.INFO, "Rules after pruning:{0}", extendedRules.size());
             LOGGER.info("FINISHED PRUNING phase\n");
             //}
         }
+
         
     }
 
@@ -245,4 +259,90 @@ public class ExtendRules {
         output.flush();
         output.close();
     }
+    
+    
+
+    public void pruneRules() {
+        LOGGER.info("STARTED Removing rules with zero coverage");
+        AttributeValue defClass =  getDefaultRuleClass();
+        int defError = getDefaultRuleError(defClass);
+        boolean removeTail=false;
+        for (Iterator<? extends PruneRule> it = extendedRules.iterator(); it.hasNext();) {
+
+            PruneRule rule = it.next();
+       
+            if (removeTail)
+            {
+                it.remove();
+                continue;
+            }
+            if (rule.getAntecedentLength() == 0) {
+                it.remove();
+                continue;
+            }     
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.log(Level.FINE, "#Rule {0}", rule.toString());
+            }
+
+            // default rule pruning
+            int supportingTransactions = rule.removeSupportingTransactions(true);
+            
+            if (supportingTransactions == 0) {
+                if (LOGGER.isLoggable(Level.FINE)) {
+                    LOGGER.fine("0 transactions, REMOVED");
+                }
+                it.remove();
+            } else if (LOGGER.isLoggable(Level.FINE)) {
+                AttributeValue newDefClass =  getDefaultRuleClass();
+                int newDefError = getDefaultRuleError(newDefClass);
+                if (defError<=newDefError)
+                {
+                    //adding the current rule did not decrease the errors compared to a default rule
+                    it.remove();
+                    removeTail=true;
+                }
+                else{
+                    LOGGER.log(Level.FINE, "{0} transactions, RULE {1} KEPT", new Object[]{supportingTransactions, rule.getRID()});
+                    defClass  = newDefClass;
+                    defError  = newDefError;
+                }
+
+            }
+            
+
+
+        }
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine("Creating new Extend rule within narrow rule procedure");
+        }
+
+        extendedRules.add(createNewDefaultRule(defClass));
+        LOGGER.info("FINISHED pruning");
+    }
+    private ExtendRule createNewDefaultRule(AttributeValue conval)
+    {
+        ArrayList<AttributeValue> conValues= new ArrayList();
+        ArrayList<ValueOrigin> origin= new ArrayList();
+        conValues.add(conval);
+        origin.add(ValueOrigin.consequent);
+        
+        Consequent consequent = new Consequent(data.makeRuleItem(conValues, origin, conval.getAttribute(), ValueOrigin.fakeConsequent));
+        ArrayList<RuleMultiItem> emptyAntecedent = new ArrayList<>();
+        Rule r = new Rule(new Antecedent(emptyAntecedent), consequent, null, null, -2, -2, data);
+        ExtendRule finalDefRule = new ExtendRule(r, new History(r.getRID()),ExtendType.defaultRule,null);
+        return finalDefRule;
+        
+    }
+    
+    private AttributeValue getDefaultRuleClass()
+    {
+        AttributeValue max = Collections.max(data.getDataTable().getTargetAttribute().getAllValues(), Comparator.comparing(c -> c.getTransactions().size()));
+        return max;
+    }
+    private int getDefaultRuleError(AttributeValue def)
+    {
+        int correct = def.getTransactions().size();
+        return data.getDataTable().getAllCurrentTransactions().size() - correct;
+    }
+        
 }

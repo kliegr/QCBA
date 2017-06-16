@@ -132,7 +132,7 @@ private final static Logger LOGGER = Logger.getLogger(AC1.class.getName());
                 int origRuleCount = pruneRulesObj.getRules().size();
                 performance.stopStopWatch("Count rules");
                 performance.startStopWatch("Prune rules");
-                pruneRulesObj.pruneRules(false);
+                pruneRulesObj.pruneRules();
                 performance.stopStopWatch("Prune rules");
                 performance.startStopWatch("Save rules");
                 GUHASimplifiedParser.saveRules(pruneRulesObj.getRules(), conf.getOutputPath());

@@ -147,7 +147,7 @@ qcbaIris2 <- function()
 #' rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
 #' print(rmqCBA@rules)
 
-qcba <- function(cbaRuleModel,  datadf, trimming=TRUE, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-0.05,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE, timeExecution=FALSE)
+qcba <- function(cbaRuleModel,  datadf, trim_literal_boundaries=TRUE, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-0.05,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE, timeExecution=FALSE)
 {
   if (fuzzification & !annotate)
   {
@@ -189,7 +189,7 @@ qcba <- function(cbaRuleModel,  datadf, trimming=TRUE, continuousPruning=FALSE, 
   
   #execute qCBA extend
   start.time <- Sys.time()
-  out <- .jcall(hjw, , "extend", trimming, continuousPruning, postpruning, fuzzification, annotate,minImprovement,minCondImprovement,minConf,  extensionStrategy)  
+  out <- .jcall(hjw, , "extend", trim_literal_boundaries, continuousPruning, postpruning, fuzzification, annotate,minImprovement,minCondImprovement,minConf,  extensionStrategy)  
   end.time <- Sys.time()
   if (timeExecution)
   {

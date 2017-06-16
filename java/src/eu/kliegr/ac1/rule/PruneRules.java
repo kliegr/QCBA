@@ -18,8 +18,13 @@
  */
 package eu.kliegr.ac1.rule;
 
+import eu.kliegr.ac1.data.AttributeValue;
+import eu.kliegr.ac1.data.DataTable;
 import eu.kliegr.ac1.performance.StopWatches;
 import eu.kliegr.ac1.rule.extend.ExtendRule;
+import eu.kliegr.ac1.rule.extend.ExtendType;
+import eu.kliegr.ac1.rule.extend.History;
+import eu.kliegr.ac1.rule.extend.ValueOrigin;
 import java.io.BufferedOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -44,6 +49,7 @@ public class PruneRules {
     private List<? extends PruneRule> rules;
     private Comparator ruleComparator;
     private PruneType type;
+    
 
     /**
      *
@@ -57,22 +63,6 @@ public class PruneRules {
 
         this.rules = rules.stream().map((rule) -> new PruneRule(rule)).collect(Collectors.toCollection(() -> Collections.synchronizedList(new ArrayList<PruneRule>())));
     }
-
-    /**
-     *
-     * @param extrules
-     */
-    public PruneRules(List<ExtendRule> extrules) {
-        this.type = PruneType.wholeRule;
-        try {
-            this.ruleComparator = (Comparator) Class.forName("eu.kliegr.ac1.rule.MMACRuleComparator").newInstance();
-        } catch (Exception ex) {
-            Logger.getLogger(PruneRules.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        rules = extrules;
-
-    }
-
     /**
      *
      * @return
@@ -92,8 +82,8 @@ public class PruneRules {
      *
      * @param hideTransaction
      */
-    public void pruneRules(boolean hideTransaction) {
-        LOGGER.info("STARTED Removing rules with zero coverage");
+     public void pruneRules() {
+        LOGGER.info("STARTED Pruning");
         for (Iterator<? extends PruneRule> it = rules.iterator(); it.hasNext();) {
 
             PruneRule rule = it.next();
@@ -111,7 +101,7 @@ public class PruneRules {
                 continue;
             }
 
-            int supportingTransactions = rule.removeSupportingTransactions(hideTransaction);
+            int supportingTransactions = rule.removeSupportingTransactions(false);
 
             if (supportingTransactions == 0) {
                 if (LOGGER.isLoggable(Level.FINE)) {
@@ -123,9 +113,11 @@ public class PruneRules {
             }
 
         }
+        
+        
         LOGGER.info("FINISHED Removing rules with zero coverage");
     }
-
+     
     /**
      *
      * @param originalRulecount

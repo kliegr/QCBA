@@ -7,13 +7,32 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Data
+## About Quantitative CBA
 
-Let's look at sample data. There are two explanatory attributes (Temperature and Humidity). The target attribute is preference (e.g. subjective comfort level). 
+We propose a postprocessing algorithm for ARC classification algorithm CBA (Liu, 1998), which reverts to the original attribute space to ``edit'' discovered association rules, refining the scope of literals in the antecedent of the rules.  As a consequence, the fit of the individual rules to data improves, rendering some of the rules comprising the model as redundant. These rules can be removed, making the resulting classifier smaller. The viable properties of CBA models that make these rule lists comprehensible, such as one-rule classification and crisp rules, are retained. The postprocessing is conceptually fast, because it is performed on a relatively small number of rules that passed the data coverage pruning in CBA. 
 
+### Novelty
+
+* First "quantitative" association rule classification algorithm.
+* Conceptually different from existing quantitative association rule learning algorithms such as QuantMiner or  NAR-Discovery.
+
+### Benchmark
+
+QCBA was evaluated on 22 standard UCI datasets against standard as well as state-of-the-art symbolic classification algorithms (such as RIPPER, FURIA, CBA). The evaluation is fully reproducible using the [arcBench package](https://github.com/kliegr/arcBench) and meets industry standards (same folds, metaparameter optimization, etc.). The evaluation shows that QCBA produces  classifiers with about 1/3 less rules than CBA while retaining comparable accuracy. 
+
+## Library
+The QCBA implementation is in Java. It is also available via an [R package wrapper](https://github.com/kliegr/QCBA), which we will used for this example.
 
 ```{r results='hide', message=FALSE}
 library(qCBA)
+attach(humtemp)
+```
+## Data
+
+Let's look at sample data for this example. There are two explanatory attributes (Temperature and Humidity). The target attribute is preference (e.g. subjective comfort level). 
+
+
+```{r results='hide', message=FALSE}
 attach(humtemp)
 ```
 
@@ -143,13 +162,14 @@ m <- dev.off()
 
 Out of the two discovered rules, we will create a CBA classifier.
 This means that the rules will be 
+
 1. sorted according to confidence support and length
 2. subject to simultaneous data coverage pruning & default rule pruning:
- * data coverage pruning: algorithm iterates through the rules in the sort order removing any rule which does not correctly cover any instances (instances correctly covered by rules above the current rule have been removed)
- * default rule pruning: the algorithm iterates through the rules in the sort order, and cuts off the list once the current rule would result in worse accuracy than a default rule inserted at that place
+ + data coverage pruning: algorithm iterates through the rules in the sort order removing any rule which does not correctly cover any instances (instances correctly covered by rules above the current rule have been removed)
+ + default rule pruning: the algorithm iterates through the rules in the sort order, and cuts off the list once the current rule would result in worse accuracy than a default rule inserted at that place
 4. a default rule is inserted at the bottom of the list. Default rule is a rule with empty antecedent and consequent predicting a majority class left in the training data once the previous rules in the classifier were applied.
 
-```{r}
+```{r message=FALSE}
 classAtt="Class"
   appearance <- getAppearance(data_discr, classAtt)
   # Note that we are calling `cba_manual()` instead of cba() because we want for demonstration purposes to construct the classifier from a user-generated rule list.
@@ -172,15 +192,16 @@ QCBA postprocesses CBA classifier created over discretized numeric attributes. Q
 
 ### Intro to QCBA 
 The steps taken by QCBA:
-1. refit the data to *finer grid*: this grid has steps corresponding to all unique attribute values appearing in the training data.
-2. trimming (optional): the literals in discovered rules are trimmed so that they do not contain regions not covered by data.
-3. extension: the ranges of literals in the body of each rule are extended. The range of each literal is increased one literal and one boundary at a time. The extension is generally accepted only if it improves rule confidence. To overcome local minima, the extension process can provisionally accept drop in confidence compared to the seed rule within bounds set by the **minCondImprovement* threshold. There are several extension strategies:
-* ConfImprovementAgainstLastConfirmedExtension: extension is accepted only if the extended rule is better by **minImprovement** than the last confirmed extension (or the original rule). This is the most conservative strategy that produces generally produces highest confidence rules.
-* ConfImprovementAgainstSeedRule: extension is accepted only if the extended rule is better by minImprovement than the original rule.  This strategy is better fitted to overcome noise in the data.
-This strategy can result in "wider" rules while at least still preserving the confidence of the original seed rule (assuming that **minImprovement>=0**).
-* MinConf: extension is accepted as long as the extended rule has at least prespecified value of confidence . This strategy produces the widest possible extension, producing rules that at least preserve the confidence threshold **minConf**, which can be the same as confidence threshold used for CBA classifier building.
-4. continuous pruning (optional): this essentially corresponds to second iteration of data coverage pruning (first was performed during CBA classifier building), which is performed immediately after a rule is extended.
-5. postpruning (optional): second iteration of data coverage pruning is performed *after* all rules have been extended and resorted.  
+
+1. **Refit** the data to *finer grid*: this grid has steps corresponding to all unique attribute values appearing in the training data.
+2. **Trimming** (optional): the literals in discovered rules are trimmed so that they do not contain regions not covered by data.
+3. **Extension**: the ranges of literals in the body of each rule are extended. The range of each literal is increased one literal and one boundary at a time. The extension is generally accepted only if it improves rule confidence. To overcome local minima, the extension process can provisionally accept drop in confidence compared to the seed rule within bounds set by the `minCondImprovement` threshold. There are several extension strategies:
++ `ConfImprovementAgainstLastConfirmedExtension`: extension is accepted only if the extended rule is better by `minImprovement` than the last confirmed extension (or the original rule). This is the most conservative strategy that produces generally produces highest confidence rules.
++ `ConfImprovementAgainstSeedRule`: extension is accepted only if the extended rule is better by minImprovement than the original rule.  This strategy is better fitted to overcome noise in the data.
+This strategy can result in "wider" rules while at least still preserving the confidence of the original seed rule (assuming that `minImprovement>=0`).
++ `MinConf`: extension is accepted as long as the extended rule has at least prespecified value of confidence . This strategy produces the widest possible extension, producing rules that at least preserve the confidence threshold `minConf`, which can be the same as confidence threshold used for CBA classifier building.
+4. **Continuous pruning** (optional): this essentially corresponds to second iteration of data coverage pruning (first was performed during CBA classifier building), which is performed immediately after a rule is extended.
+5. **Postpruning (optional)**: second iteration of data coverage pruning is performed *after* all rules have been extended and resorted.  
 
 
 
@@ -218,11 +239,12 @@ m<-dev.copy(png,filename="qcba.png")
 m<-dev.off()
 ```
 If we compare this figure with the one showing CBA output, there are the following observations:
+
 1. Rule 1 (blue): the coverage of the rule has been effectively narrowed to strictly cover only instances covered by the rule.
 2. Rule 2 (green): the coverage of the rule has been changed to exclude one misclassified instance, and include three other correctly classified instances.
 3. The default rule is unchanged. 
 
-#### Animation of QCBA Extension and Trimming (strategy ConfImprovementAgainstLastConfirmedExtension)
+#### Extension strategy Confidence Improvement Against Last Confirmed Extension)
 
 ```{r fig.width=7, fig.height=6, fig.show='animate'}
 extendHistory <- rmqCBA@history[rmqCBA@history$RID=="1",]
@@ -238,7 +260,8 @@ for (i in 1:nrow(extendHistory)) {
 This example used the conservative extension strategy ConfImprovementAgainstLastConfirmedExtension.
 
 Note that QCBA improved confidene of rule 2 from 0.75 to 1.0 and support from 0.09 to 0.18.
-#### Other QCBA features not demonstrated
+
+### Extension strategy "Confidence Improvement Against Seed Rule"
 
 ```{r results='hide'}
 rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,extensionStrategy= "ConfImprovementAgainstSeedRule", trimming = TRUE, continuousPruning = FALSE, postpruning = FALSE, minImprovement=0, minCondImprovement=-0.15, minConf = 0.5, createHistorySlot=TRUE,loglevel = "WARNING")
