@@ -153,6 +153,8 @@ plotHumTempRule<- function(rules, ruleIndex, border = "blue",col=rgb(0,0,1,alpha
   hum_coordinates<-unlist(regmatches(rule,regexec("Humidity=.([0-9]+);([0-9]+).",rule)))
   m <- rect(hum_coordinates[2], temp_coordinates[2], hum_coordinates[3], temp_coordinates[3],border=border,col=col)
 }
+
+
 plotHumTempRule(rules,1,border = "blue",col=rgb(0,0,1,alpha=0.3))
 plotHumTempRule(rules,2,border = "green",col=rgb(0,1,0,alpha=0.3))
 m <- dev.copy(png,filename="cba.png")
@@ -209,7 +211,7 @@ This strategy can result in "wider" rules while at least still preserving the co
 
 To build a model, `qcba` needs a cba model and raw (undiscretized) data. Note that number of additional parameters can be also specified - these were left to their default values.
 ```{r results='hide'}
-rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,extensionStrategy= "ConfImprovementAgainstLastConfirmedExtension", trimming = TRUE, continuousPruning = FALSE, postpruning = FALSE, minImprovement=0, minCondImprovement=-0.15, minConf = 0.5, createHistorySlot=TRUE,loglevel = "WARNING")
+rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,extensionStrategy= "ConfImprovementAgainstLastConfirmedExtension", trim_literal_boundaries = TRUE, continuousPruning = FALSE, postpruning = FALSE, minImprovement=0, minCondImprovement=0, minConf = 0.5, createHistorySlot=TRUE,loglevel = "WARNING")
 print(rmqCBA@rules)
 ```
 
@@ -259,25 +261,82 @@ for (i in 1:nrow(extendHistory)) {
 
 This example used the conservative extension strategy ConfImprovementAgainstLastConfirmedExtension.
 
-Note that QCBA improved confidene of rule 2 from 0.75 to 1.0 and support from 0.09 to 0.18.
+Note that QCBA improved confidence of rule 2 from 0.75 to 1.0 and support from 0.09 to 0.18.
 
 ### Extension strategy "Confidence Improvement Against Seed Rule"
 
 ```{r results='hide'}
-rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,extensionStrategy= "ConfImprovementAgainstSeedRule", trimming = TRUE, continuousPruning = FALSE, postpruning = FALSE, minImprovement=0, minCondImprovement=-0.15, minConf = 0.5, createHistorySlot=TRUE,loglevel = "WARNING")
+rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,extensionStrategy= "ConfImprovementAgainstSeedRule", trim_literal_boundaries = TRUE, continuousPruning = FALSE, postpruning = FALSE, minImprovement=0, minCondImprovement=-1, minConf = 0.5, createHistorySlot=TRUE,loglevel = "WARNING")
 print(rmqCBA@rules)
 ```
 
 
 ```{r fig.width=7, fig.height=6, fig.show='animate'}
+plotHumTempRuleDelta<- function(rules, ruleIndex1,ruleIndex2, border = "red",col=rgb(0,0,1,alpha=0.3) )
+{
+  # rules is a list of rules output by qCBA
+  #rule <- rules[ruleIndex,1]
+  rule1 <- rules$rules[ruleIndex1]
+  rule2 <- rules$rules[ruleIndex2]
+  temp_coordinates1 <- unlist(regmatches(rule1,regexec("Temperature=.([0-9]+);([0-9]+).",rule1)))
+  temp_coordinates2 <- unlist(regmatches(rule2,regexec("Temperature=.([0-9]+);([0-9]+).",rule2)))
+  hum_coordinates1 <- unlist(regmatches(rule1,regexec("Humidity=.([0-9]+);([0-9]+).",rule1)))
+  hum_coordinates2 <- unlist(regmatches(rule2,regexec("Humidity=.([0-9]+);([0-9]+).",rule2)))
+  r1_bottom <- temp_coordinates1[2]
+  r1_top <- temp_coordinates1[3] 
+  r1_left <- hum_coordinates1[2]
+  r1_right <- hum_coordinates1[3] 
+  r2_bottom <- temp_coordinates2[2]
+  r2_top <- temp_coordinates2[3] 
+  r2_left <- hum_coordinates2[2]
+  r2_right <- hum_coordinates2[3]  
+  if (r2_right>r1_right)
+  {
+    r_right<- r2_right
+    r_left <- r1_right
+    r_top <- r1_top
+    r_bottom <- r1_bottom
+  }
+  else if  (r2_left>r1_left)
+  {
+    r_right<- r2_left
+    r_left <- r1_left
+    r_top <- r1_top
+    r_bottom <- r1_bottom
+  }
+  else if  (r2_top>r1_top)
+  {
+    r_right<- r1_right
+    r_left <- r1_left
+    r_top <- r2_top
+    r_bottom <- r1_top
+  }  
+  else if  (r2_bottom<r1_bottom)
+  {
+    r_right<- r1_right
+    r_left <- r1_left
+    r_top <- r1_bottom
+    r_bottom <- r2_bottom
+  }    
+  m <- rect(r_left,r_bottom,r_right,r_top,border=border,col=col)
+  }
 extendHistory <- rmqCBA@history[rmqCBA@history$RID=="1",]
+seedRuleConf <- rmqCBA@history[rmqCBA@history$RID=="1",][1,5]
 for (i in 1:nrow(extendHistory)) {
   titles=c("Rule is refit to the finer grid","Rule is trimmed", rep("Rule is extended",nrow(extendHistory)-3), "Final rule: no other extend was succcessful")
-
-  plot(Humidity,Temperature,pch=Class, main=titles[i],cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1, sub=paste(extendHistory[i,3], "Supp:",round(extendHistory[i,4],2)," Conf:",round(extendHistory[i,5],2)))
+  curRuleConf <- extendHistory[i,5]
+    if (seedRuleConf > curRuleConf ){
+      titles[i] <- paste(titles[i]," (Conditional accept)")
+    }
+  
+  plot(Humidity,Temperature,pch=Class, main=titles[i],cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1, sub=paste(extendHistory[i,3], "Supp:",round(extendHistory[i,4],2)," Conf:",round(curRuleConf,2)))
   plotGrid(TRUE,FALSE)
   plotHumTempRule(extendHistory,i,border = "blue",col=rgb(0,0,1,alpha=0.3))
-  }
+  if (seedRuleConf > curRuleConf )
+  {
+    plotHumTempRuleDelta(extendHistory,i-1,i, border = "red",col=rgb(1,0,0,alpha=1.0))
+  }  
+}
 ```
 
 Note that QCBA improved confidence of  rule 2 from 0.75 to 0.77 and support from 0.09 to 0.29.
