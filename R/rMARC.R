@@ -127,6 +127,7 @@ qcbaIris2 <- function()
 #' @param datadf data frame with training data
 #' @param continuousPruning indicating  if continuous pruning is enabled
 #' @param postpruning boolean indicating if postpruning is enabled
+#' @param removeRedundantByDefault boolean removes rules made redundant by the default rule
 #' @param fuzzification boolean indicating if fuzzification is enabled. Multi rule classification model is produced if enabled. Fuzzification without annotation is not supported.
 #' @param annotate boolean indicating if annotation with probability distributions is enabled, multi rule classification model is produced if enabled 
 #' @param ruleOutputPath path of file to which model will be saved. Must be set if multi rule classification is produced.
@@ -147,7 +148,7 @@ qcbaIris2 <- function()
 #' rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
 #' print(rmqCBA@rules)
 
-qcba <- function(cbaRuleModel,  datadf, trim_literal_boundaries=TRUE, continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-1,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE, timeExecution=FALSE)
+qcba <- function(cbaRuleModel,  datadf, trim_literal_boundaries=TRUE, continuousPruning=FALSE, postpruning=TRUE, removeRedundantByDefault=FALSE,fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-1,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE, timeExecution=FALSE)
 {
   if (fuzzification & !annotate)
   {
@@ -189,7 +190,7 @@ qcba <- function(cbaRuleModel,  datadf, trim_literal_boundaries=TRUE, continuous
   
   #execute qCBA extend
   start.time <- Sys.time()
-  out <- .jcall(hjw, , "extend", trim_literal_boundaries, continuousPruning, postpruning, fuzzification, annotate,minImprovement,minCondImprovement,minConf,  extensionStrategy)  
+  out <- .jcall(hjw, , "extend", trim_literal_boundaries, continuousPruning, postpruning, removeRedundantByDefault, fuzzification, annotate,minImprovement,minCondImprovement,minConf,  extensionStrategy)  
   end.time <- Sys.time()
   if (timeExecution)
   {

@@ -275,7 +275,8 @@ This strategy can result in "wider" rules while at least still preserving the co
 
 To build a model, `qcba` needs a cba model and raw (undiscretized) data. Note that number of additional parameters can be also specified - these were left to their default values.
 ```{r results='hide'}
-rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,extensionStrategy= "ConfImprovementAgainstLastConfirmedExtension", trim_literal_boundaries = TRUE, continuousPruning = FALSE, postpruning = TRUE, minImprovement=0, minCondImprovement=-1, minConf = 0.5, createHistorySlot=TRUE,loglevel = "WARNING")
+trim_literal_boundaries = TRUE
+rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,extensionStrategy= "ConfImprovementAgainstLastConfirmedExtension", trim_literal_boundaries = trim_literal_boundaries, continuousPruning = FALSE, postpruning = TRUE, minImprovement=0, minCondImprovement=-1, minConf = 0.5, createHistorySlot=TRUE,loglevel = "WARNING")
 print(rmqCBA@rules)
 
 ```
@@ -301,12 +302,12 @@ plotGrid(TRUE)
 ```
 
 
-Rule  #1 from the QCBA classifier plotted on the finer grid. 
+Rule  #2 from the QCBA classifier plotted on the finer grid. 
 
 ```{r}
 plot(Humidity,Temperature,pch=Class, main="QCBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
 plotGrid()
-plotHumTempRule(rmqCBA@rules,1)
+plotHumTempRule(rmqCBA@rules,2)
 m<-dev.copy(png,filename="qcba.png")
 m<-dev.off()
 ```
@@ -316,16 +317,16 @@ m<-dev.off()
 Here, we will illustrate the extension process on a sequence of plots.
 
 ```{r fig.width=7, fig.height=6, fig.show='animate'}
-plotHumTempRuleDelta<- function(rules, ruleIndex1,ruleIndex2, border = "red",col=rgb(0,0,1,alpha=0.3) )
+plotHumTempRuleDelta<- function(rules, ruleIndex2,ruleIndex1, border = "red",col=rgb(0,0,1,alpha=0.3) )
 {
-  # rules is a list of rules output by qCBA
-  #rule <- rules[ruleIndex,1]
   rule1 <- rules$rules[ruleIndex1]
   rule2 <- rules$rules[ruleIndex2]
+  
   temp_coordinates1 <- unlist(regmatches(rule1,regexec("Temperature=.([0-9]+);([0-9]+).",rule1)))
   temp_coordinates2 <- unlist(regmatches(rule2,regexec("Temperature=.([0-9]+);([0-9]+).",rule2)))
   hum_coordinates1 <- unlist(regmatches(rule1,regexec("Humidity=.([0-9]+);([0-9]+).",rule1)))
   hum_coordinates2 <- unlist(regmatches(rule2,regexec("Humidity=.([0-9]+);([0-9]+).",rule2)))
+  
   r1_bottom <- temp_coordinates1[2]
   r1_top <- temp_coordinates1[3] 
   r1_left <- hum_coordinates1[2]
@@ -334,6 +335,7 @@ plotHumTempRuleDelta<- function(rules, ruleIndex1,ruleIndex2, border = "red",col
   r2_top <- temp_coordinates2[3] 
   r2_left <- hum_coordinates2[2]
   r2_right <- hum_coordinates2[3]  
+  
   if (r2_right>r1_right)
   {
     r_right<- r2_right
@@ -341,7 +343,7 @@ plotHumTempRuleDelta<- function(rules, ruleIndex1,ruleIndex2, border = "red",col
     r_top <- r1_top
     r_bottom <- r1_bottom
   }
-  else if  (r2_left>r1_left)
+  else if(r2_left>r1_left)
   {
     r_right<- r2_left
     r_left <- r1_left
@@ -367,45 +369,44 @@ plotHumTempRuleDelta<- function(rules, ruleIndex1,ruleIndex2, border = "red",col
 
 inspected_rule_RID <- "2"
 extendHistory <- rmqCBA@history[rmqCBA@history$RID==inspected_rule_RID,]
-seedRuleConf <- rmqCBA@history[rmqCBA@history$RID==inspected_rule_RID,][1,5]
+base_rule_in_history <- 1
+if (trim_literal_boundaries == TRUE)
+{
+# the base confidence will be taken from the trimmed rule, which is the second rule in history
+ base_rule_in_history <- 2
+}
+seedRuleConf <- rmqCBA@history[rmqCBA@history$RID==inspected_rule_RID,][base_rule_in_history,5]
 for (i in 1:nrow(extendHistory)) {
   titles=c("Rule is refit to the finer grid","Rule is trimmed", rep("Rule is extended",nrow(extendHistory)-3), "Final rule: no other extend was succcessful")
   curRuleConf <- extendHistory[i,5]
-    if (seedRuleConf > curRuleConf ){
+    if (seedRuleConf > curRuleConf  && i>1){
       titles[i] <- paste(titles[i]," (Conditional accept)")
     }
   
   plot(Humidity,Temperature,pch=Class, main=titles[i],cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1, sub=paste(extendHistory[i,3], "Supp:",round(extendHistory[i,4],2)," Conf:",round(curRuleConf,2)))
   plotGrid(TRUE,FALSE)
   plotHumTempRule(extendHistory[3],i)
-  if (seedRuleConf > curRuleConf )
+  if (seedRuleConf > curRuleConf && i>1)
   {
     plotHumTempRuleDelta(extendHistory,i-1,i,border="red",col=rgb(1,0,0,alpha=1.0))
   }  
 }
 ```
 
-Note that QCBA improved confidence of  rule 2 from 0.75 to 0.77 and support from 0.09 to 0.29.
+The process proceeds as follows:
+1. Rule is refit to finer grid. Boundaries shrink, confidence and support is unaffected.
+2. Rule is trimmed: it is shaved of one misclassified data point, confidence rises from 0.6 to 0.75
+3.-9. Rule coverage is extended. Confidence and support is unaffected.
+10. Left boundary on Humidity conditionally extends - one additional misclassified and one correctly classified data point is covered. Confidence drops to 0.67.
+11. Left boundary  on Humidity conditionally extends - one additional correctly classified point is covered. Confidence increases to 0.71, but is still below 0.75.
+12. Left boundary  on Humidity extends - one additional correctly classified point is covered. Confidence returns 0.75.
+13. Left boundary  on Humidity extends. Confidence and support is unaffected. Final rule.
+
+Note that QCBA improved confidence of rule 2 from initial value of 0.6 to 0.75  and support from 0.08 to 0.17.
+
 
 ## Parameters and optimizations
 
 ### Speeding up conditional accept
 The default value of the minCondImprovement parameter is -1. This parameter value ensures exhaustive search for extensions, but can be slow on large datasets or datasets with many distinct values. The closer this parameter value will be to 0, the faster the execution will generally be. 
-
-
-#### Extension strategy Confidence Improvement Against Last Confirmed Extension)
-The default stopping criterion for extension is  confidence improvement against seed rule. The implementation supports also two alternate stopping criteria: ConfImprovementAgainstLastConfirmedExtension and MinConf.
-
-```{r fig.width=7, fig.height=6, fig.show='animate'}
-extendHistory <- rmqCBA@history[rmqCBA@history$RID=="1",]
-for (i in 1:nrow(extendHistory)) {
-  titles=c("Rule is refit to the finer grid","Rule is trimmed", rep("Rule is extended",nrow(extendHistory)-3), "No other extend was succcessful")
-
-  plot(Humidity,Temperature,pch=Class, main=titles[i],cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1, sub=paste(extendHistory[i,3], "Supp:",round(extendHistory[i,4],2)," Conf:",round(extendHistory[i,5],2)))
-  plotGrid(TRUE,FALSE)
-  plotHumTempRule(extendHistory,i,border = "blue",col=rgb(0,0,1,alpha=0.3))
-  }
-```
-
-Note that QCBA improved confidence of rule 2 from 0.75 to 1.0 and support from 0.09 to 0.18.
 
