@@ -115,7 +115,7 @@ classAtt="Class"
 appearance <- getAppearance(data_discr, classAtt)
 txns <- as(data_discr, "transactions")
   rules <- apriori(txns, parameter = list(confidence = 0.5, support= 3/nrow(data_discr), minlen=1, maxlen=5), appearance=appearance)
-  inspect(rules)
+  interestingRule <- inspect(rules)[5,] #will use this later
 sink()
 inspect(rules)
 ```
@@ -294,10 +294,10 @@ plotRules(rmqCBA@rules)
 CBA rules stick to a grid that corresponds to results of discretization (figure left below). The grid used by QCBA corresponds to all unique values appearing in the training data (figure right below).
 
 ```{r}
-plot(Humidity,Temperature,pch=as.character(Class))
+interestingRuleAsText <-  paste(paste(unlist(r$lhs[1]),collapse=''),paste(unlist(r$rhs[1]),collapse=''),sep=" => ")
+plot(Humidity,Temperature,pch=Class,main="CBA-generated rule on original grid", sub=paste(interestingRuleAsText, "Supp:",round(interestingRule$support,2)," Conf:",round(interestingRule$confidence,2)),cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.15)
 plotGrid(FALSE)
-plot(Humidity,Temperature,pch=as.character(Class))
-plotGrid(TRUE)
+plotHumTempRule(rmCBA@rules,3)
 
 ```
 
@@ -305,9 +305,9 @@ plotGrid(TRUE)
 Rule  #2 from the QCBA classifier plotted on the finer grid. 
 
 ```{r}
-plot(Humidity,Temperature,pch=Class, main="QCBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+plot(Humidity,Temperature,pch=Class, main="The finer grid",cex.lab=1.5, cex.axis=1.5,  xlab="", ylab="", cex.main=1.5, cex.sub=1.15)
 plotGrid()
-plotHumTempRule(rmqCBA@rules,2)
+#plotHumTempRule(rmqCBA@rules,2)
 m<-dev.copy(png,filename="qcba.png")
 m<-dev.off()
 ```
@@ -383,12 +383,12 @@ for (i in 1:nrow(extendHistory)) {
       titles[i] <- paste(titles[i]," (Conditional accept)")
     }
   
-  plot(Humidity,Temperature,pch=Class, main=titles[i],cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1, sub=paste(extendHistory[i,3], "Supp:",round(extendHistory[i,4],2)," Conf:",round(curRuleConf,2)))
+  plot(Humidity,Temperature,pch=Class, main=titles[i],cex.lab=0.01, cex.axis=1.5, cex.main=1.5, xlab="", ylab="", ylim=c(20,35),xlim=c(27,65),cex.sub=1.3, sub=paste(extendHistory[i,3], "\n","Supp:",round(extendHistory[i,4],2)," Conf:",round(curRuleConf,2)))
   plotGrid(TRUE,FALSE)
   plotHumTempRule(extendHistory[3],i)
   if (seedRuleConf > curRuleConf && i>1)
   {
-    plotHumTempRuleDelta(extendHistory,i-1,i,border="red",col=rgb(1,0,0,alpha=1.0))
+    plotHumTempRuleDelta(extendHistory,i-1,i,border="red",col=rgb(1,0,0,alpha=0.5))
   }  
 }
 ```

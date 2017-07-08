@@ -13,6 +13,8 @@ This class represents a qCBA rule-based classifier.
 \describe{
 \item{\code{rules}}{object of class rules from arules package enhanced by qCBA}
 
+\item{\code{history}}{extension history}
+
 \item{\code{classAtt}}{name of the target class attribute}
 
 \item{\code{attTypes}}{attribute types}

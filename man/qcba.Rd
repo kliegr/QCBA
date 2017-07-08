@@ -4,18 +4,26 @@
 \alias{qcba}
 \title{qCBA Quantitative CBA}
 \usage{
-qcba(cbaRuleModel, datadf, continuousPruning = FALSE, postpruning = TRUE,
-  fuzzification = FALSE, annotate = FALSE, ruleOutputPath,
-  minImprovement = 0, minCondImprovement = -0.05, minConf = 0.5,
+qcba(cbaRuleModel, datadf, extendType = "numericOnly",
+  defaultRuleOverlapPruning = "noPruning", trim_literal_boundaries = TRUE,
+  continuousPruning = FALSE, postpruning = TRUE, fuzzification = FALSE,
+  annotate = FALSE, ruleOutputPath, minImprovement = 0,
+  minCondImprovement = -1, minConf = 0.5,
   extensionStrategy = "ConfImprovementAgainstLastConfirmedExtension",
-  loglevel = "WARNING", createHistorySlot = FALSE)
+  loglevel = "WARNING", createHistorySlot = FALSE, timeExecution = FALSE)
 }
 \arguments{
 \item{cbaRuleModel}{a \link{CBARuleModel}}
 
 \item{datadf}{data frame with training data}
 
-\item{continuousPruning}{indicating  if continuous pruning is enabled}
+\item{extendType}{possible extend types - numericOnly or noExtend}
+
+\item{defaultRuleOverlapPruning}{pruning removing rules made redundant by the default rule - possible values: noPruning,transactionBased,rangeBased,transactionBasedAsFirstStep}
+
+\item{trim_literal_boundaries}{trimming of literal boundaries enabled}
+
+\item{continuousPruning}{indicating continuous pruning is enabled}
 
 \item{postpruning}{boolean indicating if postpruning is enabled}
 
@@ -34,6 +42,11 @@ qcba(cbaRuleModel, datadf, continuousPruning = FALSE, postpruning = TRUE,
 \item{extensionStrategy}{possible values: ConfImprovementAgainstLastConfirmedExtension, ConfImprovementAgainstSeedRule,MinConf}
 
 \item{loglevel}{logger level from java.util.logging}
+
+\item{createHistorySlot}{creates a history slot on the resulting qCBARuleModel model, which with contains an ordered list of extensions 
+that were created on each rule during the extension process}
+
+\item{timeExecution}{reports execution time of the extend step}
 }
 \value{
 Object of class \link{qCBARuleModel}.
