@@ -115,7 +115,7 @@ classAtt="Class"
 appearance <- getAppearance(data_discr, classAtt)
 txns <- as(data_discr, "transactions")
   rules <- apriori(txns, parameter = list(confidence = 0.5, support= 3/nrow(data_discr), minlen=1, maxlen=5), appearance=appearance)
-  interestingRule <- inspect(rules)[5,] #will use this later
+interestingRule <- inspect(rules)[5,] #will use this later
 sink()
 inspect(rules)
 ```
@@ -288,12 +288,64 @@ plotGrid(FALSE)
 plotRules(rmqCBA@rules)
 ```
 
+#### QCBA model with removal of rules made redundant by the default rule  (default rule overlap)
+Let us remind our rule list.
+```{r results='hide'}
+print(rmqCBA@rules)
+
+```
+As we can notice from the picture above, Rule 2 is actually not needed. It classifies a certain region as blue. However, if the rule was not there, the same region would be classified as blue by the default rule. Rule 2 was not removed by the *default rule pruning* in CBA, because of the way this pruning works: the default rule replaces all rules below (as sorted according to  confidence, support, length) below the current rule. Such pruning would remove rules 3 and 4, which would impair the overall quality of the classifier. To get rid of rules such as #2 QCBA contains a novel procedure, which we call *default rule overlap* pruning.
+
+**Principle**  Default rule overlap iterates through all rules classifying into the same class as the default rule (here class 4). These rules all overlap with the default rule and are thus *candidates* for pruning. However, they can be removed only if their removal will not change the classification of the instances (or regions -- see below) they cover by rules that are below them. Recall that for prediction CBA uses the first rule in the rule list. Therefore, the algorithm checks whether the region matched by the antecedent of the candidate overlaps with region matched by any of the remaining rules (*potential clashing rule*) classifying instances into a different class that are below the candidate in the rule list. If there are no such rules, the candidate can be removed (pruned). 
+
+There are two ways how to check the overlap between the candidate and a potential clashing rule. 
+1. Check the regions matched by the antecedents of the candidate and the potential clashing rule by analyzing the boundaries of the rules. 
+2. Check overlap in transactions covered by the antecedent of the candidate rule and the antecedent of the potential clashing rule in the training data.
+
+Ad 1 **Region-based**. The regions spanned by the antecedents of two rules do not overlap only if these two rules have both a literal defined over the same attribute and their value ranges in this literal  do not overlap. In our model, rule 2 and rule 3 are candidates for removal. Rule 4 is a potential clashing rule for both.  Since both rule r2 and r3 share attribute with r4 and the value ranges in this attribute are disjunct, rule 4 does not clash with neither r2 or r3 and r2 and r3 can be removed.
+
+```{r results='hide'}
+trim_literal_boundaries = TRUE
+rmqCBA_doR <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,defaultRuleOverlapPruning="rangeBased",extensionStrategy= "ConfImprovementAgainstLastConfirmedExtension", trim_literal_boundaries = trim_literal_boundaries, continuousPruning = FALSE, postpruning = TRUE, minImprovement=0, minCondImprovement=-1, minConf = 0.5, createHistorySlot=TRUE,loglevel = "WARNING")
+print(rmqCBA_doR@rules)
+
+```
+
+```{r}
+plot(Humidity,Temperature,pch=Class,main="QCBA (Region-based default rule overlap pruning)",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+plotGrid(FALSE)
+plotRules(rmqCBA_doR@rules)
+```
+
+
+Ad 2 **Transaction-based**.
+While range-based pruning would guarantee a solution that generalizes beyond the training data,  according to our such pruning is uneffective. In realistically sized rule lists spanning mutliple dimensions, the odds that there will be a clashing rule for any candidate rule is very high and thus no rules will be removed. An alternative way is to judge overlap between two rules based on whether they have any transactions in common.  
+
+In our model, rule 2 and rule 3 are candidates for removal. Rule 4 is a potential clashing rule for both.  Since regions spanned by the antecedents of rule r2 and r3 do not contain any instance covered by antecedent of r4, rule 4 does not clash with neither r2 or r3 and r2 and r3 can be removed.
+
+```{r results='hide'}
+trim_literal_boundaries = TRUE
+rmqCBA_doT <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,defaultRuleOverlapPruning="transactionBased",extensionStrategy= "ConfImprovementAgainstLastConfirmedExtension", trim_literal_boundaries = trim_literal_boundaries, continuousPruning = FALSE, postpruning = TRUE, minImprovement=0, minCondImprovement=-1, minConf = 0.5, createHistorySlot=TRUE,loglevel = "WARNING")
+print(rmqCBA_doT@rules)
+
+```
+
+```{r}
+plot(Humidity,Temperature,pch=Class,main="QCBA  (Transaction-based default rule overlap pruning)",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+plotGrid(FALSE)
+plotRules(rmqCBA_doT@rules)
+```
+
+In this toy case, range-based and transaction-based pruning provided the same results. In practice, transaction-based pruning will remove more rules, as it will target also rules with overlapping ranges and no instances in these ranges. 
+
+
 ### Under the QCBA hood
 
 #### The finer grid
 CBA rules stick to a grid that corresponds to results of discretization (figure left below). The grid used by QCBA corresponds to all unique values appearing in the training data (figure right below).
 
 ```{r}
+
 interestingRuleAsText <-  paste(paste(unlist(r$lhs[1]),collapse=''),paste(unlist(r$rhs[1]),collapse=''),sep=" => ")
 plot(Humidity,Temperature,pch=Class,main="CBA-generated rule on original grid", sub=paste(interestingRuleAsText, "Supp:",round(interestingRule$support,2)," Conf:",round(interestingRule$confidence,2)),cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.15)
 plotGrid(FALSE)
@@ -307,7 +359,7 @@ Rule  #2 from the QCBA classifier plotted on the finer grid.
 ```{r}
 plot(Humidity,Temperature,pch=Class, main="The finer grid",cex.lab=1.5, cex.axis=1.5,  xlab="", ylab="", cex.main=1.5, cex.sub=1.15)
 plotGrid()
-#plotHumTempRule(rmqCBA@rules,2)
+plotHumTempRule(rmqCBA@rules,2)
 m<-dev.copy(png,filename="qcba.png")
 m<-dev.off()
 ```
