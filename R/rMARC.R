@@ -127,10 +127,11 @@ qcbaIris2 <- function()
 #' @param cbaRuleModel a \link{CBARuleModel}
 #' @param datadf data frame with training data
 #' @param extendType  possible extend types - numericOnly or noExtend
+#' @param defaultRuleOverlapPruning pruning removing rules made redundant by the default rule - possible values: noPruning,transactionBased,rangeBased,transactionBasedAsFirstStep
+#' @param attributePruning remove redundant attributes
 #' @param trim_literal_boundaries trimming of literal boundaries enabled
 #' @param continuousPruning indicating continuous pruning is enabled
 #' @param postpruning boolean indicating if postpruning is enabled
-#' @param defaultRuleOverlapPruning pruning removing rules made redundant by the default rule - possible values: noPruning,transactionBased,rangeBased,transactionBasedAsFirstStep
 #' @param fuzzification boolean indicating if fuzzification is enabled. Multi rule classification model is produced if enabled. Fuzzification without annotation is not supported.
 #' @param annotate boolean indicating if annotation with probability distributions is enabled, multi rule classification model is produced if enabled 
 #' @param ruleOutputPath path of file to which model will be saved. Must be set if multi rule classification is produced.
@@ -154,7 +155,7 @@ qcbaIris2 <- function()
 #' rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
 #' print(rmqCBA@rules)
 
-qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly",defaultRuleOverlapPruning="noPruning", trim_literal_boundaries=TRUE, continuousPruning=FALSE, postpruning=TRUE,fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-1,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE, timeExecution=FALSE)
+qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly",defaultRuleOverlapPruning="noPruning",attributePruning  = FALSE, trim_literal_boundaries=TRUE, continuousPruning=FALSE, postpruning=TRUE,fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-1,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE, timeExecution=FALSE)
 {
   if (fuzzification & !annotate)
   {
@@ -196,7 +197,7 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly",defaultRuleOver
   
   #execute qCBA extend
   start.time <- Sys.time()
-  out <- .jcall(hjw, , "extend", extendType, defaultRuleOverlapPruning, trim_literal_boundaries, continuousPruning, postpruning, fuzzification, annotate,minImprovement,minCondImprovement,minConf,  extensionStrategy)  
+  out <- .jcall(hjw, , "extend", extendType, defaultRuleOverlapPruning, attributePruning, trim_literal_boundaries, continuousPruning, postpruning, fuzzification, annotate,minImprovement,minCondImprovement,minConf,  extensionStrategy)  
   end.time <- Sys.time()
   if (timeExecution)
   {
