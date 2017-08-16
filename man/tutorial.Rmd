@@ -229,7 +229,7 @@ classAtt="Class"
   rmCBA <- cba_manual(data_raw,  rules, txns, appearance$rhs, classAtt, cutp= list(), pruning_options=NULL)
 ```
 
-In this case, CBA did not remove any rule, bu  added a default rule to the end, which ensures that the rule list covers every possible instance.
+In this case, CBA did not remove any rule, but  added a default rule to the end, which ensures that the rule list covers every possible instance.
 
 ```{r}
 inspect(rmCBA@rules)
@@ -256,40 +256,39 @@ The accuracy of this model on training data:
 ## Postprocessing CBA output with Quantitative CBA (QCBA)
 QCBA postprocesses CBA classifier created over discretized numeric attributes. QCBA requires on the input also the original raw undiscretized (continuous) data. 
 
-### Intro to QCBA 
-The steps taken by QCBA:
 
-1. **Refit** the data to *finer grid*: this grid has steps corresponding to all unique attribute values appearing in the training data.
-2. **Trimming** (optional): the literals in discovered rules are trimmed so that they do not contain regions not covered by data.
-3. **Extension**: the ranges of literals in the body of each rule are extended. The range of each literal is increased one literal and one boundary at a time. The extension is generally accepted only if it improves rule confidence. To overcome local minima, the extension process can provisionally accept drop in confidence compared to the seed rule within bounds set by the `minCondImprovement` threshold. There are several extension strategies:
-+ `ConfImprovementAgainstLastConfirmedExtension`: extension is accepted only if the extended rule is better by `minImprovement` than the last confirmed extension (or the original rule). This is the most conservative strategy that produces generally produces highest confidence rules.
-+ `ConfImprovementAgainstSeedRule`: extension is accepted only if the extended rule is better by minImprovement than the original rule.  This strategy is better fitted to overcome noise in the data.
-This strategy can result in "wider" rules while at least still preserving the confidence of the original seed rule (assuming that `minImprovement>=0`).
-+ `MinConf`: extension is accepted as long as the extended rule has at least prespecified value of confidence . This strategy produces the widest possible extension, producing rules that at least preserve the confidence threshold `minConf`, which can be the same as confidence threshold used for CBA classifier building.
-4. **Continuous pruning** (optional): this essentially corresponds to second iteration of data coverage pruning (first was performed during CBA classifier building), which is performed immediately after a rule is extended.
-5. **Postpruning (optional)**: second iteration of data coverage pruning is performed *after* all rules have been extended and resorted.  
-
-
-
-###QCBA model
+### Basic cCBA model
 
 To build a model, `qcba` needs a cba model and raw (undiscretized) data. Note that number of additional parameters can be also specified - these were left to their default values.
 ```{r results='hide'}
 trim_literal_boundaries <- TRUE
-postpruning <- TRUE
-rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, trim_literal_boundaries = trim_literal_boundaries, postpruning = postpruning, createHistorySlot=TRUE,loglevel = "WARNING")
+postpruning <- "cba"
+rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="numericOnly",trim_literal_boundaries = trim_literal_boundaries, postpruning = postpruning, defaultRuleOverlapPruning="noPruning",  createHistorySlot=TRUE,loglevel = "WARNING")
 print(rmqCBA@rules)
 
 ```
 
-As we can notice, the number of rules on the output decreased. After the rule boundaries have been extended, postpruning removed one rule. The default rule was recomputed, and now classifies to blue (Class 4).
+As we can notice, the number of rules on the output decreased. After the rule boundaries have been extended, postpruning removed two rules from the CBA model. The default rule was recomputed, and now classifies to green (Class 2).
 ```{r}
 plot(Humidity,Temperature,pch=Class,main="QCBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
 plotGrid(FALSE)
 plotRules(rmqCBA@rules)
 ```
 
-#### QCBA model with removal of rules made redundant by the default rule  (default rule overlap)
+
+### QCBA  Options
+The steps taken by QCBA:
+
+1. **Refit** the data to *finer grid*: this grid has steps corresponding to all unique attribute values appearing in the training data.
+2. **Trimming** (optional): the literals in discovered rules are trimmed so that they do not contain regions not covered by data.
+3. **Extension**: the ranges of literals in the body of each rule are extended. The range of each literal is increased one literal and one boundary at a time. The extension is generally accepted only if it improves rule confidence. To overcome local minima, the extension process can provisionally accept drop in confidence compared to the seed rule
+4. **Postpruning**: second iteration of data coverage pruning
+5. **Attribute pruning**: 
+5. **Default rule overlap  pruning**:  default rule overlap iterates through all rules classifying into the same class as the default rule (here class 4). These rules all overlap with the default rule and are thus *candidates* for pruning. However, they can be removed only if their removal will not change the classification of the instances (or regions -- see below) they cover by rules that are below them.
+
+
+
+#### Default rule overlap demonstration
 Let us remind our rule list.
 ```{r results='hide'}
 print(rmqCBA@rules)
@@ -307,7 +306,7 @@ Ad 1 **Region-based**. The regions spanned by the antecedents of two rules do no
 
 ```{r results='hide'}
 trim_literal_boundaries = TRUE
-rmqCBA_doR <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,defaultRuleOverlapPruning="rangeBased",extensionStrategy= "ConfImprovementAgainstLastConfirmedExtension", trim_literal_boundaries = trim_literal_boundaries, continuousPruning = FALSE, postpruning = TRUE, minImprovement=0, minCondImprovement=-1, minConf = 0.5, createHistorySlot=TRUE,loglevel = "WARNING")
+rmqCBA_doR <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,defaultRuleOverlapPruning="rangeBased",extensionStrategy= "ConfImprovementAgainstLastConfirmedExtension", trim_literal_boundaries = trim_literal_boundaries,  postpruning = "cba", createHistorySlot=TRUE,loglevel = "WARNING")
 print(rmqCBA_doR@rules)
 
 ```
@@ -326,7 +325,7 @@ In our model, rule 2 and rule 3 are candidates for removal. Rule 4 is a potentia
 
 ```{r results='hide'}
 trim_literal_boundaries = TRUE
-rmqCBA_doT <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,defaultRuleOverlapPruning="transactionBased",extensionStrategy= "ConfImprovementAgainstLastConfirmedExtension", trim_literal_boundaries = trim_literal_boundaries, continuousPruning = FALSE, postpruning = TRUE, minImprovement=0, minCondImprovement=-1, minConf = 0.5, createHistorySlot=TRUE,loglevel = "WARNING")
+rmqCBA_doT <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,defaultRuleOverlapPruning="transactionBased",extensionStrategy= "ConfImprovementAgainstLastConfirmedExtension", trim_literal_boundaries = trim_literal_boundaries,  postpruning = "cba", createHistorySlot=TRUE,loglevel = "WARNING")
 print(rmqCBA_doT@rules)
 
 ```
@@ -420,7 +419,7 @@ plotHumTempRuleDelta<- function(rules, ruleIndex2,ruleIndex1, border = "red",col
   m <- rect(r_left,r_bottom,r_right,r_top,border=border,col=col)
 }
 
-inspected_rule_RID <- "1"
+inspected_rule_RID <- "2"
 extendHistory <- rmqCBA@history[rmqCBA@history$RID==inspected_rule_RID,]
 base_rule_in_history <- 1
 if (trim_literal_boundaries == TRUE)
@@ -462,4 +461,56 @@ Note that QCBA improved confidence of rule 2 from initial value of 0.6 to 0.75  
 
 ### Speeding up conditional accept
 The default value of the minCondImprovement parameter is -1. This parameter value ensures exhaustive search for extensions, but can be slow on large datasets or datasets with many distinct values. The closer this parameter value will be to 0, the faster the execution will generally be. 
+
+## Under the hood
+
+### Debugging qCBA execution in Java.
+The CBA model is passed by the R code to a Java .jar file, which performs the QCBA model learning. The QCBA model is then returned to R. 
+To debug the "humtemp" dataset:
+
+1. Let's create "debug" folder, where we will store the rmCBA model.
+```{r}
+        basePath <-  tempdir()
+        dir.create(file.path(basePath, "debug"), showWarnings = FALSE)
+        rulesPath <-paste(basePath,"debug","humptemp.arules",sep=.Platform$file.sep)
+        write.csv(as(rmCBA@rules,"data.frame"), rulesPath, row.names=TRUE,quote = TRUE)
+        outputDataPath <- paste(basePath,"debug",'humtemp.csv', sep=.Platform$file.sep)
+        write.csv(humtemp,file=outputDataPath,row.names=FALSE)
+```
+
+Let's create the configuration file for QCBA. 
+```{r}
+extendType="numericOnly"
+trimLiteralBoundaries = TRUE
+attributePruning =TRUE
+defaultRuleOverlapPruning = "rangeBased" #noPruning,transactionBased,rangeBased
+postpruning = "cba" #none,cba,greedy
+dataTypes <- paste(rmCBA@attTypes, collapse = ',') 
+classAtt <- colnames(humtemp)[length(humtemp)] #last attribute
+outputPath <- paste(basePath,"debug",'humtemp-qcba.arules', sep=.Platform$file.sep)
+
+x=paste('<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">',
+        "<properties>\n",
+        "<entry key=\"Method\">extend</entry>\n",
+        "<entry key=\"RulesPath\">", rulesPath, "</entry>\n",
+        "<entry key=\"TrainDataPath\">", outputDataPath,"</entry>\n",
+        "<entry key=\"ExtendType\">",extendType,"</entry>\n",
+        "<entry key=\"AttributePruning\">",attributePruning, "</entry>\n",
+        "<entry key=\"Trimming\">",trimLiteralBoundaries, "</entry>\n",
+        "<entry key=\"DefaultRuleOverlapPruning\">",defaultRuleOverlapPruning, "</entry>\n",
+        "<entry key=\"Postpruning\">",postpruning, "</entry>\n",
+        "<entry key=\"DataTypes\">", dataTypes,'</entry>\n',
+        "<entry key=\"TargetAttribute\">", classAtt,'</entry>\n',
+        "<entry key=\"OutputPath\">", outputPath,'</entry>\n',
+        "</properties>", sep="")
+
+        qcbaFilePath <-paste(basePath,"debug","humtemp-conf.xml",sep=.Platform$file.sep)
+        write(x, file = qcbaFilePath,
+              ncolumns = 1,
+              append = FALSE, sep = ",")
+print(paste("Run as: ", "java -jar AC1.jar ", qcbaFilePath, sep=""))
+print(paste("QCBA model will be written to:",outputPath))
+```
+
+
 
