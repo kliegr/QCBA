@@ -64,7 +64,7 @@ qcbaHumTemp <- function()
   acc_cba <- CBARuleModelAccuracy(prediction_cba, data_discr[[classAtt]])
   print(paste("Accuracy (CBA):",acc_cba))
   
-  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,continuousPruning=FALSE, postpruning=FALSE, fuzzification=FALSE, annotate=FALSE,minImprovement=0,minCondImprovement=-0.15, minConf = 0.75,  extensionStrategy = "ConfImprovementAgainstLastConfirmedExtension")
+  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,continuousPruning=FALSE, postpruning="cba", fuzzification=FALSE, annotate=FALSE,minImprovement=0,minCondImprovement=-0.15, minConf = 0.75,  extensionStrategy = "ConfImprovementAgainstLastConfirmedExtension")
   prediction <- predict(rmqCBA,data_raw,"firstRule")
   
   acc <- CBARuleModelAccuracy(prediction, data_raw[[rmqCBA@classAtt]])
@@ -90,7 +90,7 @@ qcbaIris <- function()
   trainFold <- allData[1:100,]
   testFold <- allData[101:nrow(datasets::iris),]
   rmCBA <- cba(trainFold, classAtt="Species")
-  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extend=TRUE,continuousPruning=TRUE, postpruning=TRUE, defaultRuleOverlapPruning=TRUE, fuzzification=FALSE, annotate=FALSE)
+  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extend=TRUE,continuousPruning=TRUE, postpruning="cba", defaultRuleOverlapPruning=TRUE, fuzzification=FALSE, annotate=FALSE)
   prediction <- predict(rmqCBA,testFold,"firstRule")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
   print(rmqCBA@rules)
@@ -113,7 +113,7 @@ qcbaIris2 <- function()
   trainFold <- allData[1:100,]
   testFold <- allData[101:nrow(datasets::iris),]
   rmCBA <- cba(trainFold, classAtt="Species")
-  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extend=TRUE,trim_literal_boundaries=TRUE, continuousPruning=TRUE, postpruning=TRUE, defaultRuleOverlapPruning = TRUE, fuzzification=TRUE, annotate=TRUE,ruleOutputPath="rules.xml")
+  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extend=TRUE,trim_literal_boundaries=TRUE, continuousPruning=TRUE, postpruning="cba", defaultRuleOverlapPruning = TRUE, fuzzification=TRUE, annotate=TRUE,ruleOutputPath="rules.xml")
   prediction <- predict(rmqCBA,testFold,"mixture")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
   print(paste("Rule count:",rmqCBA@ruleCount))
@@ -131,7 +131,7 @@ qcbaIris2 <- function()
 #' @param attributePruning remove redundant attributes
 #' @param trim_literal_boundaries trimming of literal boundaries enabled
 #' @param continuousPruning indicating continuous pruning is enabled
-#' @param postpruning boolean indicating if postpruning is enabled
+#' @param postpruning type of  postpruning (none, cba - data coverage pruning, greedy - data coverage pruning stopping on first rule with total error worse than default)
 #' @param fuzzification boolean indicating if fuzzification is enabled. Multi rule classification model is produced if enabled. Fuzzification without annotation is not supported.
 #' @param annotate boolean indicating if annotation with probability distributions is enabled, multi rule classification model is produced if enabled 
 #' @param ruleOutputPath path of file to which model will be saved. Must be set if multi rule classification is produced.
@@ -155,7 +155,7 @@ qcbaIris2 <- function()
 #' rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
 #' print(rmqCBA@rules)
 
-qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly",defaultRuleOverlapPruning="noPruning",attributePruning  = FALSE, trim_literal_boundaries=TRUE, continuousPruning=FALSE, postpruning=TRUE,fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-1,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE, timeExecution=FALSE)
+qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly",defaultRuleOverlapPruning="noPruning",attributePruning  = FALSE, trim_literal_boundaries=TRUE, continuousPruning=FALSE, postpruning="cba",fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-1,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE, timeExecution=FALSE)
 {
   if (fuzzification & !annotate)
   {
