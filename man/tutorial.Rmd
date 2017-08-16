@@ -257,7 +257,7 @@ The accuracy of this model on training data:
 QCBA postprocesses CBA classifier created over discretized numeric attributes. QCBA requires on the input also the original raw undiscretized (continuous) data. 
 
 
-### Basic cCBA model
+### Basic qCBA model
 
 To build a model, `qcba` needs a cba model and raw (undiscretized) data. Note that number of additional parameters can be also specified - these were left to their default values.
 ```{r results='hide'}
@@ -265,7 +265,6 @@ trim_literal_boundaries <- TRUE
 postpruning <- "cba"
 rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="numericOnly",trim_literal_boundaries = trim_literal_boundaries, postpruning = postpruning, defaultRuleOverlapPruning="noPruning",  createHistorySlot=TRUE,loglevel = "WARNING")
 print(rmqCBA@rules)
-
 ```
 
 As we can notice, the number of rules on the output decreased. After the rule boundaries have been extended, postpruning removed two rules from the CBA model. The default rule was recomputed, and now classifies to green (Class 2).
@@ -274,101 +273,32 @@ plot(Humidity,Temperature,pch=Class,main="QCBA model",cex.lab=1.5, cex.axis=1.5,
 plotGrid(FALSE)
 plotRules(rmqCBA@rules)
 ```
+The accuracy of this model on training data:
+```{r results='hide', message=FALSE}
 
+  prediction_qcba<-predict(rmqCBA,data_raw,discretize=FALSE)
+  acc_qcba <- CBARuleModelAccuracy(prediction_qcba, data_raw[[classAtt]])
+  print(paste("Accuracy (QCBA):",acc_cba))
+```
+On the training data, QCBA provides the same accuracy as CBA but with fewer rules.
 
-### QCBA  Options
-The steps taken by QCBA:
+### Under the hood:
+The steps taken by QCBA to create the model shown above:
 
 1. **Refit** the data to *finer grid*: this grid has steps corresponding to all unique attribute values appearing in the training data.
 2. **Trimming** (optional): the literals in discovered rules are trimmed so that they do not contain regions not covered by data.
 3. **Extension**: the ranges of literals in the body of each rule are extended. The range of each literal is increased one literal and one boundary at a time. The extension is generally accepted only if it improves rule confidence. To overcome local minima, the extension process can provisionally accept drop in confidence compared to the seed rule
 4. **Postpruning**: second iteration of data coverage pruning
-5. **Attribute pruning**: 
-5. **Default rule overlap  pruning**:  default rule overlap iterates through all rules classifying into the same class as the default rule (here class 4). These rules all overlap with the default rule and are thus *candidates* for pruning. However, they can be removed only if their removal will not change the classification of the instances (or regions -- see below) they cover by rules that are below them.
 
+Additionally, QCBA supports two other features, which will be demonstrated on another dataset (TBD).
+5. **Attribute pruning**: Remove redundant attributes from rules. Attribute is considered redundant if its removal does not decrease rule confidence.
+6. **Default rule overlap  pruning**:  Default rule overlap iterates through all rules classifying into the same class as the default rule. These rules all overlap with the default rule and are thus *candidates* for pruning. They can be removed only if their removal will not change the classification of the instances (or regions -- second type of default overlap pruning) they cover by rules that are below them.
 
+Steps 1-4 will be demonstrated in detail in the following.
+First, we will setup some code for visualization of the progress of qCBA.
 
-#### Default rule overlap demonstration
-Let us remind our rule list.
-```{r results='hide'}
-print(rmqCBA@rules)
-
-```
-As we can notice from the picture above, Rule 3 is actually not needed. It classifies a certain region as blue (Class 4). However, if the rule was not there, the same region would be classified as blue by the default rule (last rule). Rule 3 was not removed by the *default rule pruning* in CBA, because of the way this pruning works: the default rule replaces all rules below (as sorted according to  confidence, support, length) below the current rule. Such pruning would remove rules 3 and 4, which would impair the overall quality of the classifier. To get rid of rules such as #2 QCBA contains a novel procedure, which we call *default rule overlap* pruning.
-
-**Principle**  Default rule overlap iterates through all rules classifying into the same class as the default rule (here class 4). These rules all overlap with the default rule and are thus *candidates* for pruning. However, they can be removed only if their removal will not change the classification of the instances (or regions -- see below) they cover by rules that are below them. Recall that for prediction CBA uses the first rule in the rule list. Therefore, the algorithm checks whether the region matched by the antecedent of the candidate overlaps with region matched by any of the remaining rules (*potential clashing rule*) classifying instances into a different class that are below the candidate in the rule list. If there are no such rules, the candidate can be removed (pruned). 
-
-There are two ways how to check the overlap between the candidate and a potential clashing rule. 
-1. Check the regions matched by the antecedents of the candidate and the potential clashing rule by analyzing the boundaries of the rules. 
-2. Check overlap in transactions covered by the antecedent of the candidate rule and the antecedent of the potential clashing rule in the training data.
-
-Ad 1 **Region-based**. The regions spanned by the antecedents of two rules do not overlap only if these two rules have both a literal defined over the same attribute and their value ranges in this literal  do not overlap. In our model, rule 2 and rule 3 are candidates for removal. Rule 4 is a potential clashing rule for both.  Since both rule r2 and r3 share attribute with r4 and the value ranges in this attribute are disjunct, rule 4 does not clash with neither r2 or r3 and r2 and r3 can be removed.
-
-```{r results='hide'}
-trim_literal_boundaries = TRUE
-rmqCBA_doR <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,defaultRuleOverlapPruning="rangeBased",extensionStrategy= "ConfImprovementAgainstLastConfirmedExtension", trim_literal_boundaries = trim_literal_boundaries,  postpruning = "cba", createHistorySlot=TRUE,loglevel = "WARNING")
-print(rmqCBA_doR@rules)
-
-```
 
 ```{r}
-plot(Humidity,Temperature,pch=Class,main="QCBA (Region-based default rule overlap pruning)",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-plotGrid(FALSE)
-plotRules(rmqCBA_doR@rules)
-```
-
-
-Ad 2 **Transaction-based**.
-While range-based pruning would guarantee a solution that generalizes beyond the training data,  according to our such pruning is uneffective. In realistically sized rule lists spanning mutliple dimensions, the odds that there will be a clashing rule for any candidate rule is very high and thus no rules will be removed. An alternative way is to judge overlap between two rules based on whether they have any transactions in common.  
-
-In our model, rule 2 and rule 3 are candidates for removal. Rule 4 is a potential clashing rule for both.  Since regions spanned by the antecedents of rule r2 and r3 do not contain any instance covered by antecedent of r4, rule 4 does not clash with neither r2 or r3 and r2 and r3 can be removed.
-
-```{r results='hide'}
-trim_literal_boundaries = TRUE
-rmqCBA_doT <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,defaultRuleOverlapPruning="transactionBased",extensionStrategy= "ConfImprovementAgainstLastConfirmedExtension", trim_literal_boundaries = trim_literal_boundaries,  postpruning = "cba", createHistorySlot=TRUE,loglevel = "WARNING")
-print(rmqCBA_doT@rules)
-
-```
-
-```{r}
-plot(Humidity,Temperature,pch=Class,main="QCBA  (Transaction-based default rule overlap pruning)",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-plotGrid(FALSE)
-plotRules(rmqCBA_doT@rules)
-```
-
-In this toy case, range-based and transaction-based pruning provided the same results. In practice, transaction-based pruning will remove more rules, as it will target also rules with overlapping ranges and no instances in these ranges. 
-
-
-### Under the QCBA hood
-
-#### The finer grid
-CBA rules stick to a grid that corresponds to results of discretization (figure left below). The grid used by QCBA corresponds to all unique values appearing in the training data (figure right below).
-
-```{r}
-
-interestingRuleAsText <-  paste(paste(unlist(interestingRule$lhs[1]),collapse=''),paste(unlist(interestingRule$rhs[1]),collapse=''),sep=" => ")
-plot(Humidity,Temperature,pch=Class,main="CBA-generated rule on original grid", sub=paste(interestingRuleAsText, "Supp:",round(interestingRule$support,2)," Conf:",round(interestingRule$confidence,2)),cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.15)
-plotGrid(FALSE)
-plotHumTempRule(rmCBA@rules,3)
-
-```
-
-
-Rule  #2 from the QCBA classifier plotted on the finer grid. 
-
-```{r}
-plot(Humidity,Temperature,pch=Class, main="The finer grid",cex.lab=1.5, cex.axis=1.5,  xlab="", ylab="", cex.main=1.5, cex.sub=1.15)
-plotGrid()
-plotHumTempRule(rmqCBA@rules,2)
-m<-dev.copy(png,filename="qcba.png")
-m<-dev.off()
-```
-
-### Extension, literal trinming and conditional accept 
-
-Here, we will illustrate the extension process on a sequence of plots.
-
-```{r fig.width=7, fig.height=6, fig.show='animate'}
 plotHumTempRuleDelta<- function(rules, ruleIndex2,ruleIndex1, border = "red",col=rgb(0,0,1,alpha=0.3) )
 {
   rule1 <- rules$rules[ruleIndex1]
@@ -419,16 +349,8 @@ plotHumTempRuleDelta<- function(rules, ruleIndex2,ruleIndex1, border = "red",col
   m <- rect(r_left,r_bottom,r_right,r_top,border=border,col=col)
 }
 
-inspected_rule_RID <- "2"
-extendHistory <- rmqCBA@history[rmqCBA@history$RID==inspected_rule_RID,]
-base_rule_in_history <- 1
-if (trim_literal_boundaries == TRUE)
+plotRuleInHistory <- function(extendHistory,i,seedRuleConf)
 {
-# the base confidence will be taken from the trimmed rule, which is the second rule in history
- base_rule_in_history <- 2
-}
-seedRuleConf <- rmqCBA@history[rmqCBA@history$RID==inspected_rule_RID,][base_rule_in_history,5]
-for (i in 1:nrow(extendHistory)) {
   titles=c("Rule is refit to the finer grid","Rule is trimmed", rep("Rule is extended",nrow(extendHistory)-3), "Final rule: no other extend was succcessful")
   curRuleConf <- extendHistory[i,5]
     if (seedRuleConf > curRuleConf  && i>1){
@@ -442,9 +364,56 @@ for (i in 1:nrow(extendHistory)) {
   {
     plotHumTempRuleDelta(extendHistory,i-1,i,border="red",col=rgb(1,0,0,alpha=0.5))
   }  
+  
 }
+inspected_rule_RID <- "2"
+extendHistory <- rmqCBA@history[rmqCBA@history$RID==inspected_rule_RID,]
+base_rule_in_history <- 1
+if (trim_literal_boundaries == TRUE)
+{
+# the base confidence will be taken from the trimmed rule, which is the second rule in history
+ base_rule_in_history <- 2
+}
+seedRuleConf <- rmqCBA@history[rmqCBA@history$RID==inspected_rule_RID,][base_rule_in_history,5]
+
+
 ```
 
+#### Refit: The finer grid
+CBA rules stick to a grid that corresponds to results of discretization. The grid used by qCBA corresponds to all unique values appearing in the training data.
+
+```{r}
+
+interestingRuleAsText <-  paste(paste(unlist(interestingRule$lhs[1]),collapse=''),paste(unlist(interestingRule$rhs[1]),collapse=''),sep=" => ")
+plot(Humidity,Temperature,pch=Class,main="CBA-generated rule on original grid", sub=paste(interestingRuleAsText, "Supp:",round(interestingRule$support,2)," Conf:",round(interestingRule$confidence,2)),cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.15)
+plotGrid(FALSE)
+plotHumTempRule(rmCBA@rules,3)
+
+```
+
+
+The same rule from the CBA classifier plotted on the finer grid. 
+
+```{r}
+plot(Humidity,Temperature,pch=Class, main="The finer grid",cex.lab=1.5, cex.axis=1.5,  xlab="", ylab="", cex.main=1.5, cex.sub=1.15)
+plotGrid()
+plotHumTempRule(rmCBA@rules,3)
+m<-dev.copy(png,filename="qcba.png")
+m<-dev.off()
+```
+
+Let's zoom in and look at how QCBA refit the rule:
+```{r}
+plotRuleInHistory(extendHistory,1,seedRuleConf)
+```
+#### Trimming
+Rule  is shaved of any boundaries that are not backed by correctly classified instances. 
+
+```{r}
+plotRuleInHistory(extendHistory,2,seedRuleConf)
+```
+
+#### Extension -- the complete process
 The process proceeds as follows:
 1. Rule is refit to finer grid. Boundaries shrink, confidence and support is unaffected.
 2. Rule is trimmed: it is shaved of one misclassified data point, confidence rises from 0.6 to 0.75
@@ -455,6 +424,83 @@ The process proceeds as follows:
 13. Left boundary  on Humidity extends. Confidence and support is unaffected. Final rule.
 
 Note that QCBA improved confidence of rule 2 from initial value of 0.6 to 0.75  and support from 0.08 to 0.17.
+
+```{r fig.width=7, fig.height=6, fig.show='animate'}
+for (i in 1:nrow(extendHistory)) {
+  plotRuleInHistory(extendHistory,i,seedRuleConf)
+}
+```
+
+#### Postpruning 
+As a result of the extension process, the data matched by the individual rules change. Within postprocessing, the extended rules are resorted and pruned again.
+
+Result of the extension process
+```{r results='hide'}
+trim_literal_boundaries <- TRUE
+postpruning <- "cba"
+rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="numericOnly",trim_literal_boundaries = trim_literal_boundaries, postpruning = "none", defaultRuleOverlapPruning="noPruning",  createHistorySlot=TRUE,loglevel = "WARNING")
+print(rmqCBA@rules)
+```
+
+
+```{r}
+plot(Humidity,Temperature,pch=Class,main="QCBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+plotGrid(FALSE)
+plotRules(rmqCBA@rules)
+```
+
+
+### Other configuration options
+
+#### Default rule overlap demonstration
+Let us remind our rule list.
+```{r results='hide'}
+print(rmqCBA@rules)
+
+```
+As we can notice from the picture above, Rule 3 is actually not needed. It classifies a certain region as blue (Class 4). However, if the rule was not there, the same region would be classified as blue by the default rule (last rule). Rule 3 was not removed by the *default rule pruning* in CBA, because of the way this pruning works: the default rule replaces all rules below (as sorted according to  confidence, support, length) below the current rule. Such pruning would remove rules 3 and 4, which would impair the overall quality of the classifier. To get rid of rules such as #2 QCBA contains a novel procedure, which we call *default rule overlap* pruning.
+
+**Principle**  Default rule overlap iterates through all rules classifying into the same class as the default rule (here class 4). These rules all overlap with the default rule and are thus *candidates* for pruning. However, they can be removed only if their removal will not change the classification of the instances (or regions -- see below) they cover by rules that are below them. Recall that for prediction CBA uses the first rule in the rule list. Therefore, the algorithm checks whether the region matched by the antecedent of the candidate overlaps with region matched by any of the remaining rules (*potential clashing rule*) classifying instances into a different class that are below the candidate in the rule list. If there are no such rules, the candidate can be removed (pruned). 
+
+There are two ways how to check the overlap between the candidate and a potential clashing rule. 
+1. Check the regions matched by the antecedents of the candidate and the potential clashing rule by analyzing the boundaries of the rules. 
+2. Check overlap in transactions covered by the antecedent of the candidate rule and the antecedent of the potential clashing rule in the training data.
+
+Ad 1 **Region-based**. The regions spanned by the antecedents of two rules do not overlap only if these two rules have both a literal defined over the same attribute and their value ranges in this literal  do not overlap. In our model, rule 2 and rule 3 are candidates for removal. Rule 4 is a potential clashing rule for both.  Since both rule r2 and r3 share attribute with r4 and the value ranges in this attribute are disjunct, rule 4 does not clash with neither r2 or r3 and r2 and r3 can be removed.
+
+```{r results='hide'}
+trim_literal_boundaries = TRUE
+rmqCBA_doR <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,defaultRuleOverlapPruning="rangeBased",extensionStrategy= "ConfImprovementAgainstLastConfirmedExtension", trim_literal_boundaries = trim_literal_boundaries,  postpruning = "cba", createHistorySlot=TRUE,loglevel = "WARNING")
+print(rmqCBA_doR@rules)
+
+```
+
+```{r}
+plot(Humidity,Temperature,pch=Class,main="QCBA (Region-based default rule overlap pruning)",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+plotGrid(FALSE)
+plotRules(rmqCBA_doR@rules)
+```
+
+
+Ad 2 **Transaction-based**.
+While range-based pruning would guarantee a solution that generalizes beyond the training data,  according to our such pruning is uneffective. In realistically sized rule lists spanning mutliple dimensions, the odds that there will be a clashing rule for any candidate rule is very high and thus no rules will be removed. An alternative way is to judge overlap between two rules based on whether they have any transactions in common.  
+
+In our model, rule 2 and rule 3 are candidates for removal. Rule 4 is a potential clashing rule for both.  Since regions spanned by the antecedents of rule r2 and r3 do not contain any instance covered by antecedent of r4, rule 4 does not clash with neither r2 or r3 and r2 and r3 can be removed.
+
+```{r results='hide'}
+trim_literal_boundaries = TRUE
+rmqCBA_doT <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,defaultRuleOverlapPruning="transactionBased",extensionStrategy= "ConfImprovementAgainstLastConfirmedExtension", trim_literal_boundaries = trim_literal_boundaries,  postpruning = "cba", createHistorySlot=TRUE,loglevel = "WARNING")
+print(rmqCBA_doT@rules)
+
+```
+
+```{r}
+plot(Humidity,Temperature,pch=Class,main="QCBA  (Transaction-based default rule overlap pruning)",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+plotGrid(FALSE)
+plotRules(rmqCBA_doT@rules)
+```
+
+In this toy case, range-based and transaction-based pruning provided the same results. In practice, transaction-based pruning will remove more rules, as it will target also rules with overlapping ranges and no instances in these ranges. 
 
 
 ## Parameters and optimizations
