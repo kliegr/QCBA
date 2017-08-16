@@ -432,23 +432,42 @@ for (i in 1:nrow(extendHistory)) {
 ```
 
 #### Postpruning 
-As a result of the extension process, the data matched by the individual rules change. Within postprocessing, the extended rules are resorted and pruned again.
+As a result of the extension process, the data matched by the individual rules change. Within postprocessing, the extended rules are resorted and pruned again using CBA data coverage pruning.
 
 Result of the extension process
 ```{r results='hide'}
-trim_literal_boundaries <- TRUE
-postpruning <- "cba"
-rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="numericOnly",trim_literal_boundaries = trim_literal_boundaries, postpruning = "none", defaultRuleOverlapPruning="noPruning",  createHistorySlot=TRUE,loglevel = "WARNING")
+rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="numericOnly",trim_literal_boundaries = TRUE, postpruning = "none",  createHistorySlot=TRUE,loglevel = "WARNING")
 print(rmqCBA@rules)
 ```
 
-
-```{r}
-plot(Humidity,Temperature,pch=Class,main="QCBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-plotGrid(FALSE)
-plotRules(rmqCBA@rules)
+Result of postpruning:
+```{r results='hide'}
+rmqCBA_pruned <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="numericOnly",trim_literal_boundaries = TRUE, postpruning = "cba",  createHistorySlot=TRUE,loglevel = "WARNING")
+print(rmqCBA_pruned@rules)
 ```
+The data coverage pruning replaced rule 
+```{r results='hide'}
+rmqCBA@rules[4,1]
+```
+with default rule
+```{r results='hide'}
+rmqCBA_pruned@rules[4,1]
+```
+This replacement results in same training set error with fewer rules:
+Training set error for the original rule list:
+```{r results='hide', message=FALSE}
 
+  prediction_qcba<-predict(rmqCBA,data_raw,discretize=FALSE)
+  acc_qcba <- CBARuleModelAccuracy(prediction_qcba, data_raw[[classAtt]])
+  print(paste("Accuracy (QCBA):",acc_cba))
+```
+Error for the pruned rule list: 
+```{r results='hide', message=FALSE}
+
+  prediction_qcba<-predict(rmqCBA_pruned,data_raw,discretize=FALSE)
+  acc_qcba <- CBARuleModelAccuracy(prediction_qcba, data_raw[[classAtt]])
+  print(paste("Accuracy (QCBA):",acc_cba))
+```
 
 ### Other configuration options
 
