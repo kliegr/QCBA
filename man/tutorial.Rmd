@@ -543,8 +543,10 @@ plotHumTempRule(rmqCBA@rules,8)
 ```
 
 #### Attribute pruning demonstration
+Attribute pruning is an optimization step in QCBA which considers removing all attribute-value pairs (literals) in all rules in the classifier. The removal is confirmed if a rule created without the literal has at least the accuracy of the original rule. The optimization is performed in a greedy manner, processing all rules in the sort order. Attributes are processed in arbitrary order. 
 
 To demonstrate attribute pruning, we need to use dataset with higher number of attributes than humtemp has. Let's use the iris dataset.
+For initial demonstration, we will turn off all optimizations in QCBA that follow after attribute pruning  (i.e. trimming, postpruning, default rule pruning).
 
 Rule list without attribute pruning:
 
@@ -555,28 +557,63 @@ trainFold <- allData[1:100,]
 testFold <- allData[101:nrow(datasets::iris),]
 rulelearning_options <- list(find_conf_supp_thresholds = FALSE,minconf = 0.5, minsupp = 0.01, minlen = 1, maxlen = 6, maxtime = 10,trim = FALSE,target_rule_count =10)
 rmCBAiris <- cba(trainFold, classAtt="Species", rulelearning_options = rulelearning_options)
-rmqCBAiris <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,extendType="numericOnly", postpruning="cba", defaultRuleOverlapPruning="noPruning")
+rmqCBAiris <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,extendType="noExtend", postpruning="none", defaultRuleOverlapPruning="noPruning")
 print(rmqCBAiris@rules)
 ```
-The accuracy of the model:
+The accuracy of the model and the average number of conditions (literals) per rule:
+```{r message=FALSE}
+library(stringr)
+prediction_iris <- predict(rmqCBAiris,testFold,"firstRule")
+acc <- CBARuleModelAccuracy(prediction_iris, testFold[[rmqCBAiris@classAtt]])
+print(acc)
+avgRuleLengthCBA <- sum(rmCBAiris@rules@lhs@data)/length(rmCBAiris@rules)
+print(paste("avg rule length of CBA model:",avgRuleLengthCBA))
+avgRuleLengthQCBA <- (sum(unlist(lapply(rmqCBAiris@rules[1],str_count,pattern=",")))+
+                              # assuming the last rule has antecedent length zero - not counting its length
+                              nrow(rmqCBAiris@rules)-1)/nrow(rmqCBAiris@rules)
+print(paste("avg rule length of QCBA model without optimizations:",avgRuleLengthQCBA))
+
+```
+This shows that QCBA leaves the CBA model untouched in terms of the number of literals (QCBA only refits literal ranges).
+Now let's us build the same QCBA model with attribute pruning on:
+
+```{r message=FALSE}
+rmqCBAiris <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold, attributePruning = TRUE, extendType="noExtend", postpruning="none", defaultRuleOverlapPruning="noPruning")
+print(rmqCBAiris@rules)
+```
+What we can observe is that 
+1) the confidence of all the rules remained the same (it can also increase).
+1) the accuracy of the complete classifier stays the same:
+
 ```{r message=FALSE}
 prediction_iris <- predict(rmqCBAiris,testFold,"firstRule")
 acc <- CBARuleModelAccuracy(prediction_iris, testFold[[rmqCBAiris@classAtt]])
 print(acc)
-
 ```
-Rule list with attribute pruning:
+2) The average number of literals dropped by 60%:
+```{r message=FALSE}
+avgRuleLengthQCBA <- (sum(unlist(lapply(rmqCBAiris@rules[1],str_count,pattern=",")))+
+                              # assuming the last rule has antecedent length zero - not counting its length
+                              nrow(rmqCBAiris@rules)-1)/nrow(rmqCBAiris@rules)
+print(paste("avg rule length of QCBA model without optimizations:",avgRuleLengthQCBA))
+```
+
+It should be noted that attribute pruning is performed as a second  step in QCBA after refitting. The result of QCBA model with attribute pruning enabled and without it can thus differ not only by the absence of some literals in the former.
+
+Full QCBA model without  attributePruning:
 
 ```{r message=FALSE}
-rmqCBAiris <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold, attributePruning = TRUE, extendType="numericOnly", postpruning="cba", defaultRuleOverlapPruning="noPruning")
+rmqCBAiris <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,attributePruning = FALSE, trim_literal_boundaries=TRUE, extendType="numericOnly", postpruning="cba", defaultRuleOverlapPruning="transactionBased")
 print(rmqCBAiris@rules)
 ```
+The same model with  attributePruning:
 
 ```{r message=FALSE}
-prediction_iris <- predict(rmqCBAiris,testFold,"firstRule")
-acc <- CBARuleModelAccuracy(prediction_iris, testFold[[rmqCBAiris@classAtt]])
-print(acc)
+rmqCBAiris <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,attributePruning = TRUE,trim_literal_boundaries=TRUE, extendType="numericOnly", postpruning="cba", defaultRuleOverlapPruning="transactionBased")
+print(rmqCBAiris@rules)
 ```
+As you can notice, the ranges of Petal.Length attribute in the second rule differ,
+
 ## Under the hood
 
 ### Speeding up conditional accept
@@ -586,7 +623,7 @@ The default value of the minCondImprovement parameter is -1. This parameter valu
 start.time <- Sys.time()
 for (i in 1:100)
 {
- rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extendType="numericOnly", minCondImprovement=-1, postpruning="cba", defaultRuleOverlapPruning="noPruning")
+ rmqCBA <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,extendType="numericOnly", minCondImprovement=-1, postpruning="cba", defaultRuleOverlapPruning="noPruning")
 }
 end.time <- Sys.time()
 message (paste("100 executions took:", round(end.time - start.time,2), " seconds"))
@@ -595,7 +632,7 @@ message (paste("100 executions took:", round(end.time - start.time,2), " seconds
 start.time <- Sys.time()
 for (i in 1:100)
 {
- rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extendType="numericOnly", minCondImprovement=-0.05, postpruning="cba", defaultRuleOverlapPruning="noPruning")
+ rmqCBA <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,extendType="numericOnly", minCondImprovement=-0.05, postpruning="cba", defaultRuleOverlapPruning="noPruning")
 }
 end.time <- Sys.time()
 message (paste("100 executions took:", round(end.time - start.time,2), " seconds"))
