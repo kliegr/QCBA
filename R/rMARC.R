@@ -1,4 +1,4 @@
-#' @import rJava 
+#' @import rJava
 #' @import arules
 #' @import arc
 
@@ -47,14 +47,14 @@ qcbaHumTemp <- function()
   #change interval syntax from (15,20] to (15;20], which is required by MARC
   data_discr[,1]<-as.factor(unlist(lapply(data_discr[,1], function(x) {gsub(",", ";", x)})))
   data_discr[,2]<-as.factor(unlist(lapply(data_discr[,2], function(x) {gsub(",", ";", x)})))
-  
+
   data_discr[,3] <- as.factor(data_raw[,3])
-  
+
   txns <- as(data_discr, "transactions")
   rules <- apriori(txns, parameter = list(confidence = 0.75, support= 3/nrow(data_discr), minlen=1, maxlen=5))
   print("Seed list of rules")
   inspect(rules)
-  
+
   classAtt="Class"
   appearance <- getAppearance(data_discr, classAtt)
   rmCBA <- cba_manual(data_raw,  rules, txns, appearance$rhs, classAtt, cutp= list(), pruning_options=NULL)
@@ -63,10 +63,10 @@ qcbaHumTemp <- function()
   prediction_cba<-predict(rmCBA,data_discr,discretize=FALSE)
   acc_cba <- CBARuleModelAccuracy(prediction_cba, data_discr[[classAtt]])
   print(paste("Accuracy (CBA):",acc_cba))
-  
+
   rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,continuousPruning=FALSE, postpruning="cba", fuzzification=FALSE, annotate=FALSE,minImprovement=0,minCondImprovement=-0.15, minConf = 0.75,  extensionStrategy = "ConfImprovementAgainstLastConfirmedExtension")
   prediction <- predict(rmqCBA,data_raw,"firstRule")
-  
+
   acc <- CBARuleModelAccuracy(prediction, data_raw[[rmqCBA@classAtt]])
   print("QCBA classifier")
   print(rmqCBA@rules)
@@ -77,7 +77,7 @@ qcbaHumTemp <- function()
 
 
 #' @title  Use the Iris dataset to test to test one rule classification qCBA workflow.
-#' @description Learns a CBA classifier, performs qCBA Extension with continuous pruning and postpruning. Applies the model in one rule classification.
+#' @description Learns a CBA classifier, performs qCBA Extension with postpruning and default rule overlap pruning. Applies the model in one rule classification.
 #'
 #' @return Accuracy.
 #' @export
@@ -90,7 +90,7 @@ qcbaIris <- function()
   trainFold <- allData[1:100,]
   testFold <- allData[101:nrow(datasets::iris),]
   rmCBA <- cba(trainFold, classAtt="Species")
-  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extend=TRUE,continuousPruning=TRUE, postpruning="cba", defaultRuleOverlapPruning=TRUE, fuzzification=FALSE, annotate=FALSE)
+  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extend=TRUE, postpruning="cba", defaultRuleOverlapPruning="rangeBased", fuzzification=FALSE, annotate=FALSE)
   prediction <- predict(rmqCBA,testFold,"firstRule")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
   print(rmqCBA@rules)
@@ -98,9 +98,9 @@ qcbaIris <- function()
   return(acc)
 }
 
-#' @title Use the Iris dataset to test multi rule qCBA workflow. 
+#' @title Use the Iris dataset to test multi rule qCBA workflow.
 #' @description Learns a CBA classifier, performs qCBA Extension with continuous pruning, postpruning, annotation and fuzzification. Applies the model in one rule classification.
-#' The model  is saved to a temporary file. 
+#' The model  is saved to a temporary file.
 #'
 #' @return Accuracy.
 #' @export
@@ -113,7 +113,7 @@ qcbaIris2 <- function()
   trainFold <- allData[1:100,]
   testFold <- allData[101:nrow(datasets::iris),]
   rmCBA <- cba(trainFold, classAtt="Species")
-  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extend=TRUE,trim_literal_boundaries=TRUE, continuousPruning=TRUE, postpruning="cba", defaultRuleOverlapPruning = TRUE, fuzzification=TRUE, annotate=TRUE,ruleOutputPath="rules.xml")
+  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extend=TRUE,trim_literal_boundaries=TRUE, postpruning="cba", defaultRuleOverlapPruning = "rangeBased", fuzzification=TRUE, annotate=TRUE,ruleOutputPath="rules.xml")
   prediction <- predict(rmqCBA,testFold,"mixture")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
   print(paste("Rule count:",rmqCBA@ruleCount))
@@ -133,13 +133,13 @@ qcbaIris2 <- function()
 #' @param continuousPruning indicating continuous pruning is enabled
 #' @param postpruning type of  postpruning (none, cba - data coverage pruning, greedy - data coverage pruning stopping on first rule with total error worse than default)
 #' @param fuzzification boolean indicating if fuzzification is enabled. Multi rule classification model is produced if enabled. Fuzzification without annotation is not supported.
-#' @param annotate boolean indicating if annotation with probability distributions is enabled, multi rule classification model is produced if enabled 
+#' @param annotate boolean indicating if annotation with probability distributions is enabled, multi rule classification model is produced if enabled
 #' @param ruleOutputPath path of file to which model will be saved. Must be set if multi rule classification is produced.
 #' @param minImprovement parameter ofqCBA extend procedure  (used when  extensionStrategy=ConfImprovementAgainstLastConfirmedExtension or ConfImprovementAgainstSeedRule)
 #' @param minCondImprovement parameter ofqCBA extend procedure
 #' @param minConf minimum confidence  to accept extension (used when  extensionStrategy=MinConf)
 #' @param extensionStrategy possible values: ConfImprovementAgainstLastConfirmedExtension, ConfImprovementAgainstSeedRule,MinConf
-#' @param createHistorySlot creates a history slot on the resulting qCBARuleModel model, which with contains an ordered list of extensions 
+#' @param createHistorySlot creates a history slot on the resulting qCBARuleModel model, which with contains an ordered list of extensions
 #' that were created on each rule during the extension process
 #' @param timeExecution reports execution time of the extend step
 
@@ -167,69 +167,69 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly",defaultRuleOver
     ruleOutputPath <- tempfile(pattern = "qcba-rules", tmpdir = tempdir(),fileext=".xml")
     print(paste("setting it to '",ruleOutputPath,"'"))
   }
-  
+
   #ensure that any NA or null values are replaced by empty string
   datadf[is.na(datadf)] <- ''
   datadf[is.null(datadf)] <- ''
-  
+
   rules=cbaRuleModel@rules
   classAtt=cbaRuleModel@classAtt
-  
+
   #reshape R data for Java call
   rulesFrame <- as(rules,"data.frame")
   rulesFrame$rules <- as.character(rulesFrame$rules)
   rulesArray <- .jarray(lapply(rulesFrame, .jarray))
   datadfConverted <- data.frame(lapply(datadf, as.character), stringsAsFactors=FALSE)
-  
+
   #cast R data to Java structures
   dataArray <-  .jarray(lapply(datadfConverted, .jarray))
   cNames <- .jarray(colnames(datadf))
-  
+
   attTypes <- mapDataTypes(cbaRuleModel@attTypes)
   attTypesArray <- .jarray(unname(attTypes))
-  
+
   #pass data to qCBA in Java
   idAtt <- ""
-  
+
   hjw <- .jnew("eu.kliegr.ac1.R.RinterfaceExtend", attTypesArray,classAtt,idAtt, loglevel)
   out <- .jcall(hjw, , "addDataFrame", dataArray,cNames)
   out <- .jcall(hjw, , "addRuleFrame", rulesArray)
-  
+
   #execute qCBA extend
   start.time <- Sys.time()
-  out <- .jcall(hjw, , "extend", extendType, defaultRuleOverlapPruning, attributePruning, trim_literal_boundaries, continuousPruning, postpruning, fuzzification, annotate,minImprovement,minCondImprovement,minConf,  extensionStrategy)  
+  out <- .jcall(hjw, , "extend", extendType, defaultRuleOverlapPruning, attributePruning, trim_literal_boundaries, continuousPruning, postpruning, fuzzification, annotate,minImprovement,minCondImprovement,minConf,  extensionStrategy)
   end.time <- Sys.time()
   if (timeExecution)
   {
-    message (paste("qCBA Model building took:", round(end.time - start.time, 2), " seconds"))  
+    message (paste("qCBA Model building took:", round(end.time - start.time, 2), " seconds"))
   }
-  
-  
+
+
   rm <- qCBARuleModel()
-  
+
   rm@classAtt <- classAtt
   rm@attTypes <- attTypes
   rm@ruleCount <- .jcall(hjw, "I" , "getRuleCount")
-  
+
   if (annotate)
   {
-    out <- .jcall(hjw, , "saveToFile", ruleOutputPath)    
+    out <- .jcall(hjw, , "saveToFile", ruleOutputPath)
     rm@rulePath <- ruleOutputPath
   }
   else
   {
     #parse results into R structures
     extRulesArray <- .jcall(hjw, "[[Ljava/lang/String;", "getRules", evalArray=FALSE)
-    extRules <- .jevalArray(extRulesArray,simplify=TRUE)   
+    extRules <- .jevalArray(extRulesArray,simplify=TRUE)
     colnames(extRules) <- c("rules","support","confidence")
     extRulesFrame<-as.data.frame(extRules,stringsAsFactors=FALSE)
     extRulesFrame$support<-as.numeric(extRulesFrame$support)
     extRulesFrame$confidence<-as.numeric(extRulesFrame$confidence)
-    
+
     if (createHistorySlot)
     {
       extRulesHistoryArray <- .jcall(hjw, "[[Ljava/lang/String;", "getRuleHistory", evalArray=FALSE)
-      extRulesHistory <- .jevalArray(extRulesHistoryArray,simplify=TRUE)   
+      extRulesHistory <- .jevalArray(extRulesHistoryArray,simplify=TRUE)
       colnames(extRulesHistory) <- c("RID","ERID","rules","support","confidence")
       extRulesHistoryFrame<-as.data.frame(extRulesHistory,stringsAsFactors=FALSE)
       extRulesHistoryFrame$support<-as.numeric(extRulesHistoryFrame$support)
@@ -238,11 +238,11 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly",defaultRuleOver
     }
     rm@rulePath <- ""
     rm@rules <- extRulesFrame
-    
+
     if (!missing(ruleOutputPath))
     {
       write.csv(extRulesFrame, ruleOutputPath, row.names=TRUE,quote = TRUE)
-      
+
     }
   }
   return(rm)
@@ -269,37 +269,37 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly",defaultRuleOver
 #' prediction <- predict(rmqCBA,testFold)
 #' acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
 #' message(acc)
-#' 
+#'
 #' @seealso \link{qcba}
 #'
 #'
-predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNING", ...) 
+predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNING", ...)
 {
   start.time <- Sys.time()
   ruleModel <- object
-  
+
   newdata[is.na(newdata)] <- ''
   newdata[is.null(newdata)] <- ''
-  
+
   #reshape and cast test data to Java structures
   testConverted <- data.frame(lapply(newdata, as.character), stringsAsFactors=FALSE)
   cNames <- .jarray(colnames(newdata))
-  
+
   #reusing attribute types from training data
   attTypes <- ruleModel@attTypes
   attTypesArray <- .jarray(unname(attTypes))
-  
+
   #attTypesArray <- .jarray(unname(sapply(newdata, class)))
   testArray <-  .jarray(lapply(testConverted, .jarray))
-  
-  
+
+
   #pass data to qCBA Java
   #the reason why we cannot use predict.RuleModel in arc package is that the items in the rules do not match the itemMatrix after R extend
   idAtt <- ""
   jPredict <- .jnew("eu.kliegr.ac1.R.RinterfacePredict", attTypesArray, ruleModel@classAtt, idAtt,loglevel)
   .jcall(jPredict, , "addDataFrame", testArray,cNames)
-  
-  
+
+
   if (nchar(ruleModel@rulePath)>0)
   {
     message(paste("Loading rule model from file:",ruleModel@rulePath ))
@@ -313,7 +313,7 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
     prediction <- .jcall(jPredict, "[Ljava/lang/String;", "predict")
   }
   end.time <- Sys.time()
-  message (paste("Prediction (qCBA model application) took:", round(end.time - start.time, 2), " seconds"))  
+  message (paste("Prediction (qCBA model application) took:", round(end.time - start.time, 2), " seconds"))
   return(prediction)
 }
 

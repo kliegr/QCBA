@@ -544,35 +544,70 @@ plotHumTempRule(rmqCBA@rules,8)
 
 #### Attribute pruning demonstration
 
-TBD
+To demonstrate attribute pruning, we need to use dataset with higher number of attributes than humtemp has. Let's use the iris dataset.
 
 Rule list without attribute pruning:
 
-```{r}
-rmqCBAatt0 <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="numericOnly", postpruning = "none", defaultRuleOverlapPruning="noPruning", attributePruning=TRUE, createHistorySlot=FALSE,loglevel = "WARNING")
+```{r message=FALSE}
+set.seed(111)
+allData <- datasets::iris[sample(nrow(datasets::iris)),]
+trainFold <- allData[1:100,]
+testFold <- allData[101:nrow(datasets::iris),]
+rulelearning_options <- list(find_conf_supp_thresholds = FALSE,minconf = 0.5, minsupp = 0.01, minlen = 1, maxlen = 6, maxtime = 10,trim = FALSE,target_rule_count =10)
+rmCBAiris <- cba(trainFold, classAtt="Species", rulelearning_options = rulelearning_options)
+rmqCBAiris <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,extendType="numericOnly", postpruning="cba", defaultRuleOverlapPruning="noPruning")
+print(rmqCBAiris@rules)
+```
+The accuracy of the model:
+```{r message=FALSE}
+prediction_iris <- predict(rmqCBAiris,testFold,"firstRule")
+acc <- CBARuleModelAccuracy(prediction_iris, testFold[[rmqCBA@classAtt]])
+print(acc)
 
-print(rmqCBAatt0@rules)
 ```
 Rule list with attribute pruning:
 
 ```{r message=FALSE}
-  rmqCBAatt <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="noExtend",trim_literal_boundaries = TRUE, postpruning = "none", defaultRuleOverlapPruning="noPruning", attributePruning=TRUE, createHistorySlot=FALSE,loglevel = "WARNING")
- print(rmqCBAatt@rules)
+rmqCBAiris <- qcba(cbaRuleModel=rmCBA,datadf=trainFold, attributePruning = TRUE, extendType="numericOnly", postpruning="cba", defaultRuleOverlapPruning="noPruning")
+print(rmqCBAiris@rules)
 ```
 
+```{r message=FALSE}
+prediction_iris <- predict(rmqCBAiris,testFold,"firstRule")
+acc <- CBARuleModelAccuracy(prediction_iris, testFold[[rmqCBA@classAtt]])
+print(acc)
+```
 ## Under the hood
 
 ### Speeding up conditional accept
 The default value of the minCondImprovement parameter is -1. This parameter value ensures exhaustive search for extensions, but can be slow on large datasets or datasets with many distinct values. The closer this parameter value will be to 0, the faster the execution will generally be. 
 
+```{r}
+start.time <- Sys.time()
+for (i in 1:100)
+{
+ rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extendType="numericOnly", minCondImprovement=-1, postpruning="cba", defaultRuleOverlapPruning="noPruning")
+}
+end.time <- Sys.time()
+message (paste("100 executions took:", round(end.time - start.time,2), " seconds"))
+```
+```{r}
+start.time <- Sys.time()
+for (i in 1:100)
+{
+ rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extendType="numericOnly", minCondImprovement=-0.05, postpruning="cba", defaultRuleOverlapPruning="noPruning")
+}
+end.time <- Sys.time()
+message (paste("100 executions took:", round(end.time - start.time,2), " seconds"))
+```
+Improvement in execution time gained  on this small dataset by changin  minCondImprovement from -1 to -0.05 is about 30%.
+
 ### Debugging qCBA execution in Java.
 The CBA model is passed by the R code to a Java .jar file, which performs the QCBA model learning. The QCBA model is then returned to R. 
+
+#### Debugging qCBA execution in Java.
 To debug the "humtemp" dataset:
 
-```{r}
-  rmqCBATEST <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="numericOnly",trim_literal_boundaries = FALSE, postpruning = "cba", defaultRuleOverlapPruning="noPruning", createHistorySlot=FALSE,loglevel = "FINE")
- print(rmqCBATEST@rules)
-```
 
 1. Let's create "debug" folder, where we will store the rmCBA model.
 ```{r}
@@ -588,7 +623,7 @@ Let's create the configuration file for QCBA.
 ```{r}
 extendType="numericOnly"
 trimLiteralBoundaries = FALSE
-attributePruning =FALSE
+attributePruning =TRUE
 defaultRuleOverlapPruning = "rangeBased" #noPruning,transactionBased,rangeBased
 postpruning = "cba" #none,cba,greedy
 dataTypes <- paste(rmCBA@attTypes, collapse = ',') 
@@ -611,6 +646,54 @@ x=paste('<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">',
         "</properties>", sep="")
 
         qcbaFilePath <-paste(basePath,"debug","humtemp-conf.xml",sep=.Platform$file.sep)
+        write(x, file = qcbaFilePath,
+              ncolumns = 1,
+              append = FALSE, sep = ",")
+print(paste("Run as: ", "java -jar AC1.jar ", qcbaFilePath, sep=""))
+print(paste("QCBA model will be written to:",outputPath))
+```
+
+#### Debugging qCBA execution in Java.
+To debug the "iris" dataset:
+
+
+1. Let's create "debug" folder, where we will store the rmCBA model.
+```{r}
+        basePath <-  tempdir()
+        dir.create(file.path(basePath, "debug"), showWarnings = FALSE)
+        rulesPath <-paste(basePath,"debug","iris.arules",sep=.Platform$file.sep)
+        write.csv(as(rmCBAiris@rules,"data.frame"), rulesPath, row.names=TRUE,quote = TRUE)
+        outputDataPath <- paste(basePath,"debug",'iris-train.csv', sep=.Platform$file.sep)
+        write.csv(trainFold,file=outputDataPath,row.names=FALSE)
+```
+
+Let's create the configuration file for QCBA. 
+```{r}
+extendType="numericOnly"
+trimLiteralBoundaries = FALSE
+attributePruning =TRUE
+defaultRuleOverlapPruning = "noPruning" #noPruning,transactionBased,rangeBased
+postpruning = "cba" #none,cba,greedy
+dataTypes <- paste(rmCBAiris@attTypes, collapse = ',') 
+classAtt <- colnames(trainFold)[length(trainFold)] #last attribute
+outputPath <- paste(basePath,"debug",'iris-qcba.arules', sep=.Platform$file.sep)
+
+x=paste('<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">',
+        "<properties>\n",
+        "<entry key=\"Method\">extend</entry>\n",
+        "<entry key=\"RulesPath\">", rulesPath, "</entry>\n",
+        "<entry key=\"TrainDataPath\">", outputDataPath,"</entry>\n",
+        "<entry key=\"ExtendType\">",extendType,"</entry>\n",
+        "<entry key=\"AttributePruning\">",attributePruning, "</entry>\n",
+        "<entry key=\"Trimming\">",trimLiteralBoundaries, "</entry>\n",
+        "<entry key=\"DefaultRuleOverlapPruning\">",defaultRuleOverlapPruning, "</entry>\n",
+        "<entry key=\"Postpruning\">",postpruning, "</entry>\n",
+        "<entry key=\"DataTypes\">", dataTypes,'</entry>\n',
+        "<entry key=\"TargetAttribute\">", classAtt,'</entry>\n',
+        "<entry key=\"OutputPath\">", outputPath,'</entry>\n',
+        "</properties>", sep="")
+
+        qcbaFilePath <-paste(basePath,"debug","iris-conf.xml",sep=.Platform$file.sep)
         write(x, file = qcbaFilePath,
               ncolumns = 1,
               append = FALSE, sep = ",")
