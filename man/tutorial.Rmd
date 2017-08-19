@@ -561,20 +561,20 @@ print(rmqCBAiris@rules)
 The accuracy of the model:
 ```{r message=FALSE}
 prediction_iris <- predict(rmqCBAiris,testFold,"firstRule")
-acc <- CBARuleModelAccuracy(prediction_iris, testFold[[rmqCBA@classAtt]])
+acc <- CBARuleModelAccuracy(prediction_iris, testFold[[rmqCBAiris@classAtt]])
 print(acc)
 
 ```
 Rule list with attribute pruning:
 
 ```{r message=FALSE}
-rmqCBAiris <- qcba(cbaRuleModel=rmCBA,datadf=trainFold, attributePruning = TRUE, extendType="numericOnly", postpruning="cba", defaultRuleOverlapPruning="noPruning")
+rmqCBAiris <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold, attributePruning = TRUE, extendType="numericOnly", postpruning="cba", defaultRuleOverlapPruning="noPruning")
 print(rmqCBAiris@rules)
 ```
 
 ```{r message=FALSE}
 prediction_iris <- predict(rmqCBAiris,testFold,"firstRule")
-acc <- CBARuleModelAccuracy(prediction_iris, testFold[[rmqCBA@classAtt]])
+acc <- CBARuleModelAccuracy(prediction_iris, testFold[[rmqCBAiris@classAtt]])
 print(acc)
 ```
 ## Under the hood
