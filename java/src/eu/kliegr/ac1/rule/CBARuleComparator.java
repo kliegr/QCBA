@@ -25,13 +25,23 @@ import java.util.logging.Logger;
  *
  * @author tomas
  */
-public class MMACRuleComparator implements Comparator {
+public class CBARuleComparator implements Comparator {
 
     @Override
     public int compare(Object o1, Object o2) {
         RuleInt r1 = (RuleInt) o1;
         RuleInt r2 = (RuleInt) o2;
-        if (r1.getConfidence() > r2.getConfidence()) {
+        //put default rule last
+        if (r1.getAntecedentLength()==0 & r2.getAntecedentLength()>0)
+        {
+            return 1;            
+        }
+        //put default rule last
+        if (r2.getAntecedentLength()==0 & r1.getAntecedentLength()>0)
+        {
+            return -1;            
+        }
+        else if (r1.getConfidence() > r2.getConfidence()) {
             return -1;
         } else if (r1.getConfidence() < r2.getConfidence()) {
             return 1;
@@ -51,6 +61,6 @@ public class MMACRuleComparator implements Comparator {
                 }
 
     }
-    private static final Logger LOG = Logger.getLogger(MMACRuleComparator.class.getName());
+    private static final Logger LOG = Logger.getLogger(CBARuleComparator.class.getName());
 
 }

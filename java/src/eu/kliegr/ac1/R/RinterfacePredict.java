@@ -18,7 +18,8 @@
  */
 package eu.kliegr.ac1.R;
 
-import eu.kliegr.ac1.rule.MMACRuleComparator;
+import eu.kliegr.ac1.rule.CBARuleComparator;
+import eu.kliegr.ac1.rule.TestRule;
 import eu.kliegr.ac1.rule.TestRules;
 import eu.kliegr.ac1.rule.TestingType;
 import eu.kliegr.ac1.rule.parsers.GenericRuleParser;
@@ -29,7 +30,7 @@ import java.util.logging.Logger;
 public class RinterfacePredict extends Rinterface {
 
     private final static Logger LOGGER = Logger.getLogger(RinterfacePredict.class.getName());
-    Comparator ruleComparator = new MMACRuleComparator();
+    Comparator ruleComparator = new CBARuleComparator();
 
     /**
      *
@@ -57,7 +58,7 @@ public class RinterfacePredict extends Rinterface {
             throw new Exception("Load data first");
         }
 
-        TestRules testRulesObj = new TestRules(GenericRuleParser.parseFileForRules(path, data), new MMACRuleComparator(), data);
+        TestRules testRulesObj = new TestRules(GenericRuleParser.parseFileForRules(path, data), new CBARuleComparator(), data);
         testRulesObj.classifyData(ttype);
         String[] result = testRulesObj.getResult();
         LOGGER.log(Level.INFO, "Result dimensionality:{0}", result.length);
@@ -70,6 +71,7 @@ public class RinterfacePredict extends Rinterface {
      * @return @throws Exception
      */
     public String[] predict() throws Exception {
+        boolean sort=false;
         TestingType ttype = TestingType.firstMatch;
         LOGGER.log(Level.INFO, "Predict invoked");
         LOGGER.log(Level.INFO, "Transaction count:{0}", data.getDataTable().getCurrentTransactionCount());
@@ -82,7 +84,26 @@ public class RinterfacePredict extends Rinterface {
         String[] result = null;
         try {
             TestRules testRulesObj = new TestRules(rules, ruleComparator, data);
-            testRulesObj.sortRules();
+            if (sort) testRulesObj.sortRules();
+
+            //do some checks
+            int lastRuleIndex = testRulesObj.getRules().size()-1;
+            for (int i=0; i<= lastRuleIndex;i++)
+            {
+
+                int curAntLen = testRulesObj.getRules().get(i).getAntecedentLength();
+                if (i==lastRuleIndex & curAntLen!=0)
+                {
+                        LOGGER.warning("Last rule not default rule");
+                        throw new Exception ("Last rule not default rule");
+                }
+                else if (i!=lastRuleIndex & curAntLen ==0 )
+                {
+                        LOGGER.warning("Default rule on other position than last");
+                        throw new Exception ("Default rule on other position than last");
+                }                
+            }
+            
             testRulesObj.classifyData(ttype);
             result = testRulesObj.getResult();
         }

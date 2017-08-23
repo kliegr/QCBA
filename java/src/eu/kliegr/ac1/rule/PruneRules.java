@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 public class PruneRules {
 
     private final static Logger LOGGER = Logger.getLogger(PruneRules.class.getName());
-    private List<? extends PruneRule> rules;
+    private List<ExtendRule> rules;
     private Comparator ruleComparator;
     private PruneType type;
     
@@ -61,13 +61,13 @@ public class PruneRules {
         this.type = type;
         this.ruleComparator = ruleComparator;
 
-        this.rules = rules.stream().map((rule) -> new PruneRule(rule)).collect(Collectors.toCollection(() -> Collections.synchronizedList(new ArrayList<PruneRule>())));
+        this.rules = rules.stream().map((rule) -> new ExtendRule(rule)).collect(Collectors.toCollection(() -> Collections.synchronizedList(new ArrayList<ExtendRule>())));
     }
     /**
      *
      * @return
      */
-    public List<? extends PruneRule> getRules() {
+    public List<ExtendRule> getRules() {
         return Collections.unmodifiableList(rules);
     }
 
@@ -84,9 +84,9 @@ public class PruneRules {
      */
      public void pruneRules() {
         LOGGER.info("STARTED Pruning");
-        for (Iterator<? extends PruneRule> it = rules.iterator(); it.hasNext();) {
+        for (Iterator<ExtendRule> it = rules.iterator(); it.hasNext();) {
 
-            PruneRule rule = it.next();
+            ExtendRule rule = it.next();
 
             if (LOGGER.isLoggable(Level.FINE)) {
                 LOGGER.log(Level.FINE, "#Rule {0}", rule.toString());
@@ -101,7 +101,7 @@ public class PruneRules {
                 continue;
             }
 
-            int supportingTransactions = rule.removeSupportingTransactions(false);
+            int supportingTransactions = rule.removeTransactionsCoveredByAntecedent(false);
 
             if (supportingTransactions == 0) {
                 if (LOGGER.isLoggable(Level.FINE)) {

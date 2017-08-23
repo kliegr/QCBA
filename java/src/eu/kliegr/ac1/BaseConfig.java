@@ -102,12 +102,35 @@ public abstract class BaseConfig {
                 }
                 for (int j=1;j<=repeats;j++)
                 {
-                    attTypes.add(AttributeType.valueOf(type));
+                    attTypes.add(AttributeType.valueOf(normalizeType(type)));
                 }
                 
             }
             
         return attTypes;
+    }
+    private String normalizeType(String type)
+    {
+        if (type.equals("factor"))
+        {
+            return "nominal";
+        }    
+        if (type.equals("logical"))
+        {
+            return "nominal";
+        }        
+        if (type.equals("integer"))
+        {
+            return "numerical";
+        }  
+        if (type.equals("numeric"))
+        {
+            return "numerical";
+        }               
+        else
+        {
+            return type;
+        }
     }
 
     /**

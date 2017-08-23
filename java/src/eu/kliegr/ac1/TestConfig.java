@@ -32,7 +32,7 @@ public class TestConfig extends BaseConfig {
 
     private final static Logger LOGGER = Logger.getLogger(TestConfig.class.getName());
     private String rulesPath = "/home/tomas/NetBeansProjects/AC1/resources/Iris1_iris_1_0.5.xml";
-    private String testRuleSortComparator = "MMACRuleComparator";
+    private String testRuleSortComparator = "CBARuleComparator";
 
     private Comparator ruleComparator;
     private TestingType testingType;
@@ -60,9 +60,13 @@ public class TestConfig extends BaseConfig {
         rulesPath = prop.getProperty("RulesPath");
         this.setOutputPath(prop.getProperty("OutputPath"));
         dataPath = prop.getProperty("TestDataPath");
-
-        testRuleSortComparator = prop.getProperty("TestRuleSortComparator");
+        String _attprune =prop.getProperty("AttributePruning");
+        String _testRuleSortComparator = prop.getProperty("TestRuleSortComparator");
+        if (_testRuleSortComparator != null) {
+            testRuleSortComparator = _testRuleSortComparator;            
+        }
         ruleComparator = (Comparator) Class.forName("eu.kliegr.ac1.rule." + testRuleSortComparator).newInstance();
+        
         if (prop.getProperty("DataTypes").contains(";")) {
             csvSeparator = ";";
         } else {

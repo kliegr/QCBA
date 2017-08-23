@@ -2,7 +2,7 @@
 % Please edit documentation in R/rMARC.R
 \name{qcbaHumTemp}
 \alias{qcbaHumTemp}
-\title{Use the Humidity-Temperature toy dataset to test one rule classification qCBA workflow.}
+\title{Use the Humidity-Temperature toy dataset from the arc package to test one rule classification QCBA workflow.}
 \usage{
 qcbaHumTemp()
 }

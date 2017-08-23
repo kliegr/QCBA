@@ -12,11 +12,6 @@ knitr::opts_chunk$set(echo = TRUE)
 Quantitative CBA (QCBA) is a postprocessing algorithm for association rule classification algorithm CBA, which implements a number of 
 optimization steps to improve handling of quantitative (numerical) attributes. The viable properties of these rule lists that make CBA classification  models most comprehensible among all association rule classification algorithms, such as one-rule classification and crisp rules, are retained. The postprocessing is conceptually fast, because it is performed on a relatively small number of rules that passed the pruning steps, and  can be adapted also for multi-rule classification algorithms. Benchmark of our QCBA approach on 22 UCI datasets shows 40 to 58\% decrease in the total size of the model as measured by the total number of conditions in all rules. Model accuracy remains on the same level as for CBA with QCBA even providing small improvement over CBA on 11 of the 22 datasets. 
 
-### Novelty
-
-* To our knowledge, the tirst non-fuzzy "quantitative" association rule classification algorithm.
-* Conceptually different from existing quantitative association rule learning algorithms such as QuantMiner or  NAR-Discovery.
-
 ### Benchmark
 
 QCBA was evaluated on 22 standard UCI datasets against standard as well as state-of-the-art symbolic classification algorithms (such as RIPPER, FURIA, CBA). The evaluation is fully reproducible using the [arcBench package](https://github.com/kliegr/arcBench). The evaluation shows that QCBA produces  classifiers with about 40-60% less rules than CBA while retaining comparable accuracy. 
@@ -714,8 +709,10 @@ To debug the "iris" dataset:
         dir.create(file.path(basePath, "debug"), showWarnings = FALSE)
         rulesPath <-paste(basePath,"debug","iris.arules",sep=.Platform$file.sep)
         write.csv(as(rmCBAiris@rules,"data.frame"), rulesPath, row.names=TRUE,quote = TRUE)
-        outputDataPath <- paste(basePath,"debug",'iris-train.csv', sep=.Platform$file.sep)
-        write.csv(trainFold,file=outputDataPath,row.names=FALSE)
+        trainDataPath <- paste(basePath,"debug",'iris-train.csv', sep=.Platform$file.sep)
+        testDataPath <- paste(basePath,"debug",'iris-test.csv', sep=.Platform$file.sep)
+        write.csv(trainFold,file=trainDataPath,row.names=FALSE)
+        write.csv(testFold,file=testDataPath,row.names=FALSE)
 ```
 
 Let's create the configuration file for QCBA. 
@@ -727,13 +724,13 @@ defaultRuleOverlapPruning = "noPruning" #noPruning,transactionBased,rangeBased
 postpruning = "cba" #none,cba,greedy
 dataTypes <- paste(rmCBAiris@attTypes, collapse = ',') 
 classAtt <- colnames(trainFold)[length(trainFold)] #last attribute
-outputPath <- paste(basePath,"debug",'iris-qcba.arules', sep=.Platform$file.sep)
+qcbaModelPath <- paste(basePath,"debug",'iris-qcba.arules', sep=.Platform$file.sep)
 
 x=paste('<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">',
         "<properties>\n",
         "<entry key=\"Method\">extend</entry>\n",
         "<entry key=\"RulesPath\">", rulesPath, "</entry>\n",
-        "<entry key=\"TrainDataPath\">", outputDataPath,"</entry>\n",
+        "<entry key=\"TrainDataPath\">", trainDataPath,"</entry>\n",
         "<entry key=\"ExtendType\">",extendType,"</entry>\n",
         "<entry key=\"AttributePruning\">",attributePruning, "</entry>\n",
         "<entry key=\"Trimming\">",trimLiteralBoundaries, "</entry>\n",
@@ -741,16 +738,62 @@ x=paste('<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">',
         "<entry key=\"Postpruning\">",postpruning, "</entry>\n",
         "<entry key=\"DataTypes\">", dataTypes,'</entry>\n',
         "<entry key=\"TargetAttribute\">", classAtt,'</entry>\n',
-        "<entry key=\"OutputPath\">", outputPath,'</entry>\n',
+        "<entry key=\"OutputPath\">", qcbaModelPath,'</entry>\n',
         "</properties>", sep="")
-
-        qcbaFilePath <-paste(basePath,"debug","iris-conf.xml",sep=.Platform$file.sep)
-        write(x, file = qcbaFilePath,
-              ncolumns = 1,
-              append = FALSE, sep = ",")
+qcbaFilePath <-paste(basePath,"debug","iris-conf.xml",sep=.Platform$file.sep)
+write(x, file = qcbaFilePath,
+      ncolumns = 1,
+      append = FALSE, sep = ",")
 print(paste("Run as: ", "java -jar AC1.jar ", qcbaFilePath, sep=""))
-print(paste("QCBA model will be written to:",outputPath))
+print(paste("QCBA model will be written to:",qcbaModelPath))
 ```
 
+####   Debugging qCBA execution in Java  ( experimental rule mixture)
+```{r}
+annotate =TRUE
+qcbaModelPath <- paste(basePath,"debug",'iris-qcba-mixture.xml', sep=.Platform$file.sep)
+x=paste('<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">',
+        "<properties>\n",
+        "<entry key=\"Method\">extend</entry>\n",
+        "<entry key=\"Annotate\">", annotate, "</entry>\n",
+        "<entry key=\"RulesPath\">", rulesPath, "</entry>\n",
+        "<entry key=\"TrainDataPath\">", trainDataPath,"</entry>\n",
+        "<entry key=\"ExtendType\">",extendType,"</entry>\n",
+        "<entry key=\"AttributePruning\">",attributePruning, "</entry>\n",
+        "<entry key=\"Trimming\">",trimLiteralBoundaries, "</entry>\n",
+        "<entry key=\"DefaultRuleOverlapPruning\">",defaultRuleOverlapPruning, "</entry>\n",
+        "<entry key=\"Postpruning\">",postpruning, "</entry>\n",
+        "<entry key=\"DataTypes\">", dataTypes,'</entry>\n',
+        "<entry key=\"TargetAttribute\">", classAtt,'</entry>\n',
+        "<entry key=\"OutputPath\">", qcbaModelPath,'</entry>\n',
+        "</properties>", sep="")
+qcbaFilePath <-paste(basePath,"debug","iris-conf-mixture.xml",sep=.Platform$file.sep)
+write(x, file = qcbaFilePath,
+      ncolumns = 1,
+      append = FALSE, sep = ",")
+print(paste("Run as: ", "java -jar AC1.jar ", qcbaFilePath, sep=""))
+print(paste("QCBA model will be written to:",qcbaModelPath))
+```
 
+Applying the mixture model
+```{r}
+testingType ="mixture"
 
+outputPath <- paste(basePath,"debug",'iris-qcba-mixture-predict.csv', sep=.Platform$file.sep)
+x=paste('<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">',
+        "<properties>\n",
+        "<entry key=\"Method\">test</entry>\n",
+        "<entry key=\"RulesPath\">", qcbaModelPath, "</entry>\n",
+        "<entry key=\"TestDataPath\">", testDataPath,"</entry>\n",
+        "<entry key=\"TestingType\">",testingType,"</entry>\n",
+        "<entry key=\"DataTypes\">", dataTypes,'</entry>\n',
+        "<entry key=\"TargetAttribute\">", classAtt,'</entry>\n',
+        "<entry key=\"OutputPath\">", outputPath,'</entry>\n',
+        "</properties>", sep="")
+qcbaFilePath <-paste(basePath,"debug","iris-conf-mixture-predict.xml",sep=.Platform$file.sep)
+write(x, file = qcbaFilePath,
+      ncolumns = 1,
+      append = FALSE, sep = ",")
+print(paste("Run as: ", "java -jar AC1.jar ", qcbaFilePath, sep=""))
+print(paste("QCBA prediction will be written to:",outputPath))
+```

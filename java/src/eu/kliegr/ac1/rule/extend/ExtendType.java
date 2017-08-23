@@ -32,6 +32,7 @@ public enum ExtendType {
      *
      */
     numericOnly,
-    defaultRule
+    defaultRule,
+    noExtend
 
 }

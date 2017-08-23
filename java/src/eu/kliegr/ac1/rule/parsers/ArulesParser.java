@@ -18,6 +18,7 @@
  */
 package eu.kliegr.ac1.rule.parsers;
 
+import eu.kliegr.ac1.data.Attribute;
 import eu.kliegr.ac1.data.AttributeType;
 import eu.kliegr.ac1.data.AttributeValue;
 import eu.kliegr.ac1.data.AttributeValueType;
@@ -28,15 +29,25 @@ import eu.kliegr.ac1.rule.Data;
 import eu.kliegr.ac1.rule.Rule;
 import eu.kliegr.ac1.rule.RuleMultiItem;
 import eu.kliegr.ac1.rule.RuleQuality;
+import eu.kliegr.ac1.rule.extend.ExtendRule;
+import eu.kliegr.ac1.rule.extend.ExtendRules;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPOutputStream;
 
 /**
  *
@@ -55,7 +66,30 @@ public class ArulesParser {
     {
         this.data=data;
     }
+    
+    public static  String normInfinity(String numericalValue)
+    {
+        if (numericalValue.contains("Infinity"))
+            return numericalValue;
+        else if (numericalValue.contains("Inf"))
+            return numericalValue.replace("Inf", "Infinity");
+        else
+            return numericalValue;
+    }
+    public static void saveRules(ExtendRules rules, String path) throws FileNotFoundException, UnsupportedEncodingException, IOException           {
+            OutputStream os;
+            os = new FileOutputStream(new File(path));
+           OutputStreamWriter o = new OutputStreamWriter(os, "utf-8");
+            Writer writer = new BufferedWriter(o);
+            int i=1;
+            writer.write("\"\",\"rules\",\"support\",\"confidence\"\n");
+            for (ExtendRule r : rules.getExtendedRules()) {
+                writer.write("\"" + i++ + "\",\"" + r.getRule().getRuleAsArulesString() + "\"," +  Double.toString(r.getRuleQuality().getRelativeSupport()) + "," + Double.toString(r.getRuleQuality().getConfidence())+"\n");
+            }
+            writer.flush();
+            os.close();
 
+    }
     /**
      *
      * @param path
@@ -165,11 +199,12 @@ public class ArulesParser {
             Matcher matcher = pattern.matcher(attr);	
             if (matcher.matches()){
                 String attname=matcher.group(1);
+                Attribute att = data.getDataTable().getAttribute(attname);
                 String value=matcher.group(2);
                 
                 Matcher intervalMatcher = intervalPattern.matcher(value);
                 ArrayList<AttributeValue> values;
-                AttributeType attType = data.getDataTable().getAttribute(attname).getType();
+                AttributeType attType = att.getType();
                 boolean matchesNumeric = intervalMatcher.matches();
                 if (attType == AttributeType.nominal && matchesNumeric){
                     
@@ -177,16 +212,45 @@ public class ArulesParser {
                     throw new InvalidAttributeTypeException(message);
 
                 }
-                      
+                 
                 if (matchesNumeric)
                 {
                     
                     boolean fromInclusive = intervalMatcher.group(1).equals("[");
                     boolean toInclusive = intervalMatcher.group(4).equals("]");
-                    float leftMargin = Float.parseFloat(intervalMatcher.group(2).replace("Inf", "Infinity"));
-                    float rightMargin= Float.parseFloat(intervalMatcher.group(3).replace("Inf", "Infinity"));
-                        
+                    float leftMargin = Float.parseFloat(normInfinity(intervalMatcher.group(2)));
+                    float rightMargin= Float.parseFloat(normInfinity(intervalMatcher.group(3)));
+                                           
                     values = new ArrayList(data.getValuesInRange(attname,leftMargin, fromInclusive, rightMargin, toInclusive, false));
+                    
+                    //we will not work with infinity boundaries on interval spanning only one distinct value
+                    if (values.size()>1)
+                    {
+                        if (leftMargin == Float.NEGATIVE_INFINITY)
+                        {
+                            LOG.info("Detecting negative infinity boundary on attribute " + attname);
+                            data.getDataTable().getAttribute(attname);
+                            AttributeValue negInf = att.getAdjacentLower(values.get(0));
+                            //negative infinity value not yet exists in the data table
+                            if (negInf==null)
+                            {
+                                negInf = att.addNewValue(String.valueOf(Float.NEGATIVE_INFINITY), null, AttributeValueType.breakpoint);
+                            }       
+                            values.add(0, negInf);
+                        }                    
+                        if (rightMargin == Float.POSITIVE_INFINITY)
+                        {
+                            LOG.info("Detecting positivie infinity boundary on attribute " + attname);
+                            data.getDataTable().getAttribute(attname);
+                            AttributeValue posInf = att.getAdjacentHigher(values.get(values.size()-1));
+                            //negative infinity value not yet exists in the data table
+                            if (posInf==null)
+                            {
+                                posInf= att.addNewValue(String.valueOf(Float.POSITIVE_INFINITY), null, AttributeValueType.breakpoint);
+                            }       
+                            values.add(posInf);                            
+                        }                              
+                    }
                 }
                 else
                 {

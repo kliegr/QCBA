@@ -86,7 +86,6 @@ public final class History {
      */
     public void addRuleIdentifiers(int ERID,String[] text) {
         //historyRID.add(RID);
-
         history.put(ERID, text);
         //historyERID.add(ERID);
         //historyText.add(text);

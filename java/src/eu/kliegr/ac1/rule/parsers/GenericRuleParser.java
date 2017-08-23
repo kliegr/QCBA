@@ -20,7 +20,17 @@ package eu.kliegr.ac1.rule.parsers;
 
 import eu.kliegr.ac1.rule.Data;
 import eu.kliegr.ac1.rule.Rule;
+import eu.kliegr.ac1.rule.extend.ExtendRule;
+import eu.kliegr.ac1.rule.extend.ExtendRules;
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.util.ArrayList;
+import java.util.zip.GZIPOutputStream;
 
 public class GenericRuleParser {
 

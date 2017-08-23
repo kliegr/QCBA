@@ -8,7 +8,8 @@ Depends:
     R (>= 2.7.0),
     arules,
     rJava (>= 0.5-0),
-    arc (>= 1.0.1)
+    arc (>= 1.0.1),
+    methods
 SystemRequirements: Java (>= 8)
 License: AGPL-3
 RoxygenNote: 6.0.1

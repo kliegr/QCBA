@@ -34,7 +34,7 @@ public class PruneConfig extends BaseConfig {
 
     private final static Logger LOGGER = Logger.getLogger(PruneConfig.class.getName());
     private String rulesPath = "/home/tomas/NetBeansProjects/AC1/resources/Iris1_iris_1_0.5.xml";
-    private String pruneRuleSortComparator = "MMACRuleComparator";
+    private String pruneRuleSortComparator = "CBARuleComparator";
 
     private PruneType pruningType = PruneType.wholeRule;
 

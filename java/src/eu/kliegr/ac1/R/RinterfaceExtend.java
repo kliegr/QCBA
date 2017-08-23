@@ -18,12 +18,14 @@
  */
 package eu.kliegr.ac1.R;
 
-import eu.kliegr.ac1.rule.MMACRuleComparator;
+import eu.kliegr.ac1.rule.CBARuleComparator;
+import eu.kliegr.ac1.rule.extend.DefaultRuleOverlapPruningType;
 import eu.kliegr.ac1.rule.extend.ExtendRule;
 import eu.kliegr.ac1.rule.extend.ExtendRuleConfig;
 import eu.kliegr.ac1.rule.extend.ExtendRules;
 import eu.kliegr.ac1.rule.extend.ExtendType;
 import eu.kliegr.ac1.rule.extend.ExtensionStrategyEnum;
+import eu.kliegr.ac1.rule.extend.PostPruningType;
 import eu.kliegr.ac1.rule.parsers.GUHASimplifiedParser;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -37,11 +39,11 @@ public class RinterfaceExtend extends Rinterface {
     //default values
     boolean isContinuousPruningEnabled = false;
     boolean isFuzzificationEnabled = false;
-    boolean isPostPruningEnabled = true;
+    PostPruningType postpruningtype;
     boolean isAnnotationEnabled = true;
 
-    Comparator ruleComparator = new MMACRuleComparator();
-    ExtendType extType = ExtendType.numericOnly;
+    Comparator ruleComparator = new CBARuleComparator();
+    
     ExtendRuleConfig conf;
     ExtendRules extendRulesObj;
 
@@ -58,20 +60,10 @@ public class RinterfaceExtend extends Rinterface {
 
     }
 
-    /**
-     *
-     * @param isContinuousPruningEnabled
-     * @param isPostPruningEnabled
-     * @param isFuzzificationEnabled
-     * @param isAnnotationEnabled
-     * @param minCondImprovement
-     * @param minImprovement
-     * @throws Exception
-     */
-    public void extend(boolean isTrimmingEnabled,boolean isContinuousPruningEnabled, boolean isPostPruningEnabled, boolean isFuzzificationEnabled, boolean isAnnotationEnabled,double minImprovement,double minCondImprovement, double minConf, String extensionStrategy) throws Exception {
+    public void extend(String extendType,String  defaultRuleOverlapPruningType, boolean isAttPruningEnabled, boolean isTrimmingEnabled,boolean isContinuousPruningEnabled, String postpruningTypeStr, boolean isFuzzificationEnabled, boolean isAnnotationEnabled,double minImprovement,double minCondImprovement, double minConf, String extensionStrategy) throws Exception {
 
         this.isFuzzificationEnabled = isFuzzificationEnabled;
-        this.isPostPruningEnabled = isPostPruningEnabled;
+        this.postpruningtype = PostPruningType.valueOf(postpruningTypeStr);
         this.isContinuousPruningEnabled = isContinuousPruningEnabled;
         this.isAnnotationEnabled = isAnnotationEnabled;
         if (extendRulesObj != null) {
@@ -84,9 +76,18 @@ public class RinterfaceExtend extends Rinterface {
             throw new Exception("Load rules first");
         }
         conf  = new ExtendRuleConfig(minImprovement,minCondImprovement,minConf, ExtensionStrategyEnum.valueOf(extensionStrategy));
-        extendRulesObj = new ExtendRules(rules, ruleComparator, extType, conf, data);
+        extendRulesObj = new ExtendRules(rules, ruleComparator, ExtendType.valueOf(extendType), conf, data);
         extendRulesObj.sortRules();
-        extendRulesObj.extendRules(isTrimmingEnabled,isContinuousPruningEnabled, isFuzzificationEnabled, isPostPruningEnabled);
+        try{
+            extendRulesObj.processRules(isAttPruningEnabled,isTrimmingEnabled,isContinuousPruningEnabled, isFuzzificationEnabled, postpruningtype, DefaultRuleOverlapPruningType.valueOf(defaultRuleOverlapPruningType) );
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            LOGGER.warning("There was exception, removing all results.");
+            extendRulesObj = null;
+            throw new Exception(e);
+        }
         if (isAnnotationEnabled) {
             extendRulesObj.annotateRules();
         }
@@ -154,10 +155,10 @@ public class RinterfaceExtend extends Rinterface {
         int ruleCount = extendRulesObj.getExtendedRules().size();
         ArrayList<String[]> histories  = new ArrayList();
         int totalHistorySize =0;
-        int columns= extendRulesObj.getExtendedRules().get(0).getHistory().historyTableHeader().length;
+        int columns= extendRulesObj.getExtendedRules().get(0).copyHistory().historyTableHeader().length;
         for (int i=0; i<ruleCount;i++)
         {
-            Collection<String[]> curHistory = extendRulesObj.getExtendedRules().get(i).getHistory().toCollection();
+            Collection<String[]> curHistory = extendRulesObj.getExtendedRules().get(i).copyHistory().toCollection();
             totalHistorySize = totalHistorySize + curHistory.size();
             histories.addAll(curHistory);
         }

@@ -123,7 +123,7 @@ public class ExtendRuleAnnotation {
             LOGGER.fine("Creating new Extend rule within narrow rule procedure");
         }
 
-        ExtendRule extRule = new ExtendRule(r, seedRule.getHistory(), seedRule.getExtendType(),seedRule.getExtendRuleConfig());
+        ExtendRule extRule = new ExtendRule(r, seedRule.copyHistory(), seedRule.getExtendType(),seedRule.getExtendRuleConfig());
         return extRule;
         //copy rule antecedent
 

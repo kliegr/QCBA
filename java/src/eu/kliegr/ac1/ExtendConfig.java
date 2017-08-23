@@ -19,10 +19,12 @@
 package eu.kliegr.ac1;
 
 import eu.kliegr.ac1.data.AttributeType;
-import eu.kliegr.ac1.rule.MMACRuleComparator;
+import eu.kliegr.ac1.rule.CBARuleComparator;
+import eu.kliegr.ac1.rule.extend.DefaultRuleOverlapPruningType;
 import eu.kliegr.ac1.rule.extend.ExtendRuleConfig;
 import eu.kliegr.ac1.rule.extend.ExtendType;
 import eu.kliegr.ac1.rule.extend.ExtensionStrategyEnum;
+import eu.kliegr.ac1.rule.extend.PostPruningType;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -36,12 +38,14 @@ import java.util.logging.Logger;
 public class ExtendConfig extends BaseConfig {
     private final static Logger LOGGER = Logger.getLogger(ExtendConfig.class.getName()); 
     private String rulesPath = "/home/tomas/NetBeansProjects/AC1/resources/Iris1_iris_1_0.5.xml";
-    private String extendRuleSortComparator ="MMACRuleComparator";
-    private boolean annotate = true;
-    private boolean pruneAfterExtend = true;
-    private boolean continuosPruning= true;
+    private String extendRuleSortComparator ="CBARuleComparator";
+    private boolean annotate = false;
+    private PostPruningType postpruningType = PostPruningType.none;
+    private boolean continuosPruning= false;
     private boolean performFuzzification = false;
-    private boolean isTrimmingEnabled = true;
+    private boolean isTrimmingEnabled = false;
+    private boolean isAttributePruningEnabled = false;
+    private DefaultRuleOverlapPruningType defaultRuleOverlapPruning = DefaultRuleOverlapPruningType.noPruning;
     private Comparator ruleComparator ;
     private ExtendType extendType;
     private ExtendRuleConfig extConf;
@@ -59,10 +63,10 @@ public class ExtendConfig extends BaseConfig {
      * @param IDcolumnName
      */
     public ExtendConfig(ArrayList<AttributeType> attType, String targetAttribute, String IDcolumnName) {
-        ruleComparator=new MMACRuleComparator();
+        ruleComparator=new CBARuleComparator();
         extendType=ExtendType.numericOnly;
         annotate=false;
-        pruneAfterExtend=true;
+        postpruningType=PostPruningType.cba;
         continuosPruning=false;
         isTrimmingEnabled = true;
         performFuzzification=false;
@@ -87,16 +91,27 @@ public class ExtendConfig extends BaseConfig {
         prop.loadFromXML(input);
         rulesPath = prop.getProperty("RulesPath");
         dataPath = prop.getProperty("TrainDataPath");
-        extendRuleSortComparator = prop.getProperty("ExtendRuleSortComparator");
+        String _extendRuleSortComparator = prop.getProperty("ExtendRuleSortComparator");
+        if (_extendRuleSortComparator != null) {
+            extendRuleSortComparator= _extendRuleSortComparator;
+        }
         ruleComparator = (Comparator) Class.forName("eu.kliegr.ac1.rule." +extendRuleSortComparator).newInstance();
         extendType= ExtendType.valueOf(prop.getProperty("ExtendType"));
         String _ann =prop.getProperty("Annotate");
         if (_ann != null) {
             annotate= Boolean.valueOf(_ann);
         }
-        String _prune =prop.getProperty("PruneAfterExtend");
+        String _prune =prop.getProperty("Postpruning");
         if (_prune != null) {
-            pruneAfterExtend= Boolean.valueOf(_prune);
+            postpruningType= PostPruningType.valueOf(_prune);
+        }
+        String _attprune =prop.getProperty("AttributePruning");
+        if (_prune != null) {
+            isAttributePruningEnabled= Boolean.valueOf(_attprune);
+        }        
+        String _redundant =prop.getProperty("DefaultRuleOverlapPruning");
+        if (_redundant != null) {
+            defaultRuleOverlapPruning= DefaultRuleOverlapPruningType.valueOf(_redundant);
         }
         String _prune_cont =prop.getProperty("ContinuousPruning");
         if (_prune_cont != null) {
@@ -167,8 +182,23 @@ public class ExtendConfig extends BaseConfig {
     public Boolean isContinuousPruningEnabled()
     {
         return continuosPruning;
-    }  
-
+    } 
+    
+    public Boolean isExtendEnabled()
+    {
+        if (extendType== ExtendType.noExtend)
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    } 
+    public DefaultRuleOverlapPruningType getDefaultRuleOverlapPruningType()
+    {
+        return defaultRuleOverlapPruning;
+    }
     public Boolean isTrimmingEnabled()
     {
         return isTrimmingEnabled;
@@ -179,11 +209,15 @@ public class ExtendConfig extends BaseConfig {
      *
      * @return
      */
-    public Boolean isPostPruningEnabled()
+    public PostPruningType getPostPruningType()
     {
-        return pruneAfterExtend;
+        return postpruningType;
     }    
 
+        public Boolean isAttributePruningEnabled()
+    {
+        return isAttributePruningEnabled;
+    } 
     /**
      *
      * @return

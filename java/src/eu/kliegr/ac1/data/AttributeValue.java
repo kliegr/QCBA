@@ -18,6 +18,7 @@
  */
 package eu.kliegr.ac1.data;
 
+import static eu.kliegr.ac1.rule.parsers.ArulesParser.normInfinity;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,7 +29,6 @@ public class AttributeValue {
     Set<Transaction> transactions = Collections.newSetFromMap(new ConcurrentHashMap<Transaction, Boolean>());
     Attribute attribute;
     private AttributeValueType type;
-
     AttributeValue(String value, Attribute attribute, AttributeValueType type) {
         this.type = type;
         this.value = value;
@@ -52,6 +52,12 @@ public class AttributeValue {
     public String toString(boolean withAttributeName, boolean valueOrigin) {
         String attName = "";
         String origin = "";
+        String _value = value;
+        if (attribute.getType() == AttributeType.numerical)
+        {
+            // we want the output look same as arules output 
+            _value = value.replace("Infinity", "Inf");                    
+        }
         if (withAttributeName) {
             attName = attribute.getName() + "=";
         }
@@ -62,7 +68,7 @@ public class AttributeValue {
 
         }
 
-        return attName + value + origin;
+        return attName + _value + origin;
 
     }
 
@@ -82,7 +88,7 @@ public class AttributeValue {
         if ((value.isEmpty() | value == null)) {
             return Float.NaN;
         } else {
-            return Float.parseFloat(value);
+            return Float.parseFloat(normInfinity(value));
         }
     }
 

@@ -18,6 +18,7 @@
  */
 package eu.kliegr.ac1.data;
 
+import static eu.kliegr.ac1.rule.parsers.ArulesParser.normInfinity;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map.Entry;
@@ -63,7 +64,9 @@ public class Attribute {
     final boolean isTargetAttribute;
     private final AttributeType type;
     final boolean isIDAttribute;
-
+    
+    //this indicates that the extreme values of this attribute are infinity
+    //boolean nonFinite = false;
     /**
      *
      * @param name
@@ -83,7 +86,15 @@ public class Attribute {
         this.isIDAttribute = IDcolumnFlag;
         //this.type = type;
     }
-
+    
+/*    public void setAsNonFinite()
+    {
+        //check if this attribute has at least two distinct values
+        
+        nonFinite=true;
+        LOGGER.info("Setting attribute" + name + " as non finite");
+    } */
+    
     /**
      *
      * @return
@@ -148,7 +159,7 @@ public class Attribute {
                 //TODO CHECK IF THIS TREATMENT OF MISSING VALUES DOES NOT CAUSE PROBLEMS
                 return (AttributeValue) attributeValues.get(Float.NaN);
             } else {
-                return (AttributeValue) attributeValues.get(Float.parseFloat(value.replace("Inf", "Infinity")));
+                return (AttributeValue) attributeValues.get(Float.parseFloat(normInfinity(value)));
             }
 
         } else {
@@ -250,7 +261,7 @@ public class Attribute {
      */
     public void setAttributeValueAsBreakpoint(AttributeValue val) {
         if (type == AttributeType.numerical) {
-            breakpointAttributeValues.put(Float.parseFloat(val.value), val);
+            breakpointAttributeValues.put(val.getNumericalValue(), val);
         } else {
             breakpointAttributeValues.put(val.value, val);
         }

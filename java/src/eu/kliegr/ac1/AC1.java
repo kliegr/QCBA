@@ -31,6 +31,8 @@ import eu.kliegr.ac1.rule.Rule;
 import eu.kliegr.ac1.rule.TestRules;
 import eu.kliegr.ac1.rule.extend.ExtendRuleConfig;
 import eu.kliegr.ac1.rule.extend.ExtendRules;
+import eu.kliegr.ac1.rule.extend.PostPruningType;
+import eu.kliegr.ac1.rule.parsers.ArulesParser;
 import eu.kliegr.ac1.rule.parsers.GUHASimplifiedParser;
 import eu.kliegr.ac1.rule.parsers.GenericRuleParser;
 import eu.kliegr.ac1.utils.EvaluateCrossvalidation;
@@ -89,7 +91,7 @@ private final static Logger LOGGER = Logger.getLogger(AC1.class.getName());
             LOGGER.info("Only Java 1.8+ supported");
             return;
         }
-        Level level =  Level.FINEST;
+        Level level =  Level.INFO;
         System.out.println("Setting log level to " + level);
         Logger rootLogger = LogManager.getLogManager().getLogger("");
         rootLogger.setLevel( level);
@@ -155,20 +157,28 @@ private final static Logger LOGGER = Logger.getLogger(AC1.class.getName());
                 extendRulesObj.sortRules();
                 performance.stopStopWatch("Sort rules");
                 performance.startStopWatch("Extend rules");
-                extendRulesObj.extendRules(conf.isTrimmingEnabled(), conf.isContinuousPruningEnabled(),conf.isFuzzificationEnabled(),conf.isPostPruningEnabled());
+                extendRulesObj.processRules(conf.isAttributePruningEnabled(),conf.isTrimmingEnabled(), conf.isContinuousPruningEnabled(),conf.isFuzzificationEnabled(),conf.getPostPruningType(), conf.getDefaultRuleOverlapPruningType());
                 performance.stopStopWatch("Extend rules");
                 if (conf.isAnnotationEnabled())
                 {
                     performance.startStopWatch("Annotate rules");
                     extendRulesObj.annotateRules();
                     performance.stopStopWatch("Annotate rules");
-                }       performance.startStopWatch("Save rules");
-                GUHASimplifiedParser.serializeRules(extendRulesObj.getSeedRules(), conf.getOutputSeedRulesPath());
-                GUHASimplifiedParser.serializeRules(extendRulesObj.getExtendedRules(), conf.getOutputExtendedRulesPath()    );
-                GUHASimplifiedParser.saveRules(extendRulesObj.getExtendedRules(), conf.getOutputPath());
+                }
+                performance.startStopWatch("Save rules");
+                
+                if (conf.getOutputPath().endsWith(".arules")) {
+                    ArulesParser.saveRules(extendRulesObj, conf.getOutputPath());
+                  }
+                else
+                {
+                    GUHASimplifiedParser.serializeRules(extendRulesObj.getSeedRules(), conf.getOutputSeedRulesPath());
+                    GUHASimplifiedParser.serializeRules(extendRulesObj.getExtendedRules(), conf.getOutputExtendedRulesPath()    );
+                    GUHASimplifiedParser.saveRules(extendRulesObj.getExtendedRules(), conf.getOutputPath());                                    
+                }
                 performance.stopStopWatch("Save rules");
-                performance.stopStopWatch("Total");
-                extendRulesObj.saveSummary(conf.getOutputSummaryPath(), performance);
+                performance.stopStopWatch("Total");                                
+                extendRulesObj.saveSummary(conf.getOutputSummaryPath(), performance);   
                     break;
                 }
             case test:{

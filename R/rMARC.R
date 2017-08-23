@@ -1,8 +1,9 @@
-#' @import rJava
-#' @import arules
 #' @import arc
-#' @importFrom("methods", "as")
-#' @importFrom("utils", "write.csv")
+#' @import utils
+#' @importFrom methods as new
+#' @importFrom rJava .jcall .jnew .jarray .jevalArray
+#' @importFrom arules apriori inspect
+#' @importFrom stats predict
 
 library(arules)
 library(rJava)
@@ -32,7 +33,7 @@ qCBARuleModel <- setClass("qCBARuleModel",
 )
 
 
-#' @title  Use the Humidity-Temperature toy dataset to test one rule classification qCBA workflow.
+#' @title  Use the Humidity-Temperature toy dataset from the arc package to test one rule classification QCBA workflow.
 #' @description TODO
 #'
 #' @return QCBA model
@@ -66,20 +67,20 @@ qcbaHumTemp <- function()
   acc_cba <- CBARuleModelAccuracy(prediction_cba, data_discr[[classAtt]])
   print(paste("Accuracy (CBA):",acc_cba))
 
-  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw,continuousPruning=FALSE, postpruning="cba", fuzzification=FALSE, annotate=FALSE,minImprovement=0,minCondImprovement=-0.15, minConf = 0.75,  extensionStrategy = "ConfImprovementAgainstLastConfirmedExtension")
-  prediction <- predict(rmqCBA,data_raw,"firstRule")
+  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, trim_literal_boundaries=TRUE, attributePruning  = FALSE, extendType="numericOnly", postpruning="cba", defaultRuleOverlapPruning="transactionBased") 
+  prediction <- predict(rmqCBA,data_raw)
 
   acc <- CBARuleModelAccuracy(prediction, data_raw[[rmqCBA@classAtt]])
   print("QCBA classifier")
   print(rmqCBA@rules)
-  #print(paste("QCBA Rule count:",rmqCBA@ruleCount))
+  
   print(paste("Accuracy (QCBA):",acc))
   return(rmqCBA)
 }
 
 
-#' @title  Use the Iris dataset to test to test one rule classification qCBA workflow.
-#' @description Learns a CBA classifier, performs qCBA Extension with postpruning and default rule overlap pruning. Applies the model in one rule classification.
+#' @title  Use the Iris dataset to test to test one rule classification QCBA workflow.
+#' @description Learns a CBA classifier, performs all qCBA postprocessing steps for one rule classification.
 #'
 #' @return Accuracy.
 #' @export
@@ -92,8 +93,8 @@ qcbaIris <- function()
   trainFold <- allData[1:100,]
   testFold <- allData[101:nrow(datasets::iris),]
   rmCBA <- cba(trainFold, classAtt="Species")
-  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extendType="numericOnly", postpruning="cba", defaultRuleOverlapPruning="transactionBased")
-  prediction <- predict(rmqCBA,testFold,"firstRule")
+  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold, trim_literal_boundaries=TRUE, attributePruning  = TRUE, extendType="numericOnly", postpruning="cba", defaultRuleOverlapPruning="transactionBased")
+  prediction <- predict(rmqCBA,testFold)
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
   print(rmqCBA@rules)
   print(paste("Rule count:",rmqCBA@ruleCount))
@@ -101,7 +102,7 @@ qcbaIris <- function()
 }
 
 #' @title Use the Iris dataset to test multi rule qCBA workflow.
-#' @description Learns a CBA classifier, performs qCBA Extension with continuous pruning, postpruning, annotation and fuzzification. Applies the model in one rule classification.
+#' @description Learns a CBA classifier, performs qCBA with the experimental multi rule classification workflow including annotation and fuzzification. Applies the model with rule mixture classification.
 #' The model  is saved to a temporary file.
 #'
 #' @return Accuracy.
@@ -115,7 +116,7 @@ qcbaIris2 <- function()
   trainFold <- allData[1:100,]
   testFold <- allData[101:nrow(datasets::iris),]
   rmCBA <- cba(trainFold, classAtt="Species")
-  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extendType="numericOnly",trim_literal_boundaries=TRUE, postpruning="cba", defaultRuleOverlapPruning = "rangeBased", fuzzification=TRUE, annotate=TRUE,ruleOutputPath="rules.xml")
+  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extendType="numericOnly",trim_literal_boundaries=TRUE, postpruning="cba", defaultRuleOverlapPruning = "rangeBased", fuzzification=TRUE, annotate=TRUE,ruleOutputPath=paste(tempdir(),"rules.xml",sep=.Platform$file.sep))
   prediction <- predict(rmqCBA,testFold,"mixture")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
   print(paste("Rule count:",rmqCBA@ruleCount))
@@ -157,7 +158,7 @@ qcbaIris2 <- function()
 #' rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
 #' print(rmqCBA@rules)
 
-qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly",defaultRuleOverlapPruning="noPruning",attributePruning  = FALSE, trim_literal_boundaries=TRUE, continuousPruning=FALSE, postpruning="cba",fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-1,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE, timeExecution=FALSE)
+qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly",defaultRuleOverlapPruning="transactionBased",attributePruning  = TRUE, trim_literal_boundaries=TRUE, continuousPruning=FALSE, postpruning="cba",fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-1,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE, timeExecution=FALSE)
 {
   if (fuzzification & !annotate)
   {

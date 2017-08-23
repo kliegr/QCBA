@@ -43,7 +43,7 @@ public class ExtendRuleConfig {
     }
     public ExtendRuleConfig()
     {
-        this.minCondImprovement = -0.05;
+        this.minCondImprovement = -1;
         this.minImprovement=0;
         this.minConfidence=0.5;
         this.extType = ExtensionStrategyEnum.ConfImprovementAgainstLastConfirmedExtension;
@@ -68,7 +68,8 @@ public class ExtendRuleConfig {
         LOGGER.log(Level.FINE, MessageFormat.format("Extension type: {0}, curRuleconfidence: {1}, lastConfirmedRuleConfidence: {2},  seedRuleConfidence:  {3}, curRuleSupport:  {4}, lastConfirmedRuleSupport: {5}", extType,curRuleconfidence,  lastConfirmedRuleConfidence,  seedRuleConfidence,  curRuleSupport,  lastConfirmedRuleSupport));
 
         boolean returnVal=false;
-        if (curRuleSupport <= lastConfirmedRuleSupport)
+        
+        if (curRuleSupport < lastConfirmedRuleSupport)
         {
             returnVal= false;
         }

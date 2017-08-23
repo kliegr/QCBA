@@ -30,6 +30,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -44,11 +46,12 @@ import org.w3c.dom.Node;
  * measures
  *
  */
-public final class ExtendRule extends PruneRule implements RuleInt {
+public final class ExtendRule implements RuleInt {
 
     private final static Logger LOGGER = Logger.getLogger(ExtendRule.class.getName());
     private ExtendRuleConfig extensionConfig;
     private Float confidenceOfSeedRule;
+    protected Rule rule;
     public float getConfidenceOfSeedRule()
     {
             return confidenceOfSeedRule;
@@ -64,17 +67,28 @@ public final class ExtendRule extends PruneRule implements RuleInt {
         extensionMap.put(extension.getAttribute(), extension);
         return constructNewAntecedent(antecedent,extensionMap);
     }
-    private static Antecedent constructNewAntecedent(Antecedent antecedent, HashMap<Attribute,RuleMultiItem> extension) {
+    private static Antecedent constructNewAntecedent(Antecedent antecedent, HashMap<Attribute,RuleMultiItem> replacement) {
         ArrayList<RuleMultiItem> newAntecedentItems = new ArrayList();
         antecedent.getItems().stream().forEach((multiitem) -> {
-            if (extension.containsKey(multiitem.getAttribute())) {
-                newAntecedentItems.add(extension.get(multiitem.getAttribute()));
+            if (replacement.containsKey(multiitem.getAttribute())) {
+                newAntecedentItems.add(replacement.get(multiitem.getAttribute()));
             } else {
                 newAntecedentItems.add(multiitem);
             }
         });
         return new Antecedent(newAntecedentItems);
     }
+    private static Antecedent constructNewAntecedent(Antecedent antecedent,  Attribute attributeToRemove) {
+        ArrayList<RuleMultiItem> newAntecedentItems = new ArrayList();
+        antecedent.getItems().stream().forEach((multiitem) -> {
+            if (attributeToRemove  == multiitem.getAttribute()) {
+                
+            } else {
+                newAntecedentItems.add(multiitem);
+            }
+        });
+        return new Antecedent(newAntecedentItems);
+    }    
 
     private ExtendType extendType;
 
@@ -86,6 +100,10 @@ public final class ExtendRule extends PruneRule implements RuleInt {
     //contains IDs of rules from which this rule is derived
     private History history;
 
+    public ExtendRule(Rule rule)
+    {
+        this.rule = rule;
+    }
 
     /**
      * constructor for seed rule
@@ -95,7 +113,7 @@ public final class ExtendRule extends PruneRule implements RuleInt {
      * @param conf
      */
     public ExtendRule(Rule rule, History history, ExtendType type,ExtendRuleConfig conf) {
-        super(rule);
+        this.rule = rule;
         this.extendType = type;
         this.extensionConfig = conf;
 
@@ -121,7 +139,7 @@ public final class ExtendRule extends PruneRule implements RuleInt {
      * @param extensionConfig
      */
     public ExtendRule(Rule rule, HashMap<Attribute, RuleMultiItem> extension, History history, ExtendType type,ExtendRuleConfig extensionConfig, float seedRuleConfidence) {
-        super(new Rule(constructNewAntecedent(rule.getAntecedent(), extension), rule.getConsequent(), null, null, rule.getRID(), Rule.getNextERID(), rule.getData()));
+        this.rule = new Rule(constructNewAntecedent(rule.getAntecedent(), extension), rule.getConsequent(), null, null, rule.getRID(), Rule.getNextERID(), rule.getData());
         this.extendType = type;
         this.extensionConfig = extensionConfig;
         this.confidenceOfSeedRule = seedRuleConfidence;
@@ -139,8 +157,29 @@ public final class ExtendRule extends PruneRule implements RuleInt {
         this.history.addRuleIdentifiers(rule.getERID(), rule.toArray());
     }
 
+    public ExtendRule(Rule rule, Attribute atToRemove, History history, ExtendType type,ExtendRuleConfig extensionConfig, float seedRuleConfidence) {
+        this.rule = new Rule(constructNewAntecedent(rule.getAntecedent(), atToRemove), rule.getConsequent(), null, null, rule.getRID(), Rule.getNextERID(), rule.getData());
+        this.extendType = type;
+        this.extensionConfig = extensionConfig;
+        this.confidenceOfSeedRule = seedRuleConfidence;
+
+        lastExtension=null;
+
+        LOGGER.fine(rule.toString());
+        this.rule.setQuality(computeQuality());
+
+        if (history == null) {
+            this.history = new History(this.getRID());
+        } else {
+            this.history = history;
+        }
+        this.history.addRuleIdentifiers(rule.getERID(), rule.toArray());
+    }
+
+    
+    
         public ExtendRule(Rule rule, RuleMultiItem extension, History history, ExtendType type,ExtendRuleConfig extensionConfig, float seedRuleConfidence) {
-        super(new Rule(constructNewAntecedent(rule.getAntecedent(), extension), rule.getConsequent(), null, null, rule.getRID(), Rule.getNextERID(), rule.getData()));
+        this.rule = new Rule(constructNewAntecedent(rule.getAntecedent(), extension), rule.getConsequent(), null, null, rule.getRID(), Rule.getNextERID(), rule.getData());
         this.extendType = type;
         this.extensionConfig = extensionConfig;
         this.confidenceOfSeedRule = seedRuleConfidence;
@@ -167,7 +206,7 @@ public final class ExtendRule extends PruneRule implements RuleInt {
      * @param data
      */
     public ExtendRule(Antecedent antecedent, Consequent cons, History history, ExtendType type, Data data,ExtendRuleConfig conf, int seedRuleRID) {
-        super(new Rule(antecedent, cons, null, null, seedRuleRID, Rule.getNextERID(), data));
+        this.rule = new Rule(antecedent, cons, null, null, seedRuleRID, Rule.getNextERID(), data);
         this.extendType = type;
         this.extensionConfig = conf;
         lastExtension = null;
@@ -202,7 +241,7 @@ public final class ExtendRule extends PruneRule implements RuleInt {
             //try to extend attribute
             return null;
         }
-        return new ExtendRule(rule, nextExtension, this.getHistory(), extendType,extensionConfig, this.getConfidenceOfSeedRule());
+        return new ExtendRule(rule, nextExtension, this.copyHistory(), extendType,extensionConfig, this.getConfidenceOfSeedRule());
     }
 
     /**
@@ -249,7 +288,7 @@ public final class ExtendRule extends PruneRule implements RuleInt {
             LOGGER.log(Level.FINEST, "Candidate rules:{0}", curNeighbourhood.size());
             LOGGER.finest("Finished computing neigbourhood");
             //the candidates will be processed from the best to worst
-            curNeighbourhood.sort(new MMACRuleComparator());
+            curNeighbourhood.sort(new CBARuleComparator());
             extensionSuccessful = false;
             for (ExtendRule candExt : curNeighbourhood) {
                 LOGGER.finest("+++++++++++++++++++++++++++++++++++++");
@@ -304,12 +343,11 @@ public final class ExtendRule extends PruneRule implements RuleInt {
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.log(Level.FINE, "-->Finished extension on rule {0}<--", rule);
             LOGGER.log(Level.FINE, "*Result: {0}", curAcceptedExtension);            
-            if (LOGGER.isLoggable(Level.FINE)){
-                LOGGER.log(Level.FINE, "*History: \n {0}", curAcceptedExtension.history.toString());            
-                LOGGER.log(Level.FINE, "*End of history");            
-            }
+            LOGGER.log(Level.FINE, "*History: \n {0}", curAcceptedExtension.history.toString());            
+            LOGGER.log(Level.FINE, "*End of history");            
+            
         }
-
+        curAcceptedExtension.addItselfToHistory();
         return curAcceptedExtension;
     }
 
@@ -330,8 +368,11 @@ public final class ExtendRule extends PruneRule implements RuleInt {
             }
         });
 
-        ExtendRule withfuzzyBorders = new ExtendRule(new Antecedent(newConsitutents), getConsequent(), getHistory(), extendType, rule.getData(),extensionConfig, rule.getRID());
-
+        ExtendRule withfuzzyBorders = new ExtendRule(new Antecedent(newConsitutents), getConsequent(), copyHistory(), extendType, rule.getData(),extensionConfig, rule.getRID());
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine("Finished creating version with fuzzy borders");
+            LOGGER.log(Level.FINE, "*Result:{0}", withfuzzyBorders);
+        }
         return withfuzzyBorders;
     }
 
@@ -339,10 +380,12 @@ public final class ExtendRule extends PruneRule implements RuleInt {
      *
      * @return
      */
-    public History getHistory() {
+    public History copyHistory() {
         return history.copy();
     }
-
+    public void addItselfToHistory() {
+        history.addRuleIdentifiers(this.rule.getERID(), this.rule.toArray());
+    }
     /**
      *
      * @return
@@ -411,7 +454,7 @@ public final class ExtendRule extends PruneRule implements RuleInt {
         //neighborhood.addAll(ruleConstituent.getNeighbourhood().stream().map((multiitem)->new ExtendRule(rule,multiitem)).collect(Collectors.toCollection(ArrayList::new)));
         this.getAntecedent().getItems().stream().filter((ruleConstituent) -> !(extendType == ExtendType.numericOnly && ruleConstituent.getAttribute().getType() == AttributeType.nominal)).map((ruleConstituent) -> ruleConstituent.getNeighbourhood()).forEach((neighbourhood) -> {
             neighbourhood.stream().forEach((multiitem) -> {
-                neighborhood.add(new ExtendRule(rule, multiitem, this.getHistory(), extendType,extensionConfig, this.getConfidenceOfSeedRule()));
+                neighborhood.add(new ExtendRule(rule, multiitem, this.copyHistory(), extendType,extensionConfig, this.getConfidenceOfSeedRule()));
             });
         });
         return neighborhood;
@@ -435,13 +478,135 @@ public final class ExtendRule extends PruneRule implements RuleInt {
     }
 
 
-    public ExtendRule trim(){
+   
+    /**
+     *
+     * @param hide
+     * @return
+     */
+        public int removeTransactionsCoveredByAntecedent(Boolean hide) {
+         int pruningCoverage = 0;
+        try {
+  
+            Set<Transaction> supportingTransactions = getAntecedent().getSupportingTransactions();
+            if (getAntecedent() == null) {
+                //antecedent is empty (no items), the antecedent matches all transactions
+                pruningCoverage= rule.getData().getDataTable().getAllCurrentTransactions().size();
+                rule.getData().getDataTable().removeAllTransactions(hide);                
+            } 
+            else {
+                pruningCoverage = supportingTransactions.size();
+                if (pruningCoverage > 0) {
+                    //TODO: add support for parallel stream
+                    supportingTransactions.stream().forEach((t) -> rule.getData().getDataTable().removeTransaction(t, hide));
+                }
+
+            }            
+            //this should delete all references to the transaction
+        } catch (NoSuchElementException e) {
+            LOGGER.warning(e.toString());
+            pruningCoverage = 0;
+        }
+        return pruningCoverage;
+    }
+    public int removeCorrectlyClassifiedTransactions(Boolean hide) {
+         int pruningCoverage = 0;
+        try {
+            Set<Transaction> supportingTransactions;
+
+            Set<Transaction> antConOverlap = getAntecedent().getSupportingTransactions();
+            Set<Transaction> conTran = getConsequent().getSupportingTransactions();
+            if (antConOverlap == null) {
+                //antecedent is empty (no items), the transactions supported by the rule are determined only by consequent
+                antConOverlap = conTran;
+            } else {
+                antConOverlap.retainAll(conTran);
+            }
+
+            supportingTransactions = antConOverlap;
+            pruningCoverage = supportingTransactions.size();
+            if (pruningCoverage > 0) {
+                //TODO: add support for parallel stream
+                supportingTransactions.stream().forEach((t) -> rule.getData().getDataTable().removeTransaction(t, hide));
+            }
+            return pruningCoverage;
+            //this should delete all references to the transaction
+        } catch (NoSuchElementException e) {
+            return 0;
+        }
+    }
+
+public ExtendRule removeRedundantAttributes(){
+        boolean ruleChanged =false;
+        LOGGER.log(Level.INFO, "STARTED REMOVING REDUNDANT ATTRIBUTES on rule: {0}\n", rule);
+        //determine correctly covered transactions in the current rule
+        Set<Transaction> correctlyCoveredTrans = getAntecedent().getSupportingTransactions();
+        Set<Transaction> conTran = getConsequent().getSupportingTransactions();        
+        ExtendRule newRule = this;
+        // at this point correctlyCoveredTrans holds covered transactions (not only correctly covered)
+        if (correctlyCoveredTrans == null| correctlyCoveredTrans.isEmpty()) {
+            LOGGER.info("Rule does not cover any transactions, leaving as is");     
+        } else {            
+            correctlyCoveredTrans.retainAll(conTran);                
+            if (correctlyCoveredTrans.isEmpty()) {
+                LOGGER.info("Rule does not CORRECTLY cover any transactions, leaving as is");     
+            }
+            //determine minimum and maximum value appearing in individual attributes in the current rule
+            else if (rule.getAntecedent().getItems().isEmpty()) {
+                LOGGER.fine("Rule with empty antecedent.");                        
+            }
+            else{                    
+                //HashMap<Attribute,RuleMultiItem> allConfirmedLiterals = new HashMap();
+                
+                boolean attrRemoved = false;
+                do
+                {
+                    //TODO: processing attributes in some sensible order may improve results
+                    
+                    for (RuleMultiItem rmi : newRule.getAntecedent().getItems()) {
+                        // consider remove current literal
+                        LOGGER.fine("Considering removal of literal created from attribute " + rmi.getAttribute());
+                        ExtendRule candNewRule = new ExtendRule(newRule.getRule(), rmi.getAttribute(), this.copyHistory(), this.getExtendType(),extensionConfig, -1);
+                        candNewRule.updateQuality();
+                        if (this.getConfidence() <= candNewRule.getConfidence())
+                        {
+                           LOGGER.fine("Confidence did not decrease after removing literal " + rmi + " from " + this.getConfidence() + " to " + candNewRule.getConfidence() );
+                           //allConfirmedLiterals.remove(rmi.getAttribute());
+                           attrRemoved = true;
+                           ruleChanged = true;
+                           newRule = candNewRule;
+                           break;
+                        }
+                        else{
+                            attrRemoved = false;
+                        }                        
+                    }                                       
+                } while (attrRemoved==true);                                          
+            }
+        }
+        if (!ruleChanged)
+        {
+             LOGGER.fine("Rule did not change during attribute pruning" );
+             return this;
+        }
+        else
+        {
+        // changed base confidence for trimming from original seed rule to the trimmed rule                       
+            
+            return newRule;            
+            
+        }
         
+}
+
+    public ExtendRule trim(){
+        boolean ruleChanged =false;
         LOGGER.log(Level.INFO, "STARTED TRIMMING on rule: {0}\n", rule);
         //determine correctly covered transactions in the current rule
         Set<Transaction> correctlyCoveredTrans = getAntecedent().getSupportingTransactions();
         Set<Transaction> conTran = getConsequent().getSupportingTransactions();        
         HashMap<Attribute,RuleMultiItem> newLiterals = new HashMap();
+        
         if (correctlyCoveredTrans == null| correctlyCoveredTrans.isEmpty()) {
             LOGGER.info("Rule does not cover any transactions, leaving as is");     
         } else {            
@@ -478,13 +643,13 @@ public final class ExtendRule extends PruneRule implements RuleInt {
                         continue;
                     }            
 
-                    //get maximum value of transactions in this attribute            
+                    //get distinct values appearing in the attribute in CORRECTLY COVERED TRANSACTIONS
                     ArrayList<AttributeValue> coveredValues = new ArrayList();
 
                     correctlyCoveredTrans.stream().forEach((t) -> {
                         coveredValues.add(t.getValue(at));
                     });
-
+                    // get lowest and highest value
                     LOGGER.log(Level.FINE, "correctlyCoveredTrans: {0}", correctlyCoveredTrans.size());
                     Collections.sort(coveredValues, new Comparator<AttributeValue>() {
                         @Override
@@ -494,7 +659,17 @@ public final class ExtendRule extends PruneRule implements RuleInt {
                     });            
                     AttributeValue lowestValue = coveredValues.get(0);
                     AttributeValue highestValue = coveredValues.get(coveredValues.size()-1);
-
+                    
+                    // check if these values are different from the original literal
+                    AttributeValue origMin = rmi.getAttributeValues().get(0);
+                    AttributeValue origMax = rmi.getAttributeValues().get(rmi.getAttributeValues().size()-1);
+                    if (origMin==lowestValue && highestValue== origMax)
+                    {
+                        LOGGER.fine("Trimming produced same literal as original.");
+                        newLiterals.put(rmi.getAttribute(),rmi);
+                        continue;
+                    }
+                    
                     //get all values between lowest and highest and create a new literal (RuleMultiItem)
                     ArrayList<AttributeValue> list = new ArrayList(at.getValuesInRange(lowestValue.getNumericalValue(), true, highestValue.getNumericalValue(), true));            
                     ArrayList<ValueOrigin> valOriginAsArray = new ArrayList();
@@ -505,15 +680,32 @@ public final class ExtendRule extends PruneRule implements RuleInt {
 
                     RuleMultiItem replacement = rule.getData().makeRuleItem(list, valOriginAsArray, at, ValueOrigin.trim);
                     newLiterals.put(replacement.getAttribute(),replacement);
-
+                    ruleChanged = true;
                 }
             }
         }
-                        
-        
-         ExtendRule newRule = new ExtendRule(rule, newLiterals, this.getHistory(), this.getExtendType(),extensionConfig, this.getConfidenceOfSeedRule());
-         LOGGER.log(Level.INFO, "FINISHED TRIMMING, result: {0}\n", newRule);
-         return newRule;
+        if (!ruleChanged)
+        {
+             LOGGER.fine("Rule did not change during trimming" );
+             return this;
+        }
+        else
+        {
+        // changed base confidence for trimming from original seed rule to the trimmed rule
+            ExtendRule newRule = new ExtendRule(rule, newLiterals, this.copyHistory(), this.getExtendType(),extensionConfig, -1);
+
+            newRule.updateQuality();
+
+            if (this.getConfidence() != newRule.getConfidence())
+            {
+               LOGGER.fine("Confidence changed after trimming from " + this.getConfidence() + " to " + newRule.getConfidence() );
+            }
+
+            newRule.confidenceOfSeedRule = newRule.getConfidence();
+            LOGGER.log(Level.INFO, "FINISHED TRIMMING, result: {0}\n", newRule);
+            return newRule;
+            
+        }
         
    
     }
@@ -600,6 +792,9 @@ public final class ExtendRule extends PruneRule implements RuleInt {
      */
     public ExtendType getExtendType() {
         return extendType;
+    }
+    public String getArulesRepresentation() {
+        return rule.getArulesRepresentation();
     }
 
 }

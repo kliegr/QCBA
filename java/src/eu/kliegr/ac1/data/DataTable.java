@@ -103,6 +103,7 @@ public class DataTable {
         return attributes.get(name);
     }
 
+
     /**
      *
      * @return
@@ -130,9 +131,9 @@ public class DataTable {
     /**
      *
      */
-    public void removeAllTransactions() {
+    public void removeAllTransactions(boolean hide) {
         while (transactions.size() > 0) {
-            removeTransaction(transactions.get(0), false);
+            removeTransaction(transactions.get(0), hide);
         }
     }
 

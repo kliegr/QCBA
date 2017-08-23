@@ -33,6 +33,7 @@ import eu.kliegr.ac1.rule.extend.ExtendRule;
 import eu.kliegr.ac1.rule.extend.RuleMultiItemAnnotation;
 import eu.kliegr.ac1.rule.extend.TestRuleAnnotation;
 import eu.kliegr.ac1.rule.extend.ValueOrigin;
+import static eu.kliegr.ac1.rule.parsers.ArulesParser.normInfinity;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
@@ -548,9 +549,13 @@ public class GUHASimplifiedParser {
         return C;
     }
 
+    
     private Collection<AttributeValue> parseInterval(Node node, String attributeName, boolean negated) {
-        float leftMargin = Float.parseFloat(node.getAttributes().getNamedItem("leftMargin").getTextContent());
-        float rightMargin = Float.parseFloat(node.getAttributes().getNamedItem("rightMargin").getTextContent());
+        String leftMargingStr = normInfinity(node.getAttributes().getNamedItem("leftMargin").getTextContent());
+        String rightMarginStr = normInfinity(node.getAttributes().getNamedItem("rightMargin").getTextContent());
+        
+        float leftMargin = Float.parseFloat(leftMargingStr);
+        float rightMargin = Float.parseFloat(rightMarginStr);
         String closure = node.getAttributes().getNamedItem("closure").getTextContent();
         boolean fromInclusive;
         boolean toInclusive;
