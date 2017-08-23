@@ -1,5 +1,5 @@
 ---
-title: "qCBA tutorial"
+title: "Quantitative CBA: small and comprehensible association rule classification models"
 output: html_document
 ---
 
@@ -9,16 +9,30 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## About Quantitative CBA
 
-We propose a postprocessing algorithm for ARC classification algorithm CBA (Liu, 1998), which reverts to the original attribute space to ``edit'' discovered association rules, refining the scope of literals in the antecedent of the rules.  As a consequence, the fit of the individual rules to data improves, rendering some of the rules comprising the model as redundant. These rules can be removed, making the resulting classifier smaller. The viable properties of CBA models that make these rule lists comprehensible, such as one-rule classification and crisp rules, are retained. The postprocessing is conceptually fast, because it is performed on a relatively small number of rules that passed the data coverage pruning in CBA. 
+Quantitative CBA (QCBA) is a postprocessing algorithm for association rule classification algorithm CBA, which implements a number of 
+optimization steps to improve handling of quantitative (numerical) attributes. The viable properties of these rule lists that make CBA classification  models most comprehensible among all association rule classification algorithms, such as one-rule classification and crisp rules, are retained. The postprocessing is conceptually fast, because it is performed on a relatively small number of rules that passed the pruning steps, and  can be adapted also for multi-rule classification algorithms. Benchmark of our QCBA approach on 22 UCI datasets shows 40 to 58\% decrease in the total size of the model as measured by the total number of conditions in all rules. Model accuracy remains on the same level as for CBA with QCBA even providing small improvement over CBA on 11 of the 22 datasets. 
 
 ### Novelty
 
-* First "quantitative" association rule classification algorithm.
+* To our knowledge, the tirst non-fuzzy "quantitative" association rule classification algorithm.
 * Conceptually different from existing quantitative association rule learning algorithms such as QuantMiner or  NAR-Discovery.
 
 ### Benchmark
 
-QCBA was evaluated on 22 standard UCI datasets against standard as well as state-of-the-art symbolic classification algorithms (such as RIPPER, FURIA, CBA). The evaluation is fully reproducible using the [arcBench package](https://github.com/kliegr/arcBench) and meets industry standards (same folds, metaparameter optimization, etc.). The evaluation shows that QCBA produces  classifiers with about 1/3 less rules than CBA while retaining comparable accuracy. 
+QCBA was evaluated on 22 standard UCI datasets against standard as well as state-of-the-art symbolic classification algorithms (such as RIPPER, FURIA, CBA). The evaluation is fully reproducible using the [arcBench package](https://github.com/kliegr/arcBench). The evaluation shows that QCBA produces  classifiers with about 40-60% less rules than CBA while retaining comparable accuracy. 
+
+## What this tutorial shows
+This tutorial visually demonstrates all the optimization steps in QCBA:
+
+* **Refitting rules** to value grid. Literals originally aligned to borders of the discretized  regions are refit to finer grid.
+* **Attribute pruning**. Remove redundant attributes from rules. 
+* **Trimming.** Literals in discovered rules are trimmed so that they do not contain regions not covered by data.
+* **Extension.** Ranges of literals in the body of each rule are extended, escaping from the coarse hypercubic created by discretization.
+* **Data coverage pruning.** Remove some of the newly redundant rules
+* **Default rule overlap pruning.** Some rules that classify into the same class as the default rule in the end of the classifier can be removed. 
+
+## What this tutorial does NOT show - how to setup qcba
+To learn how to setup QCBA refer to the [Quantitative CBA github homepage](https://github.com/kliegr/QCBA)
 
 ## Library
 The QCBA implementation is in Java. It is also available via an [R package wrapper](https://github.com/kliegr/QCBA), which we will used for this example.
@@ -529,7 +543,7 @@ plotHumTempRule(rmqCBA_dro@rules,i)
 ```
 
 ##### Default rule overlap (range-based)
-Range-based default rule pruning looks at rules below each rule that classifies to the default class  and inspects whether the rules below it can divert instances from being classified by the default rule. The difference from the transaction-based method is that it is inspected wether the regions covered by the rules do not overlap rather than training transactions.  While range-based pruning thus guarantees a solution that generalizes beyond the training data. It is perfectly safe to remove rules detected as redundant by range-based default rule overlap.
+Range-based default rule pruning looks at rules below each rule that classifies to the default class  and inspects whether the rules below it can divert instances from being classified by the default rule. The difference from the transaction-based method is that it is inspected whether the regions covered by the rules do not overlap rather than training transactions.  Range-based pruning thus guarantees a solution that generalizes beyond the training data. It is perfectly safe to remove rules detected as redundant by range-based default rule overlap.
 
 The disadvantage is that range based  pruning is not very uneffective. In realistically sized rule lists spanning mutliple dimensions, the odds that there will be a clashing rule for any candidate rule is very high and thus no rules will be removed. An alternative way is to judge overlap between two rules based on whether they have any transactions in common.  
 

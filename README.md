@@ -1,8 +1,8 @@
 # Monotonicity Exploiting Association Rule Classification
 
-# Quasi Quantitative CBA
-
-This package for R implements the Quasi Quantitative CBA, which postprocesses the output of CBA to refit discretized attributes with respect to original data.
+# Quantitative CBA
+Quantitative CBA (QCBA) is a postprocessing algorithm for association rule classification algorithm CBA, which implements a number of 
+optimization steps to improve handling of quantitative (numerical) attributes. The viable properties of these rule lists that make CBA classification  models most comprehensible among all association rule classification algorithms, such as one-rule classification and crisp rules, are retained. The postprocessing is conceptually fast, because it is performed on a relatively small number of rules that passed the pruning steps, and  can be adapted also for multi-rule classification algorithms. Benchmark of our QCBA approach on 22 UCI datasets shows 40 to 58\% decrease in the total size of the model as measured by the total number of conditions in all rules. Model accuracy remains on the same level as for CBA with QCBA even providing small improvement over CBA on 11 of the 22 datasets. 
 
 The reference for CBA:
 
@@ -11,14 +11,15 @@ The reference for CBA:
  ```
  
 The [arc](https://github.com/kliegr/arc) package is used for generation of the CBA classifier.
+## Feature Tutorial
+Look at the [tutorial](http://nb.vse.cz/~klit01/qcba/tutorial.html), which  visually demonstrates all the optimization steps in QCBA:
 
-## Features 
-- Java implementation with R wrapper
-- Supports one rule as well as multi rule classification
-- Optional fuzzification of rules
-- Optional annotation of rules with probability distributions
-- Optional Post pruning -- less aggressive, generally slightly decreases accuracy as well as rule count
-- Optional Continuous pruning -- more aggressive, generally higher decrease in accuracy as well as rule count
+- **Refitting rules** to value grid. Literals originally aligned to borders of the discretized  regions are refit to finer grid.
+- **Attribute pruning**. Remove redundant attributes from rules. 
+- **Trimming.** Literals in discovered rules are trimmed so that they do not contain regions not covered by data.
+- **Extension.** Ranges of literals in the body of each rule are extended, escaping from the coarse hypercubic created by discretization.
+- **Data coverage pruning.** Remove some of the newly redundant rules
+- **Default rule overlap pruning.** Some rules that classify into the same class as the default rule in the end of the classifier can be removed. 
 
 ## Installation
 Package  can be installed from the R environment using the devtools package.
@@ -26,10 +27,8 @@ Package  can be installed from the R environment using the devtools package.
 devtools::install_github("kliegr/QCBA")
 ```
 
-
 ## Examples
 
-### One rule classification
 ```R
   library(qCBA)
   library(mlbench)
@@ -43,53 +42,31 @@ devtools::install_github("kliegr/QCBA")
   prediction <- predict(rmCBA,testFold)
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmCBA@classAtt]])
   print(paste("CBA Model with ",length(rmCBA@rules), " rules and accuracy ",acc))
-  rmMARC <- qcbaExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=FALSE, postpruning=TRUE, fuzzification=FALSE, annotate=FALSE,ruleOutputPath="rules.xml")
-  prediction <- predict(rmMARC,testFold,"oneRule")
+  rmQCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
+  prediction <- predict(rmQCBA,testFold,"oneRule")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmMARC@classAtt]])
-  print(paste("QCBA Model with ",rmMARC@ruleCount, " rules and accuracy ",acc))
-  print(rmMARC@rules)
+  print(paste("QCBA Model with ",rmQCBA@ruleCount, " rules and accuracy ",acc))
+  print(rmQCBA@rules)
 ```
 
 Output
 ```
-[1] CBA Model with  53  rules and accuracy  0.753731343283582
-[1] MARC Model with  47  rules and accuracy  0.753731343283582
+[1] CBA Model with  53  rules and accuracy  0.720149253731343
+[1] QCBA Model with  43  rules and accuracy  0.720149253731343
 ```
-MARC decreased the number of rules while keeping same accuracy.
+QCBA decreased the number of rules while keeping same accuracy.
 
-If we actived the continuousPruning option, it would result in aggressive pruning:
-```
-[1] MARC Model with  28  rules and accuracy  0.67910447761194
-```
-### Multi rule classification (Experimental)
+If we actived the defaultRuleOverlapPruning option, it would result in aggressive pruning:
+
+
 ```R
-  library(qCBA)
-  library(mlbench)
-  data("Ionosphere")
-  set.seed(111)
-  allData <- Ionosphere[sample(nrow(Ionosphere)),]
-  trainFold <- allData[1:300,]
-  testFold <- allData[301:nrow(Ionosphere),]
-  rmCBA <- cba(trainFold, classAtt="Class")
-  prediction <- predict(rmCBA,testFold)
-  acc <- CBARuleModelAccuracy(prediction, testFold[[rmCBA@classAtt]])
-  print(paste("CBA Model with ",length(rmCBA@rules), " rules and accuracy ",acc))
-  rmMARC <- qcbaExtend(cbaRuleModel=rmCBA,datadf=trainFold,continuousPruning=TRUE, postpruning=TRUE, fuzzification=FALSE, annotate=TRUE,ruleOutputPath="rules.xml")
-  prediction <- predict(rmMARC,testFold,"mixture")
+  rmQCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,defaultRuleOverlapPruning="transactionBased")
+  prediction <- predict(rmQCBA,testFold,"oneRule")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmMARC@classAtt]])
-  print(paste("MARC Model with ",rmMARC@ruleCount, " rules and accuracy ",acc))
-  print(rmMARC@rulePath)
+  print(paste("QCBA Model with ",rmQCBA@ruleCount, " rules and accuracy ",acc))
+  print(rmQCBA@rules)
 ```
-
-
-Output
+The resulting model has 44% less rules than the CBA model: 
 ```
-[1] CBA Model with  14  rules and accuracy  0.941176470588235
-[1] MARC Model with  14  rules and accuracy  0.96078431372549
+[1] QCBA Model with  30  rules and accuracy  0.694029850746269
 ```
-
-MARC improved accuracy while keeping the number of rules.
-Rules in MARC multi rule model cannot be currently  visualized - they are stored in a file.
-
-### Evaluation
-A lightweight benchmarking framework for MARC is available as [marcbench](https://github.com/kliegr/marcbench).

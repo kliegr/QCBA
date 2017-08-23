@@ -1,6 +1,8 @@
 #' @import rJava
 #' @import arules
 #' @import arc
+#' @importFrom("methods", "as")
+#' @importFrom("utils", "write.csv")
 
 library(arules)
 library(rJava)
@@ -90,7 +92,7 @@ qcbaIris <- function()
   trainFold <- allData[1:100,]
   testFold <- allData[101:nrow(datasets::iris),]
   rmCBA <- cba(trainFold, classAtt="Species")
-  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extend=TRUE, postpruning="cba", defaultRuleOverlapPruning="rangeBased", fuzzification=FALSE, annotate=FALSE)
+  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extendType="numericOnly", postpruning="cba", defaultRuleOverlapPruning="transactionBased")
   prediction <- predict(rmqCBA,testFold,"firstRule")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
   print(rmqCBA@rules)
@@ -113,7 +115,7 @@ qcbaIris2 <- function()
   trainFold <- allData[1:100,]
   testFold <- allData[101:nrow(datasets::iris),]
   rmCBA <- cba(trainFold, classAtt="Species")
-  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extend=TRUE,trim_literal_boundaries=TRUE, postpruning="cba", defaultRuleOverlapPruning = "rangeBased", fuzzification=TRUE, annotate=TRUE,ruleOutputPath="rules.xml")
+  rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,extendType="numericOnly",trim_literal_boundaries=TRUE, postpruning="cba", defaultRuleOverlapPruning = "rangeBased", fuzzification=TRUE, annotate=TRUE,ruleOutputPath="rules.xml")
   prediction <- predict(rmqCBA,testFold,"mixture")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
   print(paste("Rule count:",rmqCBA@ruleCount))
