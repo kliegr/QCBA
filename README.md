@@ -42,6 +42,8 @@ devtools::install_github("kliegr/QCBA")
   prediction <- predict(rmCBA,testFold)
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmCBA@classAtt]])
   print(paste("CBA Model with ",length(rmCBA@rules), " rules and accuracy ",acc))
+  # default_rule_pruning has better effect if it is performed within QCBA
+  rmCBA <- cba(trainFold, classAtt="diabetes", pruning_options=list(default_rule_pruning=FALSE))
   rmQCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
   prediction <- predict(rmQCBA,testFold,"oneRule")
   acc <- CBARuleModelAccuracy(prediction, testFold[[rmMARC@classAtt]])
