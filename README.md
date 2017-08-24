@@ -44,11 +44,10 @@ devtools::install_github("kliegr/QCBA")
   print(paste("CBA Model with ",length(rmCBA@rules), " rules and accuracy ",acc))
   # default_rule_pruning has better effect if it is performed within QCBA
   rmCBA <- cba(trainFold, classAtt="diabetes", pruning_options=list(default_rule_pruning=FALSE))
-  rmQCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
-  prediction <- predict(rmQCBA,testFold,"oneRule")
-  acc <- CBARuleModelAccuracy(prediction, testFold[[rmMARC@classAtt]])
+  rmQCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,defaultRuleOverlapPruning="noPruning")
+  prediction <- predict(rmQCBA,testFold)
+  acc <- CBARuleModelAccuracy(prediction, testFold[[rmQCBA@classAtt]])
   print(paste("QCBA Model with ",rmQCBA@ruleCount, " rules and accuracy ",acc))
-  print(rmQCBA@rules)
 ```
 
 Output
@@ -56,19 +55,17 @@ Output
 [1] CBA Model with  53  rules and accuracy  0.720149253731343
 [1] QCBA Model with  43  rules and accuracy  0.720149253731343
 ```
-QCBA decreased the number of rules while keeping same accuracy.
-
-If we actived the defaultRuleOverlapPruning option, it would result in aggressive pruning:
-
+QCBA decreased the number of rules  while keeping the same accuracy.
+Further reduction in model size can be obtained by activating defaultRuleOverlapPruning:
 
 ```R
-  rmQCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold,defaultRuleOverlapPruning="transactionBased")
-  prediction <- predict(rmQCBA,testFold,"oneRule")
-  acc <- CBARuleModelAccuracy(prediction, testFold[[rmMARC@classAtt]])
+  rmQCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold, defaultRuleOverlapPruning="transactionBased")
+  prediction <- predict(rmQCBA,testFold)
+  acc <- CBARuleModelAccuracy(prediction, testFold[[rmQCBA@classAtt]])
   print(paste("QCBA Model with ",rmQCBA@ruleCount, " rules and accuracy ",acc))
-  print(rmQCBA@rules)
 ```
-The resulting model has 44% less rules than the CBA model: 
+
+Output
 ```
 [1] QCBA Model with  30  rules and accuracy  0.694029850746269
 ```
