@@ -3,12 +3,12 @@ Title: Quantitative Clasification by Association Rules
 Version: 0.2
 Author: Tomas Kliegr
 Maintainer: Tomas Kliegr <kliegr@gmail.com>
-Description: Postprocessing algorithm for CBA to create smaller models for quantitative classification by association rules.
+Description: Postprocessing algorithm for CBA -- classification by association rules  -- for creating smaller models for datasets containing quantitative (numerical) attributes.
 Depends:
     R (>= 2.7.0),
     arules,
     rJava (>= 0.5-0),
-    arc (>= 1.0.1),
+    arc (>= 1.1.2),
     methods
 SystemRequirements: Java (>= 8)
 License: AGPL-3

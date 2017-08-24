@@ -268,9 +268,12 @@ QCBA postprocesses CBA classifier created over discretized numeric attributes. Q
 ### Basic qCBA model
 
 To build a model, `qcba` needs a cba model and raw (undiscretized) data. Note that number of additional parameters can be also specified - these were left to their default values.
-```{r results='hide'}
+```{r results='hide', message=FALSE}
+# recreate the CBA model with default rule pruning disabled
+rmCBA <- cba_manual(data_raw,  rules, txns, appearance$rhs, classAtt, cutp= list(), pruning_options=list(default_rule_pruning=FALSE))
+
 trim_literal_boundaries <- TRUE #will use this variable later
-rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="numericOnly",trim_literal_boundaries = trim_literal_boundaries, postpruning = "cba", defaultRuleOverlapPruning="noPruning",  createHistorySlot=TRUE,loglevel = "WARNING")
+rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="numericOnly",trim_literal_boundaries = trim_literal_boundaries, postpruning = "cba", defaultRuleOverlapPruning="transactionBased",  createHistorySlot=TRUE,loglevel = "WARNING")
 print(rmqCBA@rules)
 ```
 
@@ -443,13 +446,13 @@ As a result of the extension process, the data matched by the individual rules c
 
 Result of the extension process:
 ```{r results='hide',message=FALSE}
-rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="numericOnly",trim_literal_boundaries = TRUE, postpruning = "none",  createHistorySlot=TRUE,loglevel = "WARNING")
+rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="numericOnly",trim_literal_boundaries = TRUE, postpruning = "none", defaultRuleOverlapPruning="noPruning", createHistorySlot=TRUE,loglevel = "WARNING")
 print(rmqCBA@rules)
 ```
 
 Result of postpruning:
 ```{r results='hide'}
-rmqCBA_pruned <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="numericOnly",trim_literal_boundaries = TRUE, postpruning = "cba",  createHistorySlot=TRUE,loglevel = "WARNING")
+rmqCBA_pruned <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="numericOnly",trim_literal_boundaries = TRUE, postpruning = "cba",  defaultRuleOverlapPruning="noPruning", createHistorySlot=TRUE,loglevel = "WARNING")
 print(rmqCBA_pruned@rules)
 ```
 Last two rules with non-empty antecedent were replaced by data coverage pruning by the default rule:
@@ -493,7 +496,7 @@ trim_literal_boundaries = FALSE
 supp = 1
 sink("/dev/null")
   rules <- apriori(txns, parameter = list(confidence = 0.5, support= supp/nrow(data_discr), minlen=1, maxlen=3), appearance=appearance)
-  rmCBA <- cba_manual(data_raw,  rules, txns, appearance$rhs, classAtt, cutp= list(), pruning_options=NULL)
+  rmCBA <- cba_manual(data_raw,  rules, txns, appearance$rhs, classAtt, cutp= list(), pruning_options=list(default_rule_pruning=FALSE))
   rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="numericOnly",trim_literal_boundaries = trim_literal_boundaries, postpruning = "cba", defaultRuleOverlapPruning="noPruning", createHistorySlot=TRUE,loglevel = "WARNING")
   sink()
 print(rmqCBA@rules)
@@ -503,7 +506,7 @@ By activating default rule overlap pruning, we can reduce the number of rules in
 ```{r results='hide',message=FALSE}
 sink("/dev/null")
   rmqCBA_dro <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="numericOnly",trim_literal_boundaries = trim_literal_boundaries, postpruning = "cba", defaultRuleOverlapPruning="transactionBased", createHistorySlot=FALSE,loglevel = "WARNING")
-  sink()
+sink()
 print(rmqCBA_dro@rules)
 ```
 Rule #6 in the original classifier is not needed.
@@ -565,8 +568,8 @@ allData <- datasets::iris[sample(nrow(datasets::iris)),]
 trainFold <- allData[1:100,]
 testFold <- allData[101:nrow(datasets::iris),]
 rulelearning_options <- list(find_conf_supp_thresholds = FALSE,minconf = 0.5, minsupp = 0.01, minlen = 1, maxlen = 6, maxtime = 10,trim = FALSE,target_rule_count =10)
-rmCBAiris <- cba(trainFold, classAtt="Species", rulelearning_options = rulelearning_options)
-rmqCBAiris <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,extendType="noExtend", postpruning="none", defaultRuleOverlapPruning="noPruning")
+rmCBAiris <- cba(trainFold, classAtt="Species", rulelearning_options = rulelearning_options,pruning_options=list(default_rule_pruning=FALSE))
+rmqCBAiris <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,extendType="noExtend", postpruning="none", defaultRuleOverlapPruning="noPruning",attributePruning = FALSE)
 print(rmqCBAiris@rules)
 ```
 The accuracy of the model and the average number of conditions (literals) per rule:
