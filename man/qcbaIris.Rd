@@ -2,7 +2,7 @@
 % Please edit documentation in R/rMARC.R
 \name{qcbaIris}
 \alias{qcbaIris}
-\title{Use the Iris dataset to test to test one rule classification qCBA workflow.}
+\title{Use the Iris dataset to test to test one rule classification QCBA workflow.}
 \usage{
 qcbaIris()
 }
@@ -10,5 +10,5 @@ qcbaIris()
 Accuracy.
 }
 \description{
-Learns a CBA classifier, performs qCBA Extension with continuous pruning and postpruning. Applies the model in one rule classification.
+Learns a CBA classifier, performs all qCBA postprocessing steps for one rule classification.
 }

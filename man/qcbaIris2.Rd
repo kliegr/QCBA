@@ -10,6 +10,6 @@ qcbaIris2()
 Accuracy.
 }
 \description{
-Learns a CBA classifier, performs qCBA Extension with continuous pruning, postpruning, annotation and fuzzification. Applies the model in one rule classification.
+Learns a CBA classifier, performs qCBA with the experimental multi rule classification workflow including annotation and fuzzification. Applies the model with rule mixture classification.
 The model  is saved to a temporary file.
 }

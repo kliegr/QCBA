@@ -5,10 +5,11 @@
 \title{qCBA Quantitative CBA}
 \usage{
 qcba(cbaRuleModel, datadf, extendType = "numericOnly",
-  defaultRuleOverlapPruning = "noPruning", trim_literal_boundaries = TRUE,
-  continuousPruning = FALSE, postpruning = TRUE, fuzzification = FALSE,
-  annotate = FALSE, ruleOutputPath, minImprovement = 0,
-  minCondImprovement = -1, minConf = 0.5,
+  defaultRuleOverlapPruning = "transactionBased", attributePruning = TRUE,
+  trim_literal_boundaries = TRUE, continuousPruning = FALSE,
+  postpruning = "cba", fuzzification = FALSE, annotate = FALSE,
+  ruleOutputPath, minImprovement = 0, minCondImprovement = -1,
+  minConf = 0.5,
   extensionStrategy = "ConfImprovementAgainstLastConfirmedExtension",
   loglevel = "WARNING", createHistorySlot = FALSE, timeExecution = FALSE)
 }
@@ -21,11 +22,13 @@ qcba(cbaRuleModel, datadf, extendType = "numericOnly",
 
 \item{defaultRuleOverlapPruning}{pruning removing rules made redundant by the default rule - possible values: noPruning,transactionBased,rangeBased,transactionBasedAsFirstStep}
 
+\item{attributePruning}{remove redundant attributes}
+
 \item{trim_literal_boundaries}{trimming of literal boundaries enabled}
 
 \item{continuousPruning}{indicating continuous pruning is enabled}
 
-\item{postpruning}{boolean indicating if postpruning is enabled}
+\item{postpruning}{type of  postpruning (none, cba - data coverage pruning, greedy - data coverage pruning stopping on first rule with total error worse than default)}
 
 \item{fuzzification}{boolean indicating if fuzzification is enabled. Multi rule classification model is produced if enabled. Fuzzification without annotation is not supported.}
 
@@ -43,7 +46,7 @@ qcba(cbaRuleModel, datadf, extendType = "numericOnly",
 
 \item{loglevel}{logger level from java.util.logging}
 
-\item{createHistorySlot}{creates a history slot on the resulting qCBARuleModel model, which with contains an ordered list of extensions 
+\item{createHistorySlot}{creates a history slot on the resulting qCBARuleModel model, which with contains an ordered list of extensions
 that were created on each rule during the extension process}
 
 \item{timeExecution}{reports execution time of the extend step}
