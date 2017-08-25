@@ -79,7 +79,7 @@ qcbaHumTemp <- function()
 }
 
 
-#' @title  Use the Iris dataset to test to test one rule classification QCBA workflow.
+#' @title  Use the Iris dataset to test one rule classification QCBA workflow.
 #' @description Learns a CBA classifier, performs all qCBA postprocessing steps for one rule classification.
 #'
 #' @return Accuracy.
