@@ -20,12 +20,14 @@ The [tutorial](http://nb.vse.cz/~klit01/qcba/tutorial.html)  visually demonstrat
 - **Data coverage pruning** Remove some of the newly redundant rules
 - **Default rule overlap pruning** Some rules that classify into the same class as the default rule in the end of the classifier can be removed. 
 
+The R Markdown source for this tutorial is located [here](https://github.com/kliegr/QCBA/blob/master/man/tutorial.Rmd). Note that while GitHub displays the syntax, it does not run the code or even display the knitted HTML. For this reason, it is recommended to view the tutorial [outside github](http://nb.vse.cz/~klit01/qcba/tutorial.html).
+
 ## Installation
 Package  can be installed from the R environment using the devtools package.
 ```R
 devtools::install_github("kliegr/QCBA")
 ```
-
+Note that the package depends on Java 8 available and correctly installed [rJava](https://cran.r-project.org/web/packages/rJava/index.html) package. For instructions on how to setup rJava please refer to rJava documentation.
 ## Example
 
 ### Baseline CBA model
