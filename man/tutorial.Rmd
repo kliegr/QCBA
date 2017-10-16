@@ -637,7 +637,24 @@ The same model with  attributePruning:
 rmqCBAiris <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,attributePruning = TRUE,trim_literal_boundaries=TRUE, extendType="numericOnly", postpruning="cba", defaultRuleOverlapPruning="transactionBased")
 print(rmqCBAiris@rules)
 ```
-As you can notice, the ranges of Petal.Length attribute in the second rule differ,
+As you can notice, the ranges of Petal.Length attribute in the second rule differ.
+
+#### Attribute pruning - no change of of literals range
+Basic QCBA model without  attributePruning. All optimizations after attribute pruning are disabled. 
+
+```{r message=FALSE}
+rmqCBAiris <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,attributePruning = FALSE, trim_literal_boundaries=TRUE, extendType="noExtend", postpruning="cba", defaultRuleOverlapPruning="noPruning")
+print(rmqCBAiris@rules)
+```
+The same model with  attributePruning:
+
+```{r message=FALSE}
+rmqCBAiris <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,attributePruning = TRUE,trim_literal_boundaries=TRUE, extendType="noExtend", postpruning="cba", defaultRuleOverlapPruning="noPruning")
+print(rmqCBAiris@rules)
+```
+
+The ranges of all literals that survivid attribute pruning match the ranges in the model without attribute pruning.
+
 
 # Part 3: advanced options
 
