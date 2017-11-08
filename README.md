@@ -34,6 +34,7 @@ Note that the package depends on Java 8 available and correctly installed [rJava
 
 Learn a CBA classifier.
 ```R
+library(arc)
 set.seed(111)
 allData <- datasets::iris[sample(nrow(datasets::iris)),]
 trainFold <- allData[1:100,]
@@ -65,6 +66,7 @@ Returns:
 ### QCBA model
 Learn a QCBA model.
 ```R
+library(qCBA)
 rmCBA4QCBAiris <- cba(trainFold, classAtt="Species",pruning_options=list(default_rule_pruning=FALSE))
 rmqCBAiris <- qcba(cbaRuleModel=rmCBA4QCBAiris,datadf=trainFold)
 print(rmqCBAiris@rules)
@@ -74,8 +76,8 @@ The model:
         lhs                                                    rhs                  support confidence lift     lhs_length
     [1] {Petal.Width=[-Inf;0.6]}                            => {Species=setosa}     0.32    1.00       3.125000 2         
     [2] {Petal.Length=[5.2;Inf]}                            => {Species=virginica}  0.25    1.00       3.125000 2         
-    [4] {Sepal.Width=[-Inf;3.1],Petal.Width=[1.8;Inf]}      => {Species=virginica}  0.20    1.00       3.125000 2         
-    [5] {}                                                  => {Species=versicolor} 0.36    0.36       1.000000 0 
+    [3] {Sepal.Width=[-Inf;3.1],Petal.Width=[1.8;Inf]}      => {Species=virginica}  0.20    1.00       3.125000 2         
+    [4] {}                                                  => {Species=versicolor} 0.36    0.36       1.000000 0 
 
 The statistics:
 ```R
