@@ -2,7 +2,7 @@
 % Please edit documentation in R/rMARC.R
 \name{qcbaIris}
 \alias{qcbaIris}
-\title{Use the Iris dataset to test to test one rule classification QCBA workflow.}
+\title{Use the Iris dataset to test one rule classification QCBA workflow.}
 \usage{
 qcbaIris()
 }

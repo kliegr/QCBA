@@ -33,6 +33,26 @@ qCBARuleModel <- setClass("qCBARuleModel",
 )
 
 
+
+#' rCBARuleModel
+#'
+#' @description  This class represents an CBA rule-based classifier, where rules are represented as string vector in a data frame
+#' @name customCBARuleModel-class
+#' @rdname customCBARuleModel-class
+#' @exportClass customCBARuleModel
+#' @slot rules dataframe output by rCBA
+#' @slot cutp list of cutpoints
+#' @slot classAtt name of the target class attribute
+#' @slot attTypes attribute types
+customCBARuleModel <- setClass("customCBARuleModel",
+                          slots = c(
+                            rules = "data.frame",
+                            cutp = "list",
+                            classAtt ="character",
+                            attTypes = "vector"
+                          )
+)
+
 #' @title  Use the Humidity-Temperature toy dataset from the arc package to test one rule classification QCBA workflow.
 #' @description TODO
 #'
@@ -124,6 +144,96 @@ qcbaIris2 <- function()
 }
 
 
+#' @title rcbaModel2CustomCBAModel Converts a model created by rCBA so that it can be passed to qCBA
+#' @description Creates instance of CustomCBAModel class based on model created by the rCBA package.
+#' This instance can then be passed to qcba() instead of CBARuleModel created with the arc package.
+#' @export
+#' @param rcbaModel aobject returned  by rCBA::build
+#' @param cutPoints specification of cutpoints applied on the data before they were passed to rCBA::build
+#' @param classAtt the name of the class attribute
+#' @param rawDataset the raw data (before discretization). This dataset is used to guess attribute types if attTypes is not passed
+#' @param attTypes vector of attribute types of the original data.  If set to null, you need to pass rawDataset.
+#' @examples
+#' if (! requireNamespace("rCBA", quietly = TRUE)) {
+#'  message("Please install rCBA: install.packages('rCBA')")
+#' } else {
+#'  discrModel <- discrNumeric(iris, "Species")
+#'  irisDisc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
+#'  rCBAmodel <- rCBA::build(irisDisc)
+#'  cCBAmodel <- rcbaModel2CustomCBAModel(rCBAmodel,discrModel$cutp,"Species",iris)
+#'  qCBAmodel <- qcba(cCBAmodel,iris)
+#'  print(qCBAmodel@rules)
+#' }
+#' 
+rcbaModel2CustomCBAModel <- function(rcbaModel, cutPoints, classAtt, rawDataset, attTypes)
+{
+  # note that the example for this function generates a notice
+  # this should be fine according to https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Suggested-packages
+  cCBA <- customCBARuleModel()
+  cCBA@rules <- rcbaModel$model #as.character
+  cCBA@cutp <- cutPoints
+  cCBA@classAtt <- classAtt
+  if (missing(attTypes))
+  {
+    cCBA@attTypes <- sapply(rawDataset, class)
+  }
+  else
+  {
+    cCBA@attTypes <- attTypes
+  }
+  return (cCBA)
+}
+
+
+#' @title arulesCBAModel2CustomCBAModel Converts a model created by arulesCBA so that it can be passed to qCBA
+#' @description Creates instance of CustomCBAModel class based on model created by the rCBA package.
+#' This instance can then be passed to qcba() instead of CBARuleModel created with the arc package.
+#' @export
+#' @param arulesCBAModel aobject returned  by arulesCBA::CBA()
+#' @param cutPoints specification of cutpoints applied on the data before they were passed to rCBA::build
+#' @param rawDataset the raw data (before discretization). This dataset is used to guess attribute types if attTypes is not passed
+#' @param attTypes vector of attribute types of the original data.  If set to null, you need to pass rawDataset.
+#' @examples
+#' if (! requireNamespace("arulesCBA", quietly = TRUE)) {
+#'  message("Please install arulesCBA: install.packages('arulesCBA')")
+#' }  else {
+#'  discrModel <- discrNumeric(iris, "Species")
+#'  irisDisc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
+#'  arulesCBAModel <- arulesCBA::CBA(Species ~ ., data = irisDisc, supp = 0.05, 
+#'   conf=0.9, lhs.support=TRUE)
+#'  cCBAmodel <- arulesCBAModel2CustomCBAModel(arulesCBAModel, discrModel$cutp, iris)
+#'  qCBAmodel <- qcba(cbaRuleModel=cCBAmodel,datadf=iris)
+#'  print(qCBAmodel@rules)
+#' }
+#' 
+arulesCBAModel2CustomCBAModel <- function(arulesCBAModel, cutPoints, rawDataset, attTypes )
+{
+  # note that the example for this function generates a notice
+  # this should be fine according to https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Suggested-packages
+  
+  cCBA <- customCBARuleModel()
+  rulesFrame<-as(arulesCBAModel$rules,"data.frame")
+  #default rule is stored separately, we need to add it 
+  defRule<- paste("{} => {",arulesCBAModel$default,"}",sep="")
+  df<-data.frame(defRule,0.0,0.0,0.0,0.0)
+  names(df)  <- names(rulesFrame)
+  newdf <- rbind(rulesFrame, df)
+  newdf$rules <- as.character(newdf$rules)
+  cCBA@rules <- newdf
+  
+  cCBA@cutp <- cutPoints
+  cCBA@classAtt <- arulesCBAModel$class
+  if (missing(attTypes))
+  {
+    cCBA@attTypes <- sapply(rawDataset, class)
+  }
+  else
+  {
+    cCBA@attTypes = attTypes
+  }
+  return (cCBA)
+}
+
 #' @title qCBA Quantitative CBA
 #' @description Creates qCBA one rule or multi rule classication model from a CBA rule model
 #' @export
@@ -158,6 +268,8 @@ qcbaIris2 <- function()
 #' rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
 #' print(rmqCBA@rules)
 
+
+
 qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly",defaultRuleOverlapPruning="transactionBased",attributePruning  = TRUE, trim_literal_boundaries=TRUE, continuousPruning=FALSE, postpruning="cba",fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-1,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE, timeExecution=FALSE)
 {
   if (fuzzification & !annotate)
@@ -175,12 +287,25 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly",defaultRuleOver
   datadf[is.na(datadf)] <- ''
   datadf[is.null(datadf)] <- ''
 
-  rules=cbaRuleModel@rules
   classAtt=cbaRuleModel@classAtt
 
-  #reshape R data for Java call
-  rulesFrame <- as(rules,"data.frame")
-  rulesFrame$rules <- as.character(rulesFrame$rules)
+  #reshape R data for Java call IF necessary
+  if (class(cbaRuleModel)=="CBARuleModel")
+  {
+    #  the passsed object in rmCBA@rules was created by arules package, reshape necessary
+    rules=cbaRuleModel@rules
+    rulesFrame <- as(rules,"data.frame")
+    rulesFrame$rules <- as.character(rulesFrame$rules)
+  }
+  else if (class(cbaRuleModel)=="customCBARuleModel")
+  {
+    rulesFrame=cbaRuleModel@rules
+    message("Using customCBARuleModel")
+  }
+  else {
+    stop("Unsupported rule model")
+  }
+  
   rulesArray <- .jarray(lapply(rulesFrame, .jarray))
   datadfConverted <- data.frame(lapply(datadf, as.character), stringsAsFactors=FALSE)
 

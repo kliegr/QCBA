@@ -10,6 +10,7 @@ Depends:
     rJava (>= 0.5-0),
     arc (>= 1.1.2),
     methods
+Suggests: arulesCBA, rCBA
 SystemRequirements: Java (>= 8)
 License: AGPL-3
 RoxygenNote: 6.0.1
