@@ -36,7 +36,7 @@ qCBARuleModel <- setClass("qCBARuleModel",
 
 #' rCBARuleModel
 #'
-#' @description  This class represents an CBA rule-based classifier, where rules are represented as string vector in a data frame
+#' @description  This class represents an CBA rule-based classifier, where rules are represented as string vectors in a data frame
 #' @name customCBARuleModel-class
 #' @rdname customCBARuleModel-class
 #' @exportClass customCBARuleModel

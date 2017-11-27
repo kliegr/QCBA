@@ -1,16 +1,19 @@
 Package: qCBA
-Title: Quantitative Clasification by Association Rules
-Version: 0.2
+Title: Quantitative Classification by Association Rules
+Version: 0.3
+Date: 2017-11-11
 Author: Tomas Kliegr
 Maintainer: Tomas Kliegr <kliegr@gmail.com>
-Description: Postprocessing algorithm for CBA -- classification by association rules  -- for creating smaller models for datasets containing quantitative (numerical) attributes.
+Description: CBA postprocessing algorithm that creates smaller models for datasets containing quantitative (numerical) attributes.
 Depends:
     R (>= 2.7.0),
     arules,
     rJava (>= 0.5-0),
     arc (>= 1.1.2),
     methods
-Suggests: arulesCBA, rCBA
+Suggests: 
+    arulesCBA (>=1.1.2),
+    rCBA (>=0.0.2.9009)
 SystemRequirements: Java (>= 8)
 License: AGPL-3
 RoxygenNote: 6.0.1
