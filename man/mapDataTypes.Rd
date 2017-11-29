@@ -13,7 +13,7 @@ mapDataTypes(Rtypes)
 Vector with qCBA data types
 }
 \description{
-Map data types between R and qCBA
+The QCBA Java implementation uses different names of some data types than are used in this R wrapper.
 }
 \examples{
 mapDataTypes(unname(sapply(iris, class)))

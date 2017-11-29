@@ -12,9 +12,9 @@
 
 \item{newdata}{data frame with data}
 
-\item{testingType}{either "mixture" for multi rule classification or "firstRule" for one rule classification. Applicable only when model is loaded from file.}
+\item{testingType}{either \code{mixture} for multi-rule classification or \code{firstRule} for one-rule classification. Applicable only when model is loaded from file.}
 
-\item{loglevel}{logger level from java.util.logging}
+\item{loglevel}{logger level from \code{java.util.logging}}
 
 \item{...}{other arguments (currently not used)}
 }
@@ -22,14 +22,15 @@
 vector with predictions.
 }
 \description{
-Method that matches qCBA rule model. Supports both one rule and multi rule classification.
+Applies \link{qcba} rule model on provided data. 
+Automatically detects whether one-rule or  multi-rule classification is used
 }
 \examples{
 allData <- datasets::iris[sample(nrow(datasets::iris)),]
 trainFold <- allData[1:100,]
 testFold <- allData[101:nrow(datasets::iris),]
 rmCBA <- cba(trainFold, classAtt="Species")
-rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
+rmqCBA <- qcba(cbaRuleModel=rmCBA, datadf=trainFold)
 print(rmqCBA@rules)
 prediction <- predict(rmqCBA,testFold)
 acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])

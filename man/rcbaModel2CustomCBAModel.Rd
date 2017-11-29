@@ -2,14 +2,14 @@
 % Please edit documentation in R/rMARC.R
 \name{rcbaModel2CustomCBAModel}
 \alias{rcbaModel2CustomCBAModel}
-\title{rcbaModel2CustomCBAModel Converts a model created by rCBA so that it can be passed to qCBA}
+\title{rcbaModel2CustomCBAModel Converts a model created by \pkg{rCBA} so that it can be passed to qCBA}
 \usage{
 rcbaModel2CustomCBAModel(rcbaModel, cutPoints, classAtt, rawDataset, attTypes)
 }
 \arguments{
-\item{rcbaModel}{aobject returned  by rCBA::build}
+\item{rcbaModel}{object returned  by \link[rCBA]{build}}
 
-\item{cutPoints}{specification of cutpoints applied on the data before they were passed to rCBA::build}
+\item{cutPoints}{specification of cutpoints applied on the data before they were passed to  \link[rCBA]{build}}
 
 \item{classAtt}{the name of the class attribute}
 
@@ -18,8 +18,9 @@ rcbaModel2CustomCBAModel(rcbaModel, cutPoints, classAtt, rawDataset, attTypes)
 \item{attTypes}{vector of attribute types of the original data.  If set to null, you need to pass rawDataset.}
 }
 \description{
-Creates instance of CustomCBAModel class based on model created by the rCBA package.
-This instance can then be passed to qcba() instead of CBARuleModel created with the arc package.
+Creates instance of \link{customCBARuleModel} class based on model created by the  \pkg{rCBA}  package.
+Instance of \link{customCBARuleModel} can then be passed to \link[qCBA]{qcba} instead of an instance of \link{CBARuleModel},
+which is created with the arc package.
 }
 \examples{
 if (! requireNamespace("rCBA", quietly = TRUE)) {

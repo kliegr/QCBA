@@ -11,11 +11,11 @@ library(arc)
 
 #' qCBARuleModel
 #'
-#' @description  This class represents a qCBA rule-based classifier.
+#' @description  This class represents a QCBA rule-based classifier.
 #' @name qCBARuleModel-class
 #' @rdname qCBARuleModel-class
 #' @exportClass qCBARuleModel
-#' @slot rules object of class rules from arules package enhanced by qCBA
+#' @slot rules object of class rules from arules package postprocessed by \pkg{qCBA}
 #' @slot history extension history
 #' @slot classAtt name of the target class attribute
 #' @slot attTypes attribute types
@@ -40,7 +40,7 @@ qCBARuleModel <- setClass("qCBARuleModel",
 #' @name customCBARuleModel-class
 #' @rdname customCBARuleModel-class
 #' @exportClass customCBARuleModel
-#' @slot rules dataframe output by rCBA
+#' @slot rules dataframe output by \pkg{rCBA}
 #' @slot cutp list of cutpoints
 #' @slot classAtt name of the target class attribute
 #' @slot attTypes attribute types
@@ -53,12 +53,11 @@ customCBARuleModel <- setClass("customCBARuleModel",
                           )
 )
 
-#' @title  Use the Humidity-Temperature toy dataset from the arc package to test one rule classification QCBA workflow.
-#' @description TODO
+#' @title  Use the HumTemp dataset to test the one rule classification QCBA workflow.
+#' @description Learns a CBA classifier and performs all QCBA postprocessing steps.
 #'
 #' @return QCBA model
 #' @export
-#'
 #'
 qcbaHumTemp <- function()
 {
@@ -67,14 +66,14 @@ qcbaHumTemp <- function()
   #custom discretization
   data_discr[,1]<-cut(data_raw[,1],breaks=seq(from=15,to=45,by=5))
   data_discr[,2]<-cut(data_raw[,2],breaks=c(0,40,60,80,100))
-  #change interval syntax from (15,20] to (15;20], which is required by MARC
+  #change interval syntax from (15,20] to (15;20], which is required by QCBA
   data_discr[,1]<-as.factor(unlist(lapply(data_discr[,1], function(x) {gsub(",", ";", x)})))
   data_discr[,2]<-as.factor(unlist(lapply(data_discr[,2], function(x) {gsub(",", ";", x)})))
 
   data_discr[,3] <- as.factor(data_raw[,3])
 
   txns <- as(data_discr, "transactions")
-  rules <- apriori(txns, parameter = list(confidence = 0.75, support= 3/nrow(data_discr), minlen=1, maxlen=5))
+  rules <- apriori(txns, parameter = list(confidence = 0.5, support= 3/nrow(data_discr), minlen=1, maxlen=3), appearance=appearance)
   print("Seed list of rules")
   inspect(rules)
 
@@ -99,8 +98,8 @@ qcbaHumTemp <- function()
 }
 
 
-#' @title  Use the Iris dataset to test one rule classification QCBA workflow.
-#' @description Learns a CBA classifier, performs all qCBA postprocessing steps for one rule classification.
+#' @title  Use the \link{iris} dataset to the test QCBA workflow.
+#' @description Learns a CBA classifier and performs all QCBA postprocessing steps
 #'
 #' @return Accuracy.
 #' @export
@@ -121,8 +120,9 @@ qcbaIris <- function()
   return(acc)
 }
 
-#' @title Use the Iris dataset to test multi rule qCBA workflow.
-#' @description Learns a CBA classifier, performs qCBA with the experimental multi rule classification workflow including annotation and fuzzification. Applies the model with rule mixture classification.
+#' @title Use the Iris dataset to test the experimental multi-rule QCBA workflow.
+#' @description Learns a CBA classifier, and then transforms it  to a multirule classifier,
+#'  including rule annotation and fuzzification. Applies the learnt model with rule mixture classification.
 #' The model  is saved to a temporary file.
 #'
 #' @return Accuracy.
@@ -144,12 +144,13 @@ qcbaIris2 <- function()
 }
 
 
-#' @title rcbaModel2CustomCBAModel Converts a model created by rCBA so that it can be passed to qCBA
-#' @description Creates instance of CustomCBAModel class based on model created by the rCBA package.
-#' This instance can then be passed to qcba() instead of CBARuleModel created with the arc package.
+#' @title rcbaModel2CustomCBAModel Converts a model created by \pkg{rCBA} so that it can be passed to qCBA
+#' @description Creates instance of \link{customCBARuleModel} class based on model created by the  \pkg{rCBA}  package.
+#' Instance of \link{customCBARuleModel} can then be passed to \link[qCBA]{qcba} instead of an instance of \link{CBARuleModel},
+#' which is created with the arc package.
 #' @export
-#' @param rcbaModel aobject returned  by rCBA::build
-#' @param cutPoints specification of cutpoints applied on the data before they were passed to rCBA::build
+#' @param rcbaModel object returned  by \link[rCBA]{build}
+#' @param cutPoints specification of cutpoints applied on the data before they were passed to  \link[rCBA]{build}
 #' @param classAtt the name of the class attribute
 #' @param rawDataset the raw data (before discretization). This dataset is used to guess attribute types if attTypes is not passed
 #' @param attTypes vector of attribute types of the original data.  If set to null, you need to pass rawDataset.
@@ -165,6 +166,7 @@ qcbaIris2 <- function()
 #'  print(qCBAmodel@rules)
 #' }
 #' 
+
 rcbaModel2CustomCBAModel <- function(rcbaModel, cutPoints, classAtt, rawDataset, attTypes)
 {
   # note that the example for this function generates a notice
@@ -185,9 +187,10 @@ rcbaModel2CustomCBAModel <- function(rcbaModel, cutPoints, classAtt, rawDataset,
 }
 
 
-#' @title arulesCBAModel2CustomCBAModel Converts a model created by arulesCBA so that it can be passed to qCBA
-#' @description Creates instance of CustomCBAModel class based on model created by the rCBA package.
-#' This instance can then be passed to qcba() instead of CBARuleModel created with the arc package.
+#' @title arulesCBAModel2CustomCBAModel Converts a model created by \pkg{arulesCBA} so that it can be passed to qCBA
+#' @description Creates instance of \link{customCBARuleModel} class based on model created by the \pkg{arulesCBA} package.
+#' Instance of \link{customCBARuleModel} can then be passed to \link{qcba} instead of an instance of \link{CBARuleModel}, 
+#' which is created with the arc package.
 #' @export
 #' @param arulesCBAModel aobject returned  by arulesCBA::CBA()
 #' @param cutPoints specification of cutpoints applied on the data before they were passed to rCBA::build
@@ -235,28 +238,33 @@ arulesCBAModel2CustomCBAModel <- function(arulesCBAModel, cutPoints, rawDataset,
 }
 
 #' @title qCBA Quantitative CBA
-#' @description Creates qCBA one rule or multi rule classication model from a CBA rule model
+#' @description Creates QCBA model by from a CBA rule model.
+#' The default values are set so that the function postprocesses CBA models, reducing their size. 
+#' The resulting model has the same structure as CBA model: it is composed of an ordered list of crisp conjunctive rules,  intended to be applied for one-rule classification.
+#' The experimental \code{annotate} and \code{fuzzification} parameters will trigger more complex postprocessing of CBA models: 
+#' rules will be annotated with probability distributions and optionally fuzzy borders. The intended use of such models is multi-rule classification.
+#' The \link{predict} function automatically determines whether the input model is a CBA model or an annotated model.
 #' @export
 #' @param cbaRuleModel a \link{CBARuleModel}
 #' @param datadf data frame with training data
 #' @param extendType  possible extend types - numericOnly or noExtend
-#' @param defaultRuleOverlapPruning pruning removing rules made redundant by the default rule - possible values: noPruning,transactionBased,rangeBased,transactionBasedAsFirstStep
+#' @param defaultRuleOverlapPruning pruning removing rules made redundant by the default rule; possible values: \code{noPruning}, \code{transactionBased}, \code{rangeBased}, \code{transactionBasedAsFirstStep}
 #' @param attributePruning remove redundant attributes
 #' @param trim_literal_boundaries trimming of literal boundaries enabled
 #' @param continuousPruning indicating continuous pruning is enabled
-#' @param postpruning type of  postpruning (none, cba - data coverage pruning, greedy - data coverage pruning stopping on first rule with total error worse than default)
-#' @param fuzzification boolean indicating if fuzzification is enabled. Multi rule classification model is produced if enabled. Fuzzification without annotation is not supported.
-#' @param annotate boolean indicating if annotation with probability distributions is enabled, multi rule classification model is produced if enabled
+#' @param postpruning type of  postpruning (\code{none}, \code{cba} - data coverage pruning, \code{greedy} - data coverage pruning stopping on first rule with total error worse than default)
+#' @param fuzzification boolean indicating if fuzzification is enabled. Multi-rule classification model is produced if enabled. Fuzzification without annotation is not supported.
+#' @param annotate boolean indicating if annotation with probability distributions is enabled, multi-rule classification model is produced if enabled
 #' @param ruleOutputPath path of file to which model will be saved. Must be set if multi rule classification is produced.
-#' @param minImprovement parameter ofqCBA extend procedure  (used when  extensionStrategy=ConfImprovementAgainstLastConfirmedExtension or ConfImprovementAgainstSeedRule)
+#' @param minImprovement parameter ofqCBA extend procedure  (used when  \code{extensionStrategy=ConfImprovementAgainstLastConfirmedExtension} or \code{ConfImprovementAgainstSeedRule})
 #' @param minCondImprovement parameter ofqCBA extend procedure
 #' @param minConf minimum confidence  to accept extension (used when  extensionStrategy=MinConf)
-#' @param extensionStrategy possible values: ConfImprovementAgainstLastConfirmedExtension, ConfImprovementAgainstSeedRule,MinConf
-#' @param createHistorySlot creates a history slot on the resulting qCBARuleModel model, which with contains an ordered list of extensions
-#' that were created on each rule during the extension process
+#' @param extensionStrategy possible values: \code{ConfImprovementAgainstLastConfirmedExtension}, \code{ConfImprovementAgainstSeedRule},\code{MinConf}
+#' @param createHistorySlot creates a history slot on the resulting \link{qCBARuleModel} model, which contains an ordered list of extensions
+#' that were created on input rules during the extension process
 #' @param timeExecution reports execution time of the extend step
 
-#' @param loglevel logger level from java.util.logging
+#' @param loglevel logger level from \code{java.util.logging}
 #'
 #' @return Object of class \link{qCBARuleModel}.
 #'
@@ -270,7 +278,7 @@ arulesCBAModel2CustomCBAModel <- function(arulesCBAModel, cutPoints, rawDataset,
 
 
 
-qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly",defaultRuleOverlapPruning="transactionBased",attributePruning  = TRUE, trim_literal_boundaries=TRUE, continuousPruning=FALSE, postpruning="cba",fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-1,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE, timeExecution=FALSE)
+qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly", defaultRuleOverlapPruning="transactionBased",attributePruning  = TRUE, trim_literal_boundaries=TRUE, continuousPruning=FALSE, postpruning="cba",fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-1,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE, timeExecution=FALSE)
 {
   if (fuzzification & !annotate)
   {
@@ -332,7 +340,6 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly",defaultRuleOver
     message (paste("qCBA Model building took:", round(end.time - start.time, 2), " seconds"))
   }
 
-
   rm <- qCBARuleModel()
 
   rm@classAtt <- classAtt
@@ -370,19 +377,20 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly",defaultRuleOver
     if (!missing(ruleOutputPath))
     {
       write.csv(extRulesFrame, ruleOutputPath, row.names=TRUE,quote = TRUE)
-
     }
   }
   return(rm)
 }
 
 #' @title Aplies qCBARuleModel
-#' @description Method that matches qCBA rule model. Supports both one rule and multi rule classification.
+#' @description Applies \link{qcba} rule model on provided data. 
+#' Automatically detects whether one-rule or  multi-rule classification is used
+#' 
 #'
 #' @param object \link{qCBARuleModel} class instance
 #' @param newdata data frame with data
-#' @param testingType either "mixture" for multi rule classification or "firstRule" for one rule classification. Applicable only when model is loaded from file.
-#' @param loglevel logger level from java.util.logging
+#' @param testingType either \code{mixture} for multi-rule classification or \code{firstRule} for one-rule classification. Applicable only when model is loaded from file.
+#' @param loglevel logger level from \code{java.util.logging}
 #' @param ... other arguments (currently not used)
 #' @return vector with predictions.
 #' @export
@@ -392,7 +400,7 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly",defaultRuleOver
 #' trainFold <- allData[1:100,]
 #' testFold <- allData[101:nrow(datasets::iris),]
 #' rmCBA <- cba(trainFold, classAtt="Species")
-#' rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
+#' rmqCBA <- qcba(cbaRuleModel=rmCBA, datadf=trainFold)
 #' print(rmqCBA@rules)
 #' prediction <- predict(rmqCBA,testFold)
 #' acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
@@ -403,7 +411,6 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly",defaultRuleOver
 #'
 predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNING", ...)
 {
-  start.time <- Sys.time()
   ruleModel <- object
 
   newdata[is.na(newdata)] <- ''
@@ -419,14 +426,12 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
 
   #attTypesArray <- .jarray(unname(sapply(newdata, class)))
   testArray <-  .jarray(lapply(testConverted, .jarray))
-
-
-  #pass data to qCBA Java
+  
+  #pass data to QCBA Java implementation
   #the reason why we cannot use predict.RuleModel in arc package is that the items in the rules do not match the itemMatrix after R extend
   idAtt <- ""
   jPredict <- .jnew("eu.kliegr.ac1.R.RinterfacePredict", attTypesArray, ruleModel@classAtt, idAtt,loglevel)
   .jcall(jPredict, , "addDataFrame", testArray,cNames)
-
 
   if (nchar(ruleModel@rulePath)>0)
   {
@@ -435,18 +440,15 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
   }
   else
   {
-    message("Using rules stored in the passed model")
     extRulesJArray <- .jarray(lapply(ruleModel@rules, .jarray))
     .jcall(jPredict, , "addRuleFrame", extRulesJArray)
     prediction <- .jcall(jPredict, "[Ljava/lang/String;", "predict")
   }
-  end.time <- Sys.time()
-  message (paste("Prediction (qCBA model application) took:", round(end.time - start.time, 2), " seconds"))
   return(prediction)
 }
 
 #' @title Map R types to qCBA
-#' @description Map data types between R and qCBA
+#' @description The QCBA Java implementation uses different names of some data types than are used in this R wrapper.
 #' @export
 #' @param Rtypes Vector with R data types
 #'

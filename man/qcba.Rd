@@ -20,7 +20,7 @@ qcba(cbaRuleModel, datadf, extendType = "numericOnly",
 
 \item{extendType}{possible extend types - numericOnly or noExtend}
 
-\item{defaultRuleOverlapPruning}{pruning removing rules made redundant by the default rule - possible values: noPruning,transactionBased,rangeBased,transactionBasedAsFirstStep}
+\item{defaultRuleOverlapPruning}{pruning removing rules made redundant by the default rule; possible values: \code{noPruning}, \code{transactionBased}, \code{rangeBased}, \code{transactionBasedAsFirstStep}}
 
 \item{attributePruning}{remove redundant attributes}
 
@@ -28,26 +28,26 @@ qcba(cbaRuleModel, datadf, extendType = "numericOnly",
 
 \item{continuousPruning}{indicating continuous pruning is enabled}
 
-\item{postpruning}{type of  postpruning (none, cba - data coverage pruning, greedy - data coverage pruning stopping on first rule with total error worse than default)}
+\item{postpruning}{type of  postpruning (\code{none}, \code{cba} - data coverage pruning, \code{greedy} - data coverage pruning stopping on first rule with total error worse than default)}
 
-\item{fuzzification}{boolean indicating if fuzzification is enabled. Multi rule classification model is produced if enabled. Fuzzification without annotation is not supported.}
+\item{fuzzification}{boolean indicating if fuzzification is enabled. Multi-rule classification model is produced if enabled. Fuzzification without annotation is not supported.}
 
-\item{annotate}{boolean indicating if annotation with probability distributions is enabled, multi rule classification model is produced if enabled}
+\item{annotate}{boolean indicating if annotation with probability distributions is enabled, multi-rule classification model is produced if enabled}
 
 \item{ruleOutputPath}{path of file to which model will be saved. Must be set if multi rule classification is produced.}
 
-\item{minImprovement}{parameter ofqCBA extend procedure  (used when  extensionStrategy=ConfImprovementAgainstLastConfirmedExtension or ConfImprovementAgainstSeedRule)}
+\item{minImprovement}{parameter ofqCBA extend procedure  (used when  \code{extensionStrategy=ConfImprovementAgainstLastConfirmedExtension} or \code{ConfImprovementAgainstSeedRule})}
 
 \item{minCondImprovement}{parameter ofqCBA extend procedure}
 
 \item{minConf}{minimum confidence  to accept extension (used when  extensionStrategy=MinConf)}
 
-\item{extensionStrategy}{possible values: ConfImprovementAgainstLastConfirmedExtension, ConfImprovementAgainstSeedRule,MinConf}
+\item{extensionStrategy}{possible values: \code{ConfImprovementAgainstLastConfirmedExtension}, \code{ConfImprovementAgainstSeedRule},\code{MinConf}}
 
-\item{loglevel}{logger level from java.util.logging}
+\item{loglevel}{logger level from \code{java.util.logging}}
 
-\item{createHistorySlot}{creates a history slot on the resulting qCBARuleModel model, which with contains an ordered list of extensions
-that were created on each rule during the extension process}
+\item{createHistorySlot}{creates a history slot on the resulting \link{qCBARuleModel} model, which contains an ordered list of extensions
+that were created on input rules during the extension process}
 
 \item{timeExecution}{reports execution time of the extend step}
 }
@@ -55,7 +55,12 @@ that were created on each rule during the extension process}
 Object of class \link{qCBARuleModel}.
 }
 \description{
-Creates qCBA one rule or multi rule classication model from a CBA rule model
+Creates QCBA model by from a CBA rule model.
+The default values are set so that the function postprocesses CBA models, reducing their size. 
+The resulting model has the same structure as CBA model: it is composed of an ordered list of crisp conjunctive rules,  intended to be applied for one-rule classification.
+The experimental \code{annotate} and \code{fuzzification} parameters will trigger more complex postprocessing of CBA models: 
+rules will be annotated with probability distributions and optionally fuzzy borders. The intended use of such models is multi-rule classification.
+The \link{predict} function automatically determines whether the input model is a CBA model or an annotated model.
 }
 \examples{
 allData <- datasets::iris[sample(nrow(datasets::iris)),]

@@ -2,7 +2,7 @@
 % Please edit documentation in R/rMARC.R
 \name{arulesCBAModel2CustomCBAModel}
 \alias{arulesCBAModel2CustomCBAModel}
-\title{arulesCBAModel2CustomCBAModel Converts a model created by arulesCBA so that it can be passed to qCBA}
+\title{arulesCBAModel2CustomCBAModel Converts a model created by \pkg{arulesCBA} so that it can be passed to qCBA}
 \usage{
 arulesCBAModel2CustomCBAModel(arulesCBAModel, cutPoints, rawDataset, attTypes)
 }
@@ -16,8 +16,9 @@ arulesCBAModel2CustomCBAModel(arulesCBAModel, cutPoints, rawDataset, attTypes)
 \item{attTypes}{vector of attribute types of the original data.  If set to null, you need to pass rawDataset.}
 }
 \description{
-Creates instance of CustomCBAModel class based on model created by the rCBA package.
-This instance can then be passed to qcba() instead of CBARuleModel created with the arc package.
+Creates instance of \link{customCBARuleModel} class based on model created by the \pkg{arulesCBA} package.
+Instance of \link{customCBARuleModel} can then be passed to \link{qcba} instead of an instance of \link{CBARuleModel}, 
+which is created with the arc package.
 }
 \examples{
 if (! requireNamespace("arulesCBA", quietly = TRUE)) {

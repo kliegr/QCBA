@@ -2,7 +2,7 @@
 % Please edit documentation in R/rMARC.R
 \name{qcbaIris2}
 \alias{qcbaIris2}
-\title{Use the Iris dataset to test multi rule qCBA workflow.}
+\title{Use the Iris dataset to test the experimental multi-rule QCBA workflow.}
 \usage{
 qcbaIris2()
 }
@@ -10,6 +10,7 @@ qcbaIris2()
 Accuracy.
 }
 \description{
-Learns a CBA classifier, performs qCBA with the experimental multi rule classification workflow including annotation and fuzzification. Applies the model with rule mixture classification.
+Learns a CBA classifier, and then transforms it  to a multirule classifier,
+ including rule annotation and fuzzification. Applies the learnt model with rule mixture classification.
 The model  is saved to a temporary file.
 }

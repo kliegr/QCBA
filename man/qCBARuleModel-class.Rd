@@ -6,12 +6,12 @@
 \alias{qCBARuleModel}
 \title{qCBARuleModel}
 \description{
-This class represents a qCBA rule-based classifier.
+This class represents a QCBA rule-based classifier.
 }
 \section{Slots}{
 
 \describe{
-\item{\code{rules}}{object of class rules from arules package enhanced by qCBA}
+\item{\code{rules}}{object of class rules from arules package postprocessed by \pkg{qCBA}}
 
 \item{\code{history}}{extension history}
 

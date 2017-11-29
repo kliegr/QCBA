@@ -12,8 +12,8 @@ Depends:
     arc (>= 1.1.2),
     methods
 Suggests: 
-    arulesCBA (>=1.1.2),
-    rCBA (>=0.0.2.9009)
+    arulesCBA (>= 1.1.2),
+    rCBA (>= 0.0.2.9009)
 SystemRequirements: Java (>= 8)
 License: AGPL-3
 RoxygenNote: 6.0.1

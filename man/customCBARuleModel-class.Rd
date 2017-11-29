@@ -6,12 +6,12 @@
 \alias{customCBARuleModel}
 \title{rCBARuleModel}
 \description{
-This class represents an CBA rule-based classifier, where rules are represented as string vector in a data frame
+This class represents an CBA rule-based classifier, where rules are represented as string vectors in a data frame
 }
 \section{Slots}{
 
 \describe{
-\item{\code{rules}}{dataframe output by rCBA}
+\item{\code{rules}}{dataframe output by \pkg{rCBA}}
 
 \item{\code{cutp}}{list of cutpoints}
 
