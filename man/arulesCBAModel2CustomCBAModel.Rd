@@ -9,7 +9,7 @@ arulesCBAModel2CustomCBAModel(arulesCBAModel, cutPoints, rawDataset, attTypes)
 \arguments{
 \item{arulesCBAModel}{aobject returned  by arulesCBA::CBA()}
 
-\item{cutPoints}{specification of cutpoints applied on the data before they were passed to rCBA::build}
+\item{cutPoints}{specification of cutpoints applied on the data before they were passed to \code{rCBA::build}}
 
 \item{rawDataset}{the raw data (before discretization). This dataset is used to guess attribute types if attTypes is not passed}
 
@@ -21,6 +21,8 @@ Instance of \link{customCBARuleModel} can then be passed to \link{qcba} instead 
 which is created with the arc package.
 }
 \examples{
+
+\donttest{
 if (! requireNamespace("arulesCBA", quietly = TRUE)) {
  message("Please install arulesCBA: install.packages('arulesCBA')")
 }  else {
@@ -31,6 +33,7 @@ if (! requireNamespace("arulesCBA", quietly = TRUE)) {
  cCBAmodel <- arulesCBAModel2CustomCBAModel(arulesCBAModel, discrModel$cutp, iris)
  qCBAmodel <- qcba(cbaRuleModel=cCBAmodel,datadf=iris)
  print(qCBAmodel@rules)
+ }
 }
 
 }
