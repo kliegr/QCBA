@@ -1,4 +1,8 @@
 # Quantitative CBA
+
+[![](http://cranlogs.r-pkg.org/badges/qCBA)](http://cran.rstudio.com/web/packages/qCBA/index.html)
+[![Travis-CI Build Status](https://travis-ci.org/kliegr/QCBA.svg?branch=master)](https://travis-ci.org/kliegr/QCBA)
+
 Quantitative CBA (QCBA) is a postprocessing algorithm for association rule classification algorithm CBA, which implements a number of 
 optimization steps to improve handling of quantitative (numerical) attributes. The viable properties of these rule lists that make CBA classification  models most comprehensible among all association rule classification algorithms, such as one-rule classification and crisp rules, are retained. The postprocessing is conceptually fast, because it is performed on a relatively small number of rules that passed the pruning steps, and  can be adapted also for multi-rule classification algorithms. Benchmarks show about 50% decrease in the total size of the model as measured by the total number of conditions in all rules. Model accuracy generally remains on the same level as for CBA with QCBA even providing small improvement over CBA on 11 of the 22 datasets involved in our benchmark. 
 
