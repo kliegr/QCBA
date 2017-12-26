@@ -210,7 +210,11 @@ rcbaModel2CustomCBAModel <- function(rcbaModel, cutPoints, classAtt, rawDataset,
 #' @param attTypes vector of attribute types of the original data.  If set to null, you need to pass rawDataset.
 #' @examples 
 #' 
+<<<<<<< HEAD
 #' \dontrun{
+=======
+#' \donttest{
+>>>>>>> 928a44844e37ff0f814bd2c3353b864016df0323
 #' if (! requireNamespace("arulesCBA", quietly = TRUE)) {
 #'  message("Please install arulesCBA: install.packages('arulesCBA')")
 #' }  else {
