@@ -7,9 +7,9 @@
 rcbaModel2CustomCBAModel(rcbaModel, cutPoints, classAtt, rawDataset, attTypes)
 }
 \arguments{
-\item{rcbaModel}{object returned  by \link[rCBA]{build}}
+\item{rcbaModel}{object returned  by rCBA::build}
 
-\item{cutPoints}{specification of cutpoints applied on the data before they were passed to  \link[rCBA]{build}}
+\item{cutPoints}{specification of cutpoints applied on the data before they were passed to  \code{rCBA::build}}
 
 \item{classAtt}{the name of the class attribute}
 
@@ -23,15 +23,25 @@ Instance of \link{customCBARuleModel} can then be passed to \link[qCBA]{qcba} in
 which is created with the arc package.
 }
 \examples{
+\donttest{
 if (! requireNamespace("rCBA", quietly = TRUE)) {
  message("Please install rCBA: install.packages('rCBA')")
 } else {
+if (utils::compareVersion(utils::packageDescription('rCBA')$Version,"0.0.2.9009") == -1 )
+{
+  message("rCBA minimum version '0.0.2.9009' required. \\n
+  Please install latest version of rCBA from GitHub.")
+}
+else
+{
  discrModel <- discrNumeric(iris, "Species")
  irisDisc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
  rCBAmodel <- rCBA::build(irisDisc)
  cCBAmodel <- rcbaModel2CustomCBAModel(rCBAmodel,discrModel$cutp,"Species",iris)
  qCBAmodel <- qcba(cCBAmodel,iris)
  print(qCBAmodel@rules)
+  }
+ }
 }
 
 }

@@ -149,24 +149,36 @@ qcbaIris2 <- function()
 #' Instance of \link{customCBARuleModel} can then be passed to \link[qCBA]{qcba} instead of an instance of \link{CBARuleModel},
 #' which is created with the arc package.
 #' @export
-#' @param rcbaModel object returned  by \link[rCBA]{build}
-#' @param cutPoints specification of cutpoints applied on the data before they were passed to  \link[rCBA]{build}
+#' @param rcbaModel object returned  by rCBA::build
+#' @param cutPoints specification of cutpoints applied on the data before they were passed to  \code{rCBA::build}
 #' @param classAtt the name of the class attribute
 #' @param rawDataset the raw data (before discretization). This dataset is used to guess attribute types if attTypes is not passed
 #' @param attTypes vector of attribute types of the original data.  If set to null, you need to pass rawDataset.
+
+
 #' @examples
+#' \donttest{
 #' if (! requireNamespace("rCBA", quietly = TRUE)) {
 #'  message("Please install rCBA: install.packages('rCBA')")
 #' } else {
+#'if (utils::compareVersion(utils::packageDescription('rCBA')$Version,"0.0.2.9009") == -1 )
+#' {
+#'   message("rCBA minimum version '0.0.2.9009' required. \n
+#'   Please install latest version of rCBA from GitHub.")
+#' }
+#' else
+#' {
 #'  discrModel <- discrNumeric(iris, "Species")
 #'  irisDisc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
 #'  rCBAmodel <- rCBA::build(irisDisc)
 #'  cCBAmodel <- rcbaModel2CustomCBAModel(rCBAmodel,discrModel$cutp,"Species",iris)
 #'  qCBAmodel <- qcba(cCBAmodel,iris)
 #'  print(qCBAmodel@rules)
+#'   }
+#'  }
 #' }
-#' 
 
+#' 
 rcbaModel2CustomCBAModel <- function(rcbaModel, cutPoints, classAtt, rawDataset, attTypes)
 {
   # note that the example for this function generates a notice
@@ -193,10 +205,12 @@ rcbaModel2CustomCBAModel <- function(rcbaModel, cutPoints, classAtt, rawDataset,
 #' which is created with the arc package.
 #' @export
 #' @param arulesCBAModel aobject returned  by arulesCBA::CBA()
-#' @param cutPoints specification of cutpoints applied on the data before they were passed to rCBA::build
+#' @param cutPoints specification of cutpoints applied on the data before they were passed to \code{rCBA::build}
 #' @param rawDataset the raw data (before discretization). This dataset is used to guess attribute types if attTypes is not passed
 #' @param attTypes vector of attribute types of the original data.  If set to null, you need to pass rawDataset.
-#' @examples
+#' @examples 
+#' 
+#' \donttest{
 #' if (! requireNamespace("arulesCBA", quietly = TRUE)) {
 #'  message("Please install arulesCBA: install.packages('arulesCBA')")
 #' }  else {
@@ -207,6 +221,7 @@ rcbaModel2CustomCBAModel <- function(rcbaModel, cutPoints, classAtt, rawDataset,
 #'  cCBAmodel <- arulesCBAModel2CustomCBAModel(arulesCBAModel, discrModel$cutp, iris)
 #'  qCBAmodel <- qcba(cbaRuleModel=cCBAmodel,datadf=iris)
 #'  print(qCBAmodel@rules)
+#'  }
 #' }
 #' 
 arulesCBAModel2CustomCBAModel <- function(arulesCBAModel, cutPoints, rawDataset, attTypes )
