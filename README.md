@@ -10,10 +10,9 @@
 Quantitative CBA (QCBA) is a postprocessing algorithm for association rule classification algorithm CBA, which implements a number of 
 optimization steps to improve handling of quantitative (numerical) attributes. The viable properties of these rule lists that make CBA classification  models most comprehensible among all association rule classification algorithms, such as one-rule classification and crisp rules, are retained. The postprocessing is conceptually fast, because it is performed on a relatively small number of rules that passed the pruning steps, and  can be adapted also for multi-rule classification algorithms. Benchmarks show about 50% decrease in the total size of the model as measured by the total number of conditions in all rules. Model accuracy generally remains on the same level as for CBA with QCBA even providing small improvement over CBA on 11 of the 22 datasets involved in our benchmark. 
 
-The reference for CBA:
 
  ```
- Liu, B. Hsu, W. and Ma, Y (1998). Integrating Classification and Association Rule Mining. Proceedings KDD-98, New York, 27-31 August. AAAI. pp 80-86.
+Kliegr, Tomas. "Quantitative CBA: Small and Comprehensible Association Rule Classification Models." arXiv preprint arXiv:1711.10166 (2017).
  ```
  
 The [arc](https://github.com/kliegr/arc) package is used for generation of the CBA classifier, which is postprocessed by the QCBA R package.
