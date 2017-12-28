@@ -29,12 +29,20 @@ The [tutorial](http://nb.vse.cz/~klit01/qcba/tutorial.html)  visually demonstrat
 
 The R Markdown source for this tutorial is located [here](https://github.com/kliegr/QCBA/blob/master/man/tutorial.Rmd). Note that while GitHub displays the syntax, it does not run the code or even display the knitted HTML. For this reason, it is recommended to view the tutorial [outside github](http://nb.vse.cz/~klit01/qcba/tutorial.html).
 
+## Prerequisites
+The qCBA package depends on Java 8, and correctly installed [rJava](https://cran.r-project.org/web/packages/rJava/index.html) package. On Linux, even if you have Java installed, it [might be necessary](https://stackoverflow.com/questions/3311940/r-rjava-package-install-failing) to install it again with
+```bash
+apt-get install r-cran-rjava
+```
+
+For instructions on how to setup rJava please refer to [rJava documentation](https://cran.r-project.org/web/packages/rJava/index.html) .
 ## Installation
-Package  can be installed from the R environment using the devtools package.
+The package version available on CRAN is [![](https://www.r-pkg.org/badges/version/qCBA)](https://cran.r-project.org/web/packages/qCBA/index.html).
+
+The latest version can be installed from the R environment using the devtools package.
 ```R
 devtools::install_github("kliegr/QCBA")
 ```
-Note that the package depends on Java 8 available and correctly installed [rJava](https://cran.r-project.org/web/packages/rJava/index.html) package. For instructions on how to setup rJava please refer to rJava documentation.
 ## Example
 
 ### Baseline CBA model
