@@ -2,14 +2,17 @@
 
 [![](http://cranlogs.r-pkg.org/badges/qCBA)](http://cran.rstudio.com/web/packages/qCBA/index.html)
 [![Travis-CI Build Status](https://travis-ci.org/kliegr/QCBA.svg?branch=master)](https://travis-ci.org/kliegr/QCBA)
+[![](https://www.r-pkg.org/badges/version/qCBA)](https://cran.r-project.org/web/packages/qCBA/index.html)
 
-Quantitative CBA (QCBA) is a postprocessing algorithm for association rule classification algorithm CBA, which implements a number of 
+
+
+
+[Quantitative CBA (QCBA)](https://arxiv.org/abs/1711.10166) is a postprocessing algorithm for association rule classification algorithm CBA, which implements a number of 
 optimization steps to improve handling of quantitative (numerical) attributes. The viable properties of these rule lists that make CBA classification  models most comprehensible among all association rule classification algorithms, such as one-rule classification and crisp rules, are retained. The postprocessing is conceptually fast, because it is performed on a relatively small number of rules that passed the pruning steps, and  can be adapted also for multi-rule classification algorithms. Benchmarks show about 50% decrease in the total size of the model as measured by the total number of conditions in all rules. Model accuracy generally remains on the same level as for CBA with QCBA even providing small improvement over CBA on 11 of the 22 datasets involved in our benchmark. 
 
-The reference for CBA:
 
  ```
- Liu, B. Hsu, W. and Ma, Y (1998). Integrating Classification and Association Rule Mining. Proceedings KDD-98, New York, 27-31 August. AAAI. pp 80-86.
+Kliegr, Tomas. "Quantitative CBA: Small and Comprehensible Association Rule Classification Models." arXiv preprint arXiv:1711.10166 (2017).
  ```
  
 The [arc](https://github.com/kliegr/arc) package is used for generation of the CBA classifier, which is postprocessed by the QCBA R package.
@@ -26,12 +29,20 @@ The [tutorial](http://nb.vse.cz/~klit01/qcba/tutorial.html)  visually demonstrat
 
 The R Markdown source for this tutorial is located [here](https://github.com/kliegr/QCBA/blob/master/man/tutorial.Rmd). Note that while GitHub displays the syntax, it does not run the code or even display the knitted HTML. For this reason, it is recommended to view the tutorial [outside github](http://nb.vse.cz/~klit01/qcba/tutorial.html).
 
+## Prerequisites
+The qCBA package depends on Java 8, and correctly installed [rJava](https://cran.r-project.org/web/packages/rJava/index.html) package. On Linux, even if you have Java installed, it [might be necessary](https://stackoverflow.com/questions/3311940/r-rjava-package-install-failing) to install it again with
+```bash
+apt-get install r-cran-rjava
+```
+
+For instructions on how to setup rJava please refer to [rJava documentation](https://cran.r-project.org/web/packages/rJava/index.html) .
 ## Installation
-Package  can be installed from the R environment using the devtools package.
+The package version available on CRAN is [![](https://www.r-pkg.org/badges/version/qCBA)](https://cran.r-project.org/web/packages/qCBA/index.html).
+
+The latest version can be installed from the R environment using the devtools package.
 ```R
 devtools::install_github("kliegr/QCBA")
 ```
-Note that the package depends on Java 8 available and correctly installed [rJava](https://cran.r-project.org/web/packages/rJava/index.html) package. For instructions on how to setup rJava please refer to rJava documentation.
 ## Example
 
 ### Baseline CBA model
