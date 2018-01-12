@@ -26,6 +26,7 @@ which is created with the arc package.
 if (! requireNamespace("arulesCBA", quietly = TRUE)) {
  message("Please install arulesCBA: install.packages('arulesCBA')")
 }  else {
+ message("The following code might cause the 'pruning exception' rCBA error on some installations")
  discrModel <- discrNumeric(iris, "Species")
  irisDisc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
  arulesCBAModel <- arulesCBA::CBA(Species ~ ., data = irisDisc, supp = 0.05, 

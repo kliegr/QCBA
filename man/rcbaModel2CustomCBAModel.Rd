@@ -23,17 +23,13 @@ Instance of \link{customCBARuleModel} can then be passed to \link[qCBA]{qcba} in
 which is created with the arc package.
 }
 \examples{
-\donttest{
+\donttest{ # this example takes about 10 seconds
 if (! requireNamespace("rCBA", quietly = TRUE)) {
  message("Please install rCBA: install.packages('rCBA')")
-} else {
-if (utils::compareVersion(utils::packageDescription('rCBA')$Version,"0.0.2.9009") == -1 )
+} else
 {
-  message("rCBA minimum version '0.0.2.9009' required. \\n
-  Please install latest version of rCBA from GitHub.")
-}
-else
-{
+ library(rCBA)
+ message(packageVersion("rCBA"))
  discrModel <- discrNumeric(iris, "Species")
  irisDisc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
  rCBAmodel <- rCBA::build(irisDisc)
@@ -41,7 +37,6 @@ else
  qCBAmodel <- qcba(cCBAmodel,iris)
  print(qCBAmodel@rules)
   }
- }
 }
 
 }
