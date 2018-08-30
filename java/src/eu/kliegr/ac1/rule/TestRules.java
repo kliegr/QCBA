@@ -347,6 +347,31 @@ public class TestRules {
         }
     }
 
+    public String[] getFiringRuleID() {
+        if (allCovered.isEmpty()) {
+            return null;
+        }
+        String[]  result = new String[allCovered.size()];
+        int i=0;
+        for (Entry<Transaction, Prediction[]> t : allCovered.entrySet()) {
+            TestRule coveringRule = t.getKey().getCoveringRule();
+            result[i++]=Integer.toString(coveringRule.getRID());
+        }                
+        return result;
+    }
+    
+    public String[] getFiringRuleString() {
+        if (allCovered.isEmpty()) {
+            return null;
+        }
+        String[]  result = new String[allCovered.size()];
+        int i=0;
+        for (Entry<Transaction, Prediction[]> t : allCovered.entrySet()) {
+            TestRule coveringRule = t.getKey().getCoveringRule();
+            result[i++]=coveringRule.toString();
+        }                
+        return result;
+    }    
     /**
      *
      * @return

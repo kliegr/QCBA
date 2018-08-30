@@ -402,6 +402,7 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly", defaultRuleOve
 #' @param newdata data frame with data
 #' @param testingType either \code{mixture} for multi-rule classification or \code{firstRule} for one-rule classification. Applicable only when model is loaded from file.
 #' @param loglevel logger level from \code{java.util.logging}
+#' @param outputFiringRuleIDs if set to TRUE, instead of predictions, the function will return one-based IDs of  rules used to classify each instance (one rule per instance). 
 #' @param ... other arguments (currently not used)
 #' @return vector with predictions.
 #' @export
@@ -416,11 +417,16 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly", defaultRuleOve
 #' prediction <- predict(rmqCBA,testFold)
 #' acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
 #' message(acc)
-#'
+#' firingRuleIDs <- predict(rmqCBA,testFold,outputFiringRuleIDs=TRUE)
+#' message("The second instance in testFold was classified by the following rule")
+#' message(rmqCBA@rules[firingRuleIDs[2],1])
+#' message("The second instance is")
+#' message(testFold[2,])
+#' 
 #' @seealso \link{qcba}
 #'
 #'
-predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNING", ...)
+predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNING", outputFiringRuleIDs=FALSE, ...)
 {
   ruleModel <- object
 
@@ -455,8 +461,22 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
     .jcall(jPredict, , "addRuleFrame", extRulesJArray)
     prediction <- .jcall(jPredict, "[Ljava/lang/String;", "predict")
   }
-  return(prediction)
+  if (outputFiringRuleIDs)
+  {
+    ruleIDs <- .jcall(jPredict, "[Ljava/lang/String;", "getFiringRuleID")
+    # the original IDs from Java are zero based, R works with one-based indices
+    return(strtoi(ruleIDs)+1)
+  }
+  else
+  {
+    return(prediction)
+  }
+  
 }
+
+
+
+
 
 #' @title Map R types to qCBA
 #' @description The QCBA Java implementation uses different names of some data types than are used in this R wrapper.

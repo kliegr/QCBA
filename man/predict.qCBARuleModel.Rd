@@ -5,7 +5,7 @@
 \title{Aplies qCBARuleModel}
 \usage{
 \method{predict}{qCBARuleModel}(object, newdata, testingType,
-  loglevel = "WARNING", ...)
+  loglevel = "WARNING", outputFiringRuleIDs = FALSE, ...)
 }
 \arguments{
 \item{object}{\link{qCBARuleModel} class instance}
@@ -15,6 +15,8 @@
 \item{testingType}{either \code{mixture} for multi-rule classification or \code{firstRule} for one-rule classification. Applicable only when model is loaded from file.}
 
 \item{loglevel}{logger level from \code{java.util.logging}}
+
+\item{outputFiringRuleIDs}{if set to TRUE, instead of predictions, the function will return one-based IDs of  rules used to classify each instance (one rule per instance).}
 
 \item{...}{other arguments (currently not used)}
 }
@@ -35,6 +37,11 @@ print(rmqCBA@rules)
 prediction <- predict(rmqCBA,testFold)
 acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
 message(acc)
+firingRuleIDs <- predict(rmqCBA,testFold,outputFiringRuleIDs=TRUE)
+message("The second instance in testFold was classified by the following rule")
+message(rmqCBA@rules[firingRuleIDs[2],1])
+message("The second instance is")
+message(testFold[2,])
 
 }
 \seealso{

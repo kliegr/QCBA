@@ -31,6 +31,8 @@ public class RinterfacePredict extends Rinterface {
 
     private final static Logger LOGGER = Logger.getLogger(RinterfacePredict.class.getName());
     Comparator ruleComparator = new CBARuleComparator();
+    TestRules testRulesObj;
+    TestingType ttype;
 
     /**
      *
@@ -60,6 +62,7 @@ public class RinterfacePredict extends Rinterface {
 
         TestRules testRulesObj = new TestRules(GenericRuleParser.parseFileForRules(path, data), new CBARuleComparator(), data);
         testRulesObj.classifyData(ttype);
+
         String[] result = testRulesObj.getResult();
         LOGGER.log(Level.INFO, "Result dimensionality:{0}", result.length);
         return result;
@@ -72,7 +75,7 @@ public class RinterfacePredict extends Rinterface {
      */
     public String[] predict() throws Exception {
         boolean sort=false;
-        TestingType ttype = TestingType.firstMatch;
+        ttype = TestingType.firstMatch;
         LOGGER.log(Level.INFO, "Predict invoked");
         LOGGER.log(Level.INFO, "Transaction count:{0}", data.getDataTable().getCurrentTransactionCount());
         if (data.getDataTable() == null) {
@@ -83,7 +86,7 @@ public class RinterfacePredict extends Rinterface {
         }
         String[] result = null;
         try {
-            TestRules testRulesObj = new TestRules(rules, ruleComparator, data);
+            testRulesObj = new TestRules(rules, ruleComparator, data);
             if (sort) testRulesObj.sortRules();
 
             //do some checks
@@ -106,6 +109,69 @@ public class RinterfacePredict extends Rinterface {
             
             testRulesObj.classifyData(ttype);
             result = testRulesObj.getResult();
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+            throw e;
+        }
+        
+        LOGGER.log(Level.INFO, "Result dimensionality:{0}", result.length);
+        return result;
+    }
+    
+    
+     public String[] getFiringRuleString() throws Exception {
+         
+        LOGGER.log(Level.INFO, "getFiringRule invoked");
+        LOGGER.log(Level.INFO, "Transaction count:{0}", data.getDataTable().getCurrentTransactionCount());
+        if (data.getDataTable() == null) {
+            throw new Exception("Load data first");
+        }
+        if (rules == null) {
+            throw new Exception("Load rules first");
+        }
+        if (testRulesObj == null) {
+            throw new Exception("Call predict first");
+        }
+        if (ttype!=TestingType.firstMatch)
+        {
+            throw new Exception("Applicable only to TestingType.firstMatch");
+        }
+        String[] result = null;        
+        try {            
+            result=testRulesObj.getFiringRuleString();
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+            throw e;
+        }
+        
+        LOGGER.log(Level.INFO, "Result dimensionality:{0}", result.length);
+        return result;
+    }
+     
+     public String[] getFiringRuleID() throws Exception {
+         
+        LOGGER.log(Level.INFO, "getFiringRule invoked");
+        LOGGER.log(Level.INFO, "Transaction count:{0}", data.getDataTable().getCurrentTransactionCount());
+        if (data.getDataTable() == null) {
+            throw new Exception("Load data first");
+        }
+        if (rules == null) {
+            throw new Exception("Load rules first");
+        }
+        if (testRulesObj == null) {
+            throw new Exception("Call predict first");
+        }
+        if (ttype!=TestingType.firstMatch)
+        {
+            throw new Exception("Applicable only to TestingType.firstMatch");
+        }
+        String[] result = null;        
+        try {            
+            result=testRulesObj.getFiringRuleID();
         }
         catch(Exception e)
         {
