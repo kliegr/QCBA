@@ -184,6 +184,12 @@ public class ExtendRules {
                 rule = rule.removeRedundantAttributes();
                 LOGGER.info("FINISHED removeRedundantAttributes ");
             }
+            
+            if (rule.getAntecedent().getItems().size() == 0)
+            {
+                LOGGER.info("REMOVING DEFAULT RULE CREATED BY removeRedundantAttributes ");
+                continue;
+            }
                       
             
             if (isTrimmingEnabled)

@@ -5,13 +5,14 @@
 \title{qCBA Quantitative CBA}
 \usage{
 qcba(cbaRuleModel, datadf, extendType = "numericOnly",
-  defaultRuleOverlapPruning = "transactionBased", attributePruning = TRUE,
-  trim_literal_boundaries = TRUE, continuousPruning = FALSE,
-  postpruning = "cba", fuzzification = FALSE, annotate = FALSE,
-  ruleOutputPath, minImprovement = 0, minCondImprovement = -1,
-  minConf = 0.5,
+  defaultRuleOverlapPruning = "transactionBased",
+  attributePruning = TRUE, trim_literal_boundaries = TRUE,
+  continuousPruning = FALSE, postpruning = "cba",
+  fuzzification = FALSE, annotate = FALSE, ruleOutputPath,
+  minImprovement = 0, minCondImprovement = -1, minConf = 0.5,
   extensionStrategy = "ConfImprovementAgainstLastConfirmedExtension",
-  loglevel = "WARNING", createHistorySlot = FALSE, timeExecution = FALSE)
+  loglevel = "WARNING", createHistorySlot = FALSE,
+  timeExecution = FALSE)
 }
 \arguments{
 \item{cbaRuleModel}{a \link{CBARuleModel}}

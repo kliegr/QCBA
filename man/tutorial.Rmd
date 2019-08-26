@@ -153,7 +153,7 @@ The rules can be visualized in the feature space as rectangular regions.
 ```{r}
 interesting_rule <- 5
 #as.character(Class)
-plot(Humidity,Temperature,pch=Class,main="Discovered asociation rules",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+plot(Humidity,Temperature,pch=as.character(Class),main="Discovered asociation rules",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
 
 plotGrid(FALSE)
 
@@ -266,7 +266,7 @@ inspect(rmCBA@rules)
 The green background on the plot is associated with the default rule classifying to Class 2.
 
 ```{r}
-plot(Humidity,Temperature,pch=Class,main="CBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+plot(Humidity,Temperature,pch=as.character(Class),main="CBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
 plotGrid(FALSE)
 plotRules(rmCBA@rules)
 ```
@@ -309,7 +309,7 @@ Finally, the **createHistorySlot** parameter is useful for debugging and visuali
 
 As we can notice, the number of rules on the output decreased. After the rule boundaries have been extended, postpruning removed two rules from the CBA model. The default rule was recomputed, and now classifies to green (Class 2).
 ```{r}
-plot(Humidity,Temperature,pch=Class,main="QCBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+plot(Humidity,Temperature,pch=as.character(Class),main="QCBA model",cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
 plotGrid(FALSE)
 plotRules(rmqCBA@rules)
 ```
@@ -398,7 +398,7 @@ plotRuleInHistory <- function(extendHistory,i,seedRuleConf)
       titles[i] <- paste(titles[i]," (Conditional accept)")
     }
   
-  plot(Humidity,Temperature,pch=Class, main=titles[i],cex.lab=0.01, cex.axis=1.5, cex.main=1.5, xlab="", ylab="", ylim=c(20,35),xlim=c(27,65),cex.sub=1.3, sub=paste(extendHistory[i,3], "\n","Supp:",round(extendHistory[i,4],2)," Conf:",round(curRuleConf,2)))
+  plot(Humidity,Temperature,pch=as.character(Class), main=titles[i],cex.lab=0.01, cex.axis=1.5, cex.main=1.5, xlab="", ylab="", ylim=c(20,35),xlim=c(27,65),cex.sub=1.3, sub=paste(extendHistory[i,3], "\n","Supp:",round(extendHistory[i,4],2)," Conf:",round(curRuleConf,2)))
   plotGrid(TRUE,FALSE)
   plotHumTempRule(extendHistory[3],i)
   if (seedRuleConf > curRuleConf && i>1)
@@ -426,7 +426,7 @@ CBA rules stick to a grid that corresponds to results of discretization. The gri
 ```{r}
 
 interestingRuleAsText <-  paste(paste(unlist(interestingRule$lhs[1]),collapse=''),paste(unlist(interestingRule$rhs[1]),collapse=''),sep=" => ")
-plot(Humidity,Temperature,pch=Class,main="CBA-generated rule on original grid", sub=paste(interestingRuleAsText, "Supp:",round(interestingRule$support,2)," Conf:",round(interestingRule$confidence,2)),cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.15)
+plot(Humidity,Temperature,pch=as.character(Class),main="CBA-generated rule on original grid", sub=paste(interestingRuleAsText, "Supp:",round(interestingRule$support,2)," Conf:",round(interestingRule$confidence,2)),cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.15)
 plotGrid(FALSE)
 plotHumTempRule(rmCBA@rules,3)
 
@@ -436,7 +436,7 @@ plotHumTempRule(rmCBA@rules,3)
 The same rule from the CBA classifier plotted on the finer grid. 
 
 ```{r}
-plot(Humidity,Temperature,pch=Class, main="The finer grid",cex.lab=1.5, cex.axis=1.5,  xlab="", ylab="", cex.main=1.5, cex.sub=1.15)
+plot(Humidity,Temperature,pch=as.character(Class), main="The finer grid",cex.lab=1.5, cex.axis=1.5,  xlab="", ylab="", cex.main=1.5, cex.sub=1.15)
 plotGrid()
 plotHumTempRule(rmCBA@rules,3)
 ```
@@ -554,7 +554,7 @@ Rule #6 is drawn in grey in the following figure, the remaining rules below it a
 
 
 ```{r}
-plot(Humidity,Temperature,pch=Class, main="Rules #6 to #11 (default rule pruning OFF)",cex.lab=1.5, cex.axis=1.5,  xlab="", ylab="", cex.main=1.5, cex.sub=1.15)
+plot(Humidity,Temperature,pch=as.character(Class), main="Rules #6 to #11 (default rule pruning OFF)",cex.lab=1.5, cex.axis=1.5,  xlab="", ylab="", cex.main=1.5, cex.sub=1.15)
 plotGrid()
 for (i in 6:11) {
 plotHumTempRule(rmqCBA@rules,i)
@@ -564,7 +564,7 @@ plotHumTempRule(rmqCBA@rules,i)
 When Default rule overlap pruning is activated,  rules such as #6 are  removed and the  area left for classification to the default rule, which comes as last (default rule is plotted in grey).
 
 ```{r}
-plot(Humidity,Temperature,pch=Class, main="Rules #6 to #10 (default rule pruning ON)",cex.lab=1.5, cex.axis=1.5,  xlab="", ylab="", cex.main=1.5, cex.sub=1.15)
+plot(Humidity,Temperature,pch=as.character(Class), main="Rules #6 to #10 (default rule pruning ON)",cex.lab=1.5, cex.axis=1.5,  xlab="", ylab="", cex.main=1.5, cex.sub=1.15)
 plotGrid()
 for (i in 6:10) {
 plotHumTempRule(rmqCBA_dro@rules,i)
@@ -579,7 +579,7 @@ The disadvantage is that range based  pruning is not very uneffective. In realis
 In our toy case, range-based pruning does not remove any rule. Rule #6 is not removed, because it shares a boundary on Temperature (34) with rule #8.
 
 ```{r}
-plot(Humidity,Temperature,pch=Class, main="R #6 and #8 intersect (range-based pruning is ineffective)",cex.lab=1.5, cex.axis=1.5,  xlab="", ylab="", cex.main=1.5, cex.sub=1.15)
+plot(Humidity,Temperature,pch=as.character(Class), main="R #6 and #8 intersect (range-based pruning is ineffective)",cex.lab=1.5, cex.axis=1.5,  xlab="", ylab="", cex.main=1.5, cex.sub=1.15)
 plotGrid()
 plotHumTempRule(rmqCBA@rules,6)
 plotHumTempRule(rmqCBA@rules,8)

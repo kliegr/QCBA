@@ -581,7 +581,8 @@ public ExtendRule removeRedundantAttributes(){
                             attrRemoved = false;
                         }                        
                     }                                       
-                } while (attrRemoved==true);                                          
+                    // added on 23/08/19 "&& newRule.getAntecedent().getItems().size()>0"
+                } while (attrRemoved==true && newRule.getAntecedent().getItems().size()>0);                                          
             }
         }
         if (!ruleChanged)

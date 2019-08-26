@@ -144,10 +144,9 @@ qcbaIris2 <- function()
 }
 
 
-#' @title rcbaModel2CustomCBAModel Converts a model created by \pkg{rCBA} so that it can be passed to qCBA
-#' @description Creates instance of \link{customCBARuleModel} class based on model created by the  \pkg{rCBA}  package.
-#' Instance of \link{customCBARuleModel} can then be passed to \link[qCBA]{qcba} instead of an instance of \link{CBARuleModel},
-#' which is created with the arc package.
+#' @title rcbaModel2arcCBARuleModel Converts a model created by \pkg{rCBA} so that it can be passed to qCBA
+#' @description Creates instance of CBAmodel class from the \pkg{arc} package
+#' Instance of CBAmodel can then be passed to \link{qcba}
 #' @export
 #' @param rcbaModel object returned  by rCBA::build
 #' @param cutPoints specification of cutpoints applied on the data before they were passed to  \code{rCBA::build}
@@ -155,9 +154,8 @@ qcbaIris2 <- function()
 #' @param rawDataset the raw data (before discretization). This dataset is used to guess attribute types if attTypes is not passed
 #' @param attTypes vector of attribute types of the original data.  If set to null, you need to pass rawDataset.
 
-
 #' @examples
-#' \donttest{ # this example takes about 10 seconds
+#' # this example takes about 10 seconds
 #' if (! requireNamespace("rCBA", quietly = TRUE)) {
 #'  message("Please install rCBA: install.packages('rCBA')")
 #' } else
@@ -166,87 +164,211 @@ qcbaIris2 <- function()
 #'  message(packageVersion("rCBA"))
 #'  discrModel <- discrNumeric(iris, "Species")
 #'  irisDisc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
-#'  rCBAmodel <- rCBA::build(irisDisc)
-#'  cCBAmodel <- rcbaModel2CustomCBAModel(rCBAmodel,discrModel$cutp,"Species",iris)
-#'  qCBAmodel <- qcba(cCBAmodel,iris)
+#'  rCBAmodel <- rCBA::build(irisDisc,parallel=FALSE, sa=list(timeout=0.1))
+#'  CBAmodel <- rcbaModel2CBARuleModel(rCBAmodel,discrModel$cutp,"Species",iris)
+#'  qCBAmodel <- qcba(CBAmodel,iris)
 #'  print(qCBAmodel@rules)
 #'   }
-#' }
+#' 
 
 #' 
-rcbaModel2CustomCBAModel <- function(rcbaModel, cutPoints, classAtt, rawDataset, attTypes)
+rcbaModel2CBARuleModel <- function(rcbaModel, cutPoints, classAtt, rawDataset, attTypes)
 {
   # note that the example for this function generates a notice
   # this should be fine according to https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Suggested-packages
-  cCBA <- customCBARuleModel()
-  cCBA@rules <- rcbaModel$model #as.character
-  cCBA@cutp <- cutPoints
-  cCBA@classAtt <- classAtt
+  CBArm <- CBARuleModel()
+  CBArm@rules <- rcbaModel$model #as.character
+  CBArm@cutp <- cutPoints
+  CBArm@classAtt <- classAtt
   if (missing(attTypes))
   {
-    cCBA@attTypes <- sapply(rawDataset, class)
+    CBArm@attTypes <- sapply(rawDataset, class)
   }
   else
   {
-    cCBA@attTypes <- attTypes
+    CBArm@attTypes <- attTypes
   }
-  return (cCBA)
+  return (CBArm)
 }
 
-
-#' @title arulesCBAModel2CustomCBAModel Converts a model created by \pkg{arulesCBA} so that it can be passed to qCBA
-#' @description Creates instance of \link{customCBARuleModel} class based on model created by the \pkg{arulesCBA} package.
-#' Instance of \link{customCBARuleModel} can then be passed to \link{qcba} instead of an instance of \link{CBARuleModel}, 
-#' which is created with the arc package.
+#' @title arulesCBA2arcCBAModel Converts a model created by \pkg{arulesCBA} so that it can be passed to qCBA
+#' @description Creates instance of arc CBAmodel class from the \pkg{arc} package
+#' Instance of CBAmodel can then be passed to \link{qcba}
 #' @export
 #' @param arulesCBAModel aobject returned  by arulesCBA::CBA()
 #' @param cutPoints specification of cutpoints applied on the data before they were passed to \code{rCBA::build}
 #' @param rawDataset the raw data (before discretization). This dataset is used to guess attribute types if attTypes is not passed
+#' @param classAtt the name of the class attribute
 #' @param attTypes vector of attribute types of the original data.  If set to null, you need to pass rawDataset.
 #' @examples 
 #' 
-#' \donttest{
 #' if (! requireNamespace("arulesCBA", quietly = TRUE)) {
 #'  message("Please install arulesCBA: install.packages('arulesCBA')")
 #' }  else {
 #'  message("The following code might cause the 'pruning exception' rCBA error on some installations")
-#'  discrModel <- discrNumeric(iris, "Species")
+#'  classAtt <- "Species"
+#'  discrModel <- discrNumeric(iris, classAtt)
 #'  irisDisc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
 #'  arulesCBAModel <- arulesCBA::CBA(Species ~ ., data = irisDisc, supp = 0.05, 
 #'   conf=0.9, lhs.support=TRUE)
-#'  cCBAmodel <- arulesCBAModel2CustomCBAModel(arulesCBAModel, discrModel$cutp, iris)
-#'  qCBAmodel <- qcba(cbaRuleModel=cCBAmodel,datadf=iris)
+#'  CBAmodel <- arulesCBA2arcCBAModel(arulesCBAModel, discrModel$cutp,  iris, classAtt)
+#'  qCBAmodel <- qcba(cbaRuleModel=CBAmodel,datadf=iris)
 #'  print(qCBAmodel@rules)
 #'  }
-#' }
 #' 
-arulesCBAModel2CustomCBAModel <- function(arulesCBAModel, cutPoints, rawDataset, attTypes )
+#' 
+arulesCBA2arcCBAModel <- function(arulesCBAModel, cutPoints, rawDataset, classAtt, attTypes )
 {
   # note that the example for this function generates a notice
   # this should be fine according to https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Suggested-packages
   
-  cCBA <- customCBARuleModel()
-  rulesFrame<-as(arulesCBAModel$rules,"data.frame")
-  #default rule is stored separately, we need to add it 
-  defRule<- paste("{} => {",arulesCBAModel$default,"}",sep="")
-  df<-data.frame(defRule,0.0,0.0,0.0,0.0)
-  names(df)  <- names(rulesFrame)
-  newdf <- rbind(rulesFrame, df)
-  newdf$rules <- as.character(newdf$rules)
-  cCBA@rules <- newdf
-  
-  cCBA@cutp <- cutPoints
-  cCBA@classAtt <- arulesCBAModel$class
+  CBAmodel <- CBARuleModel()
+  #add default rule
+  CBAmodel@rules <- arulesCBAModel$rules
+  emptyrhs<-rep(FALSE,NROW(arulesCBAModel$class))
+  emptylhs<-rep(FALSE,NROW(arulesCBAModel$rules@lhs@data)-NROW(arulesCBAModel$class))
+  CBAmodel@rules@lhs@data<-as(cbind(arulesCBAModel$rules@lhs@data,c(emptylhs,emptyrhs)),"ngCMatrix")
+  rhs<-emptyrhs
+  rhs[which(arulesCBAModel$default  == arulesCBAModel$class ) ]<- TRUE
+  CBAmodel@rules@rhs@data<-as(cbind(arulesCBAModel$rules@rhs@data,c(emptylhs,rhs)),"ngCMatrix")
+  #arules data frame does not contain quality metrics for the default rule
+  CBAmodel@rules@quality <- rbind(CBAmodel@rules@quality, c(0,0,0,0) )
+  CBAmodel@cutp <- cutPoints
+  CBAmodel@classAtt <- classAtt
   if (missing(attTypes))
   {
-    cCBA@attTypes <- sapply(rawDataset, class)
+    CBAmodel@attTypes <- sapply(rawDataset, class)
   }
   else
   {
-    cCBA@attTypes = attTypes
+    CBAmodel@attTypes = attTypes
   }
-  return (cCBA)
+  return (CBAmodel)
 }
+#' @title sbrlModel2arcCBARuleModel Converts a model created by \pkg{sbrl} so that it can be passed to qCBA
+#' @description Creates instance of  CBAmodel class from the \pkg{arc} package
+#' Instance of  CBAmodel can then be passed to \link{qcba}
+#' @export
+#' @param sbrl_model aobject returned  by arulesCBA::CBA()
+#' @param cutPoints specification of cutpoints applied on the data before they were passed to \code{rCBA::build}
+#' @param rawDataset the raw data (before discretization). This dataset is used to guess attribute types if attTypes is not passed
+#' @param classAtt the name of the class attribute
+#' @param attTypes vector of attribute types of the original data.  If set to null, you need to pass rawDataset.
+#' @examples 
+#' if (! requireNamespace("rCBA", quietly = TRUE)) {
+#'   message("Please install rCBA to allow for sbrl model conversion")
+#'   return()
+#' } else
+#' {
+#'   library(rCBA)
+#' }
+#' if (! requireNamespace("sbrl", quietly = TRUE)) {
+#'   message("Please install sbrl to allow for postprocessing of sbrl models")
+#'   return()
+#' } else
+#' {
+#'   library(sbrl)
+#' }
+#'  #sbrl handles only binary problems, iris has 3 target classes - remove one class
+#' set.seed(111)
+#' allData <- datasets::iris[sample(nrow(datasets::iris)),]
+#' classToExclude<-"versicolor"
+#' allData <- allData[allData$Species!=classToExclude, ]
+#' # drop virginica level
+#' allData$Species <-allData$Species [, drop=TRUE]
+#' trainFold <- allData[1:50,]
+#' testFold <- allData[51:nrow(allData),]
+#' sbrlFixedLabel<-"label"
+#' origLabel<-"Species"
+#' 
+#' orignames<-colnames(trainFold)
+#' orignames[which(orignames == origLabel)]<-sbrlFixedLabel
+#' colnames(trainFold)<-orignames
+#' colnames(testFold)<-orignames
+#' 
+#' # to recode label to binary values:
+#' # first create dict mapping from original distinct class values to 0,1 
+#' origval<-levels(as.factor(trainFold$label))
+#' newval<-range(0,1)
+#' dict<-data.frame(origval,newval)
+#' # then apply dict to train and test fold
+#' trainFold$label<-dict[match(trainFold$label, dict$origval), 2]
+#' testFold$label<-dict[match(testFold$label, dict$origval), 2]
+#' 
+#' # discretize training data
+#' trainFoldDiscTemp <- discrNumeric(trainFold, sbrlFixedLabel)
+#' trainFoldDiscCutpoints <- trainFoldDiscTemp$cutp
+#' trainFoldDisc <- as.data.frame(lapply(trainFoldDiscTemp$Disc.data, as.factor))
+#' 
+#' # discretize test data
+#' testFoldDisc <- applyCuts(testFold, trainFoldDiscCutpoints, infinite_bounds=TRUE, labels=TRUE)
+#' 
+#' # learn sbrl model
+#' sbrl_model <- sbrl(trainFoldDisc, iters=30000, pos_sign="0", 
+#'                    neg_sign="1", rule_minlen=1, rule_maxlen=10, 
+#'                    minsupport_pos=0.10, minsupport_neg=0.10, 
+#'                    lambda=10.0, eta=1.0, alpha=c(1,1), nchain=10)
+#' # apply sbrl model on a test fold
+#' yhat <- predict(sbrl_model, testFoldDisc)
+#' yvals<- as.integer(yhat$V1>0.5)
+#' sbrl_acc<-mean(as.integer(yvals == testFoldDisc$label))
+#' message("SBRL RESULT")
+#' sbrl_model
+#' rm_sbrl<-sbrlModel2arcCBARuleModel(sbrl_model,trainFoldDiscCutpoints,trainFold,sbrlFixedLabel) 
+#' message(paste("sbrl acc=",sbrl_acc,"sbrl rule count=",nrow(sbrl_model$rs), "avg rule length", 
+#'  sum(rm_sbrl@rules@lhs@data)/length(rm_sbrl@rules)))
+#' rmQCBA_sbrl <- qcba(cbaRuleModel=rm_sbrl,datadf=trainFold)
+#' prediction <- predict(rmQCBA_sbrl,testFold)
+#' acc_qcba_sbrl <- CBARuleModelAccuracy(prediction, testFold[[rmQCBA_sbrl@classAtt]])
+#' if (! requireNamespace("stringr", quietly = TRUE)) {
+#'   message("Please install stringr to compute average rule length for QCBA")
+#'   avg_rule_length <- NA
+#' } else
+#' {
+#'   library(stringr)
+#'   avg_rule_length <- (sum(unlist(lapply(rmQCBA_sbrl@rules[1],str_count,pattern=",")))+
+#'                         # assuming the last rule has antecedent length zero 
+#'                         nrow(rmQCBA_sbrl@rules)-1)/nrow(rmQCBA_sbrl@rules)
+#' }
+#' message("QCBA RESULT")
+#' rmQCBA_sbrl@rules
+#' message(paste("QCBA after SBRL acc=",acc_qcba_sbrl,"rule count=",
+#'  rmQCBA_sbrl@ruleCount, "avg rule length",  avg_rule_length))
+
+sbrlModel2arcCBARuleModel <- function(sbrl_model, cutPoints, rawDataset, classAtt, attTypes)
+{
+  #rules in the list order with default rule missing
+  lhs <- sbrl_model$rulenames[sbrl_model$rs$V1]
+  #add defaut class antecedent
+  lhs <- c(lhs,"{}")
+  #class probabilities, incl. default rule
+  classes<-as.integer(sbrl_model$rs$V2<0.5)
+  rulecount<-length(classes)
+  rhs<-paste0(rep("{label=",rulecount),classes,rep("}",rulecount))
+  rules<-paste0(lhs, rep(" => ", rulecount), rhs)
+  support<- rep(1,rulecount)
+  confidence<- rep(1,rulecount)
+  lift<- rep(1,rulecount)
+  dfRules<-data.frame(rules,support,confidence, lift, stringsAsFactors=FALSE)
+  
+  rm_sbrl <- CBARuleModel()
+  rm_sbrl@rules <- rCBA::frameToRules(dfRules)
+  #rm_sbrl@rules <- as.item.matrix(dfRules,trainFold,classAtt)
+  rm_sbrl@cutp <- cutPoints
+  rm_sbrl@classAtt <- classAtt
+  
+  if (missing(attTypes))
+  {
+    rm_sbrl@attTypes <- sapply(rawDataset, class)
+  }
+  else
+  {
+    rm_sbrl@attTypes <- attTypes
+  }
+  
+  return (rm_sbrl)
+}  
+  
 
 #' @title qCBA Quantitative CBA
 #' @description Creates QCBA model by from a CBA rule model.
@@ -445,7 +567,7 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
   testArray <-  .jarray(lapply(testConverted, .jarray))
   
   #pass data to QCBA Java implementation
-  #the reason why we cannot use predict.RuleModel in arc package is that the items in the rules do not match the itemMatrix after R extend
+  #the reason why we cannot use predict.RuleModel in \pkg{arc} package is that the items in the rules do not match the itemMatrix after R extend
   idAtt <- ""
   jPredict <- .jnew("eu.kliegr.ac1.R.RinterfacePredict", attTypesArray, ruleModel@classAtt, idAtt,loglevel)
   .jcall(jPredict, , "addDataFrame", testArray,cNames)

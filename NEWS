@@ -1,3 +1,11 @@
+qCBA v0.4 (Release date: 2019-08-26)
+==============
+Changes
+
+* Added support for sbrl models
+* Fixed support of rCBA and arulesCBA models
+* Fixed possible endless loop error in removal of redundant attributes
+
 qCBA v0.3.1 (Release date: 2017-12-26)
 ==============
 Changes
