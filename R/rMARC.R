@@ -249,7 +249,7 @@ arulesCBA2arcCBAModel <- function(arulesCBAModel, cutPoints, rawDataset, classAt
 #' @description Creates instance of  CBAmodel class from the \pkg{arc} package
 #' Instance of  CBAmodel can then be passed to \link{qcba}
 #' @export
-#' @param sbrl_model aobject returned  by arulesCBA::CBA()
+#' @param sbrl_model object returned  by arulesCBA::CBA()
 #' @param cutPoints specification of cutpoints applied on the data before they were passed to \code{rCBA::build}
 #' @param rawDataset the raw data (before discretization). This dataset is used to guess attribute types if attTypes is not passed
 #' @param classAtt the name of the class attribute

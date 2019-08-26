@@ -8,7 +8,7 @@ sbrlModel2arcCBARuleModel(sbrl_model, cutPoints, rawDataset, classAtt,
   attTypes)
 }
 \arguments{
-\item{sbrl_model}{aobject returned  by arulesCBA::CBA()}
+\item{sbrl_model}{object returned  by arulesCBA::CBA()}
 
 \item{cutPoints}{specification of cutpoints applied on the data before they were passed to \code{rCBA::build}}
 

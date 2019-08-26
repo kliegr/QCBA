@@ -14,7 +14,6 @@ Depends:
 Suggests: 
     arulesCBA (>= 1.1.2),
     rCBA (>= 0.3.0),
-    sbrl,
     stringr
 SystemRequirements: Java (>= 8)
 URL: https://github.com/kliegr/QCBA
