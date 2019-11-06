@@ -160,6 +160,9 @@ qcbaIris2 <- function()
 #'  message("Please install rCBA: install.packages('rCBA')")
 #' } else
 #' {
+#' # This will run only outside a CRAN test, if the environment variable  NOT_CRAN is set to true
+#' # This environment variable is set by devtools
+#' if (identical(Sys.getenv("NOT_CRAN"), "true")) {
 #'  library(rCBA)
 #'  message(packageVersion("rCBA"))
 #'  discrModel <- discrNumeric(iris, "Species")
@@ -168,7 +171,8 @@ qcbaIris2 <- function()
 #'  CBAmodel <- rcbaModel2CBARuleModel(rCBAmodel,discrModel$cutp,"Species",iris)
 #'  qCBAmodel <- qcba(CBAmodel,iris)
 #'  print(qCBAmodel@rules)
-#'   }
+#'  }
+#'}
 #' 
 
 #' 
@@ -334,6 +338,8 @@ arulesCBA2arcCBAModel <- function(arulesCBAModel, cutPoints, rawDataset, classAt
 #' rmQCBA_sbrl@rules
 #' message(paste("QCBA after SBRL acc=",acc_qcba_sbrl,"rule count=",
 #'  rmQCBA_sbrl@ruleCount, "avg rule length",  avg_rule_length))
+#'  unlink("tdata_R.label") # delete temp files created by SBRL
+#'  unlink("tdata_R.out")
 
 sbrlModel2arcCBARuleModel <- function(sbrl_model, cutPoints, rawDataset, classAtt, attTypes)
 {

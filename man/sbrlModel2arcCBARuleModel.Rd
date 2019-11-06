@@ -102,4 +102,6 @@ message("QCBA RESULT")
 rmQCBA_sbrl@rules
 message(paste("QCBA after SBRL acc=",acc_qcba_sbrl,"rule count=",
  rmQCBA_sbrl@ruleCount, "avg rule length",  avg_rule_length))
+ unlink("tdata_R.label") # delete temp files created by SBRL
+ unlink("tdata_R.out")
 }

@@ -28,6 +28,9 @@ if (! requireNamespace("rCBA", quietly = TRUE)) {
  message("Please install rCBA: install.packages('rCBA')")
 } else
 {
+# This will run only outside a CRAN test, if the environment variable  NOT_CRAN is set to true
+# This environment variable is set by devtools
+if (identical(Sys.getenv("NOT_CRAN"), "true")) {
  library(rCBA)
  message(packageVersion("rCBA"))
  discrModel <- discrNumeric(iris, "Species")
@@ -36,7 +39,8 @@ if (! requireNamespace("rCBA", quietly = TRUE)) {
  CBAmodel <- rcbaModel2CBARuleModel(rCBAmodel,discrModel$cutp,"Species",iris)
  qCBAmodel <- qcba(CBAmodel,iris)
  print(qCBAmodel@rules)
-  }
+ }
+}
 
 
 }
