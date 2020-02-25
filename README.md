@@ -1,7 +1,6 @@
 # Quantitative CBA
 
 [![](http://cranlogs.r-pkg.org/badges/qCBA)](http://cran.rstudio.com/web/packages/qCBA/index.html)
-[![Travis-CI Build Status](https://travis-ci.org/kliegr/QCBA.svg?branch=master)](https://travis-ci.org/kliegr/QCBA)
 [![](https://www.r-pkg.org/badges/version/qCBA)](https://cran.r-project.org/web/packages/qCBA/index.html)
 
 
