@@ -36,7 +36,7 @@ if (! requireNamespace("arulesCBA", quietly = TRUE)) {
  classAtt <- "Species"
  discrModel <- discrNumeric(iris, classAtt)
  irisDisc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
- arulesCBAModel <- arulesCBA::CBA(Species ~ ., data = irisDisc, supp = 0.05, 
+ arulesCBAModel <- arulesCBA::CBA(Species ~ ., data = irisDisc, supp = 0.1, 
   conf=0.9)
  CBAmodel <- arulesCBA2arcCBAModel(arulesCBAModel, discrModel$cutp,  iris, classAtt)
  qCBAmodel <- qcba(cbaRuleModel=CBAmodel,datadf=iris)

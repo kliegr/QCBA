@@ -1,10 +1,10 @@
-qCBA v0.5 (Release date: 2020-08-20)
+qCBA v0.5.1 (Release date: 2020-11-09)
 ==============
 Changes
 
 * Explainability enhancements: Predict function now supports outputing identifiers of rules used for classification and estimates of confidence scores (preview feature, not yet thoroughly tested).
 * Sync with changes in arulesCBA version 1.2.0 with respect to the output of default rule
-* Added Additional_repositories information for sbrl (sbrl no longer in CRAN), which is in line with the CRAN policy (https://cran.r-project.org/web/packages/policies.html) for packages in Suggests field, which are not in a mainstream repository. 
+* Improved confidence estimation on the output of the prune function: In addition to standard measured computed by the arules library, new slots are available for each rule -- orderedConf and orderedSupp. Order-sensitive confidence  is computed only from instances reaching the given rule as a/(a+b), where a is the number of instances matching both the antecedent (available as slot orderedSupp) and consequent and b is the number of instances matching the antecedent, but not matching the consequent of the given rule.  
 
 qCBA v0.4 (Release date: 2019-08-26)
 ==============

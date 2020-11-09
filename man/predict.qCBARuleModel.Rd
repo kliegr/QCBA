@@ -11,6 +11,7 @@
   loglevel = "WARNING",
   outputFiringRuleIDs = FALSE,
   outputConfidenceScores = FALSE,
+  confScoreType = "ordered",
   positiveClass = NULL,
   ...
 )
@@ -28,8 +29,10 @@
 
 \item{outputConfidenceScores}{if set to TRUE, instead of predictions, the function will return confidences of the firing rule}
 
-\item{positiveClass}{This setting is only used if outputConfidenceScores=TRUE. It should be used only for binary problems. In this 
-case, the confidence values are recalculated so that these are not confidence values of the predicted class (default behaviour of outputConfidenceScores=TRUE)
+\item{confScoreType}{applicable only if `outputConfidenceScores=TRUE`, possible values `ordered` for confidence computed only for training instances reaching this rule, or `global` for standard rule confidence computed from the complete training data}
+
+\item{positiveClass}{This setting is only used if `outputConfidenceScores=TRUE`. It should be used only for binary problems. In this 
+case, the confidence values are recalculated so that these are not confidence values of the predicted class (default behaviour of `outputConfidenceScores=TRUE`)
 but rather confidence values associated with the class designated as positive}
 
 \item{...}{other arguments (currently not used)}
