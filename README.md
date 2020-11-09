@@ -112,4 +112,30 @@ QCBA:
 - Reduced number of conditions in the rules from 1.6 to 1
 - Unlike other ARC approaches retains interpretability of CBA models by performing one rule classification.
 
+### New feature - ROC and AUC curves
+```R
+library(ROCR)
+library(qCBA)
+twoClassIris<-datasets::iris[1:100,]
+twoClassIris <- twoClassIris[sample(nrow(twoClassIris)),]
+#twoClassIris$Species<-as.factor(as.character(iris$Species))
+trainFold <- twoClassIris[1:75,]
+testFold <- twoClassIris[76:nrow(twoClassIris),]
+rmCBA <- cba(trainFold, classAtt="Species")
+rmqCBA <- qcba(cbaRuleModel=rmCBA, datadf=trainFold)
+print(rmqCBA@rules)
+prediction <- predict(rmqCBA,testFold)
+acc <- CBARuleModelAccuracy(prediction, testFold[[rmqCBA@classAtt]])
+message(acc)
+confidences <- predict(rmqCBA,testFold,output,outputConfidenceScores=TRUE,positiveClass="setosa")
+#it is importat that the first level is different from positiveClass specified in the line above
+target<-droplevels(factor(testFold[[rmqCBA@classAtt]],ordered = TRUE,levels=c("versicolor","setosa")))
 
+pred = ROCR::prediction(confidences, target)
+roc = ROCR::performance(pred, "tpr", "fpr")
+plot(roc, lwd=2, colorize=TRUE)
+lines(x=c(0, 1), y=c(0, 1), col="black", lwd=1)
+auc = ROCR::performance(pred, "auc")
+auc = unlist(auc@y.values)
+auc
+``` 

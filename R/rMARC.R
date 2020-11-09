@@ -214,7 +214,7 @@ rcbaModel2CBARuleModel <- function(rcbaModel, cutPoints, classAtt, rawDataset, a
 #'  discrModel <- discrNumeric(iris, classAtt)
 #'  irisDisc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
 #'  arulesCBAModel <- arulesCBA::CBA(Species ~ ., data = irisDisc, supp = 0.05, 
-#'   conf=0.9, lhs.support=TRUE)
+#'   conf=0.9)
 #'  CBAmodel <- arulesCBA2arcCBAModel(arulesCBAModel, discrModel$cutp,  iris, classAtt)
 #'  qCBAmodel <- qcba(cbaRuleModel=CBAmodel,datadf=iris)
 #'  print(qCBAmodel@rules)
@@ -229,14 +229,16 @@ arulesCBA2arcCBAModel <- function(arulesCBAModel, cutPoints, rawDataset, classAt
   CBAmodel <- CBARuleModel()
   #add default rule
   CBAmodel@rules <- arulesCBAModel$rules
-  emptyrhs<-rep(FALSE,NROW(arulesCBAModel$class))
-  emptylhs<-rep(FALSE,NROW(arulesCBAModel$rules@lhs@data)-NROW(arulesCBAModel$class))
-  CBAmodel@rules@lhs@data<-as(cbind(arulesCBAModel$rules@lhs@data,c(emptylhs,emptyrhs)),"ngCMatrix")
-  rhs<-emptyrhs
-  rhs[which(arulesCBAModel$default  == arulesCBAModel$class ) ]<- TRUE
-  CBAmodel@rules@rhs@data<-as(cbind(arulesCBAModel$rules@rhs@data,c(emptylhs,rhs)),"ngCMatrix")
+  
+  # the following code was necessary for older arulesCBA versions
+  #emptyrhs<-rep(FALSE,NROW(arulesCBAModel$class))
+  #emptylhs<-rep(FALSE,NROW(arulesCBAModel$rules@lhs@data)-NROW(arulesCBAModel$class))
+  #CBAmodel@rules@lhs@data<-as(cbind(arulesCBAModel$rules@lhs@data,c(emptylhs,emptyrhs)),"ngCMatrix")
+  #rhs<-emptyrhs
+  #rhs[which(arulesCBAModel$default  == arulesCBAModel$class ) ]<- TRUE
+  #CBAmodel@rules@rhs@data<-as(cbind(arulesCBAModel$rules@rhs@data,c(emptylhs,rhs)),"ngCMatrix")
   #arules data frame does not contain quality metrics for the default rule
-  CBAmodel@rules@quality <- rbind(CBAmodel@rules@quality, c(0,0,0,0) )
+  #CBAmodel@rules@quality <- rbind(CBAmodel@rules@quality, c(0,0,0,0) )
   CBAmodel@cutp <- cutPoints
   CBAmodel@classAtt <- classAtt
   if (missing(attTypes))
@@ -262,84 +264,80 @@ arulesCBA2arcCBAModel <- function(arulesCBAModel, cutPoints, rawDataset, classAt
 #' if (! requireNamespace("rCBA", quietly = TRUE)) {
 #'   message("Please install rCBA to allow for sbrl model conversion")
 #'   return()
-#' } else
-#' {
-#'   library(rCBA)
-#' }
-#' if (! requireNamespace("sbrl", quietly = TRUE)) {
+#' } else if (! requireNamespace("sbrl", quietly = TRUE)) {
 #'   message("Please install sbrl to allow for postprocessing of sbrl models")
-#'   return()
 #' } else
 #' {
-#'   library(sbrl)
-#' }
+#'  library(sbrl)
+#'  library(rCBA)
 #'  #sbrl handles only binary problems, iris has 3 target classes - remove one class
-#' set.seed(111)
-#' allData <- datasets::iris[sample(nrow(datasets::iris)),]
-#' classToExclude<-"versicolor"
-#' allData <- allData[allData$Species!=classToExclude, ]
-#' # drop virginica level
-#' allData$Species <-allData$Species [, drop=TRUE]
-#' trainFold <- allData[1:50,]
-#' testFold <- allData[51:nrow(allData),]
-#' sbrlFixedLabel<-"label"
-#' origLabel<-"Species"
+#'  set.seed(111)
+#'  allData <- datasets::iris[sample(nrow(datasets::iris)),]
+#'  classToExclude<-"versicolor"
+#'  allData <- allData[allData$Species!=classToExclude, ]
+#'  # drop virginica level
+#'  allData$Species <-allData$Species [, drop=TRUE]
+#'  trainFold <- allData[1:50,]
+#'  testFold <- allData[51:nrow(allData),]
+#'  sbrlFixedLabel<-"label"
+#'  origLabel<-"Species"
 #' 
-#' orignames<-colnames(trainFold)
-#' orignames[which(orignames == origLabel)]<-sbrlFixedLabel
-#' colnames(trainFold)<-orignames
-#' colnames(testFold)<-orignames
+#'  orignames<-colnames(trainFold)
+#'  orignames[which(orignames == origLabel)]<-sbrlFixedLabel
+#'  colnames(trainFold)<-orignames
+#'  colnames(testFold)<-orignames
 #' 
-#' # to recode label to binary values:
-#' # first create dict mapping from original distinct class values to 0,1 
-#' origval<-levels(as.factor(trainFold$label))
-#' newval<-range(0,1)
-#' dict<-data.frame(origval,newval)
-#' # then apply dict to train and test fold
-#' trainFold$label<-dict[match(trainFold$label, dict$origval), 2]
-#' testFold$label<-dict[match(testFold$label, dict$origval), 2]
+#'  # to recode label to binary values:
+#'  # first create dict mapping from original distinct class values to 0,1 
+#'  origval<-levels(as.factor(trainFold$label))
+#'  newval<-range(0,1)
+#'  dict<-data.frame(origval,newval)
+#'  # then apply dict to train and test fold
+#'  trainFold$label<-dict[match(trainFold$label, dict$origval), 2]
+#'  testFold$label<-dict[match(testFold$label, dict$origval), 2]
 #' 
-#' # discretize training data
-#' trainFoldDiscTemp <- discrNumeric(trainFold, sbrlFixedLabel)
-#' trainFoldDiscCutpoints <- trainFoldDiscTemp$cutp
-#' trainFoldDisc <- as.data.frame(lapply(trainFoldDiscTemp$Disc.data, as.factor))
+#'  # discretize training data
+#'  trainFoldDiscTemp <- discrNumeric(trainFold, sbrlFixedLabel)
+#'  trainFoldDiscCutpoints <- trainFoldDiscTemp$cutp
+#'  trainFoldDisc <- as.data.frame(lapply(trainFoldDiscTemp$Disc.data, as.factor))
 #' 
-#' # discretize test data
-#' testFoldDisc <- applyCuts(testFold, trainFoldDiscCutpoints, infinite_bounds=TRUE, labels=TRUE)
+#'  # discretize test data
+#'  testFoldDisc <- applyCuts(testFold, trainFoldDiscCutpoints, infinite_bounds=TRUE, labels=TRUE)
 #' 
-#' # learn sbrl model
-#' sbrl_model <- sbrl(trainFoldDisc, iters=30000, pos_sign="0", 
+#'  # learn sbrl model
+#'  sbrl_model <- sbrl(trainFoldDisc, iters=30000, pos_sign="0", 
 #'                    neg_sign="1", rule_minlen=1, rule_maxlen=10, 
 #'                    minsupport_pos=0.10, minsupport_neg=0.10, 
 #'                    lambda=10.0, eta=1.0, alpha=c(1,1), nchain=10)
-#' # apply sbrl model on a test fold
-#' yhat <- predict(sbrl_model, testFoldDisc)
-#' yvals<- as.integer(yhat$V1>0.5)
-#' sbrl_acc<-mean(as.integer(yvals == testFoldDisc$label))
-#' message("SBRL RESULT")
-#' sbrl_model
-#' rm_sbrl<-sbrlModel2arcCBARuleModel(sbrl_model,trainFoldDiscCutpoints,trainFold,sbrlFixedLabel) 
-#' message(paste("sbrl acc=",sbrl_acc,"sbrl rule count=",nrow(sbrl_model$rs), "avg rule length", 
+#'  # apply sbrl model on a test fold
+#'  yhat <- predict(sbrl_model, testFoldDisc)
+#'  yvals<- as.integer(yhat$V1>0.5)
+#'  sbrl_acc<-mean(as.integer(yvals == testFoldDisc$label))
+#'  message("SBRL RESULT")
+#'  sbrl_model
+#'  rm_sbrl<-sbrlModel2arcCBARuleModel(sbrl_model,trainFoldDiscCutpoints,trainFold,sbrlFixedLabel) 
+#'  message(paste("sbrl acc=",sbrl_acc,"sbrl rule count=",nrow(sbrl_model$rs), "avg rule length", 
 #'  sum(rm_sbrl@rules@lhs@data)/length(rm_sbrl@rules)))
-#' rmQCBA_sbrl <- qcba(cbaRuleModel=rm_sbrl,datadf=trainFold)
-#' prediction <- predict(rmQCBA_sbrl,testFold)
-#' acc_qcba_sbrl <- CBARuleModelAccuracy(prediction, testFold[[rmQCBA_sbrl@classAtt]])
-#' if (! requireNamespace("stringr", quietly = TRUE)) {
-#'   message("Please install stringr to compute average rule length for QCBA")
-#'   avg_rule_length <- NA
-#' } else
-#' {
-#'   library(stringr)
-#'   avg_rule_length <- (sum(unlist(lapply(rmQCBA_sbrl@rules[1],str_count,pattern=",")))+
-#'                         # assuming the last rule has antecedent length zero 
-#'                         nrow(rmQCBA_sbrl@rules)-1)/nrow(rmQCBA_sbrl@rules)
+#'  rmQCBA_sbrl <- qcba(cbaRuleModel=rm_sbrl,datadf=trainFold)
+#'  prediction <- predict(rmQCBA_sbrl,testFold)
+#'  acc_qcba_sbrl <- CBARuleModelAccuracy(prediction, testFold[[rmQCBA_sbrl@classAtt]])
+#'  if (! requireNamespace("stringr", quietly = TRUE)) {
+#'    message("Please install stringr to compute average rule length for QCBA")
+#'    avg_rule_length <- NA
+#'  } else
+#'  {
+#'    library(stringr)
+#'    avg_rule_length <- (sum(unlist(lapply(rmQCBA_sbrl@rules[1],str_count,pattern=",")))+
+#'                          # assuming the last rule has antecedent length zero 
+#'                          nrow(rmQCBA_sbrl@rules)-1)/nrow(rmQCBA_sbrl@rules)
+#'  }
+#'  message("QCBA RESULT")
+#'  rmQCBA_sbrl@rules
+#'  message(paste("QCBA after SBRL acc=",acc_qcba_sbrl,"rule count=",
+#'   rmQCBA_sbrl@ruleCount, "avg rule length",  avg_rule_length))
+#'   unlink("tdata_R.label") # delete temp files created by SBRL
+#'   unlink("tdata_R.out")
 #' }
-#' message("QCBA RESULT")
-#' rmQCBA_sbrl@rules
-#' message(paste("QCBA after SBRL acc=",acc_qcba_sbrl,"rule count=",
-#'  rmQCBA_sbrl@ruleCount, "avg rule length",  avg_rule_length))
-#'  unlink("tdata_R.label") # delete temp files created by SBRL
-#'  unlink("tdata_R.out")
 
 sbrlModel2arcCBARuleModel <- function(sbrl_model, cutPoints, rawDataset, classAtt, attTypes)
 {
@@ -531,6 +529,10 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly", defaultRuleOve
 #' @param testingType either \code{mixture} for multi-rule classification or \code{firstRule} for one-rule classification. Applicable only when model is loaded from file.
 #' @param loglevel logger level from \code{java.util.logging}
 #' @param outputFiringRuleIDs if set to TRUE, instead of predictions, the function will return one-based IDs of  rules used to classify each instance (one rule per instance). 
+#' @param outputConfidenceScores if set to TRUE, instead of predictions, the function will return confidences of the firing rule 
+#' @param positiveClass This setting is only used if outputConfidenceScores=TRUE. It should be used only for binary problems. In this 
+#' case, the confidence values are recalculated so that these are not confidence values of the predicted class (default behaviour of outputConfidenceScores=TRUE)
+#' but rather confidence values associated with the class designated as positive 
 #' @param ... other arguments (currently not used)
 #' @return vector with predictions.
 #' @export
@@ -554,7 +556,7 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly", defaultRuleOve
 #' @seealso \link{qcba}
 #'
 #'
-predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNING", outputFiringRuleIDs=FALSE, ...)
+predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNING", outputFiringRuleIDs=FALSE, outputConfidenceScores=FALSE, positiveClass=NULL, ...)
 {
   ruleModel <- object
 
@@ -589,11 +591,37 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
     .jcall(jPredict, , "addRuleFrame", extRulesJArray)
     prediction <- .jcall(jPredict, "[Ljava/lang/String;", "predict")
   }
-  if (outputFiringRuleIDs)
+  if (outputFiringRuleIDs | outputConfidenceScores)
   {
     ruleIDs <- .jcall(jPredict, "[Ljava/lang/String;", "getFiringRuleID")
     # the original IDs from Java are zero based, R works with one-based indices
-    return(strtoi(ruleIDs)+1)
+    ruleIDs <- strtoi(ruleIDs)+1
+  }
+  
+  if (outputFiringRuleIDs)
+  {
+    if(outputConfidenceScores)
+    {
+      warning("Illegal combination of parameters, ignoring outputConfidenceScores")
+    }
+    return(ruleIDs)
+  }
+  if (outputConfidenceScores)
+  {
+    # The method uses confidence of the firing rule (as was computed on the entire training data)
+    # as the confidence estimate. 
+    # This is not the best approximation of confidence, especially for rules lower in the list
+      confidences <- vector()
+      for (ruleId in ruleIDs)
+      {
+        confidence <-  ruleModel@rules[ruleId,3]
+        confidences <- c(confidences, confidence)
+      }
+      if (!is.null(positiveClass))
+      {
+        confidences <- getConfVectorForROC(confidences,prediction,positiveClass)
+      }
+      return(confidences)
   }
   else
   {
@@ -601,8 +629,6 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
   }
   
 }
-
-
 
 
 

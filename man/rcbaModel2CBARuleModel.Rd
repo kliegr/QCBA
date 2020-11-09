@@ -4,8 +4,7 @@
 \alias{rcbaModel2CBARuleModel}
 \title{rcbaModel2arcCBARuleModel Converts a model created by \pkg{rCBA} so that it can be passed to qCBA}
 \usage{
-rcbaModel2CBARuleModel(rcbaModel, cutPoints, classAtt, rawDataset,
-  attTypes)
+rcbaModel2CBARuleModel(rcbaModel, cutPoints, classAtt, rawDataset, attTypes)
 }
 \arguments{
 \item{rcbaModel}{object returned  by rCBA::build}

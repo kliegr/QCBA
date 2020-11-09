@@ -368,6 +368,7 @@ public class ExtendRules {
 
             ExtendRule rule = it.next();
             rule.updateQuality();
+            rule.setQualityInRuleList(rule.getRuleQuality());
             if (LOGGER.isLoggable(Level.FINE)) {
                 LOGGER.log(Level.FINE, "Processing rule {0}", rule.toString());
             }
@@ -612,6 +613,7 @@ public class ExtendRules {
                 {
                     //go to next PRCandidate             
                     clashingRuleFound=true;
+                    break;
                 }                    
             }
             if (clashingRuleFound == false)

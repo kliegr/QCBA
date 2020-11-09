@@ -1,3 +1,11 @@
+qCBA v0.5 (Release date: 2020-08-20)
+==============
+Changes
+
+* Explainability enhancements: Predict function now supports outputing identifiers of rules used for classification and estimates of confidence scores (preview feature, not yet thoroughly tested).
+* Sync with changes in arulesCBA version 1.2.0 with respect to the output of default rule
+* Added Additional_repositories information for sbrl (sbrl no longer in CRAN), which is in line with the CRAN policy (https://cran.r-project.org/web/packages/policies.html) for packages in Suggests field, which are not in a mainstream repository. 
+
 qCBA v0.4 (Release date: 2019-08-26)
 ==============
 Changes

@@ -2,6 +2,7 @@
 
 S3method(predict,qCBARuleModel)
 export(arulesCBA2arcCBAModel)
+export(getConfVectorForROC)
 export(mapDataTypes)
 export(qcba)
 export(qcbaHumTemp)

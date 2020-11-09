@@ -139,6 +139,27 @@ public class RinterfaceExtend extends Rinterface {
 
         int ruleCount = extendRulesObj.getExtendedRules().size();
 
+        String[][] df = new String[ruleCount][5];
+
+        int i = 0;
+        for (ExtendRule r : extendRulesObj.getExtendedRules()) {
+            df[i][0] = r.getRule().getRuleAsArulesString();
+            df[i][1] = Double.toString(r.getRuleQuality().getRelativeSupport());
+            df[i][2] = Double.toString(r.getRuleQuality().getConfidence());
+            df[i][4] = Double.toString(r.getQualityInRuleList().getSupport()); //orderedSupport
+            df[i++][3] = Double.toString(r.getQualityInRuleList().getConfidence()); //orderedConfidence
+        }
+
+        return df;
+    }
+    
+     public String[][] ___getRules() throws Exception {
+        if (isAnnotationEnabled | isFuzzificationEnabled) {
+            throw new Exception("Fuzzified or annotated rules cannot be exported to R, use saveToFile()!");
+        }
+
+        int ruleCount = extendRulesObj.getExtendedRules().size();
+
         String[][] df = new String[ruleCount][3];
 
         int i = 0;

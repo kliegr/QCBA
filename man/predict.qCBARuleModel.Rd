@@ -4,8 +4,16 @@
 \alias{predict.qCBARuleModel}
 \title{Aplies qCBARuleModel}
 \usage{
-\method{predict}{qCBARuleModel}(object, newdata, testingType,
-  loglevel = "WARNING", outputFiringRuleIDs = FALSE, ...)
+\method{predict}{qCBARuleModel}(
+  object,
+  newdata,
+  testingType,
+  loglevel = "WARNING",
+  outputFiringRuleIDs = FALSE,
+  outputConfidenceScores = FALSE,
+  positiveClass = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{\link{qCBARuleModel} class instance}
@@ -17,6 +25,12 @@
 \item{loglevel}{logger level from \code{java.util.logging}}
 
 \item{outputFiringRuleIDs}{if set to TRUE, instead of predictions, the function will return one-based IDs of  rules used to classify each instance (one rule per instance).}
+
+\item{outputConfidenceScores}{if set to TRUE, instead of predictions, the function will return confidences of the firing rule}
+
+\item{positiveClass}{This setting is only used if outputConfidenceScores=TRUE. It should be used only for binary problems. In this 
+case, the confidence values are recalculated so that these are not confidence values of the predicted class (default behaviour of outputConfidenceScores=TRUE)
+but rather confidence values associated with the class designated as positive}
 
 \item{...}{other arguments (currently not used)}
 }

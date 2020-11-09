@@ -52,6 +52,9 @@ public final class ExtendRule implements RuleInt {
     private ExtendRuleConfig extensionConfig;
     private Float confidenceOfSeedRule;
     protected Rule rule;
+    //this field contains rule quality values obtained after rules above the current
+    //rule were removed during pruning
+    private RuleQuality ruleQualityInRuleList;
     public float getConfidenceOfSeedRule()
     {
             return confidenceOfSeedRule;
@@ -796,6 +799,15 @@ public ExtendRule removeRedundantAttributes(){
     }
     public String getArulesRepresentation() {
         return rule.getArulesRepresentation();
+    }
+
+    void setQualityInRuleList(RuleQuality ruleQuality) {
+        ruleQualityInRuleList = ruleQuality;
+        }
+
+    
+    public RuleQuality getQualityInRuleList() {
+        return(ruleQualityInRuleList);
     }
 
 }
