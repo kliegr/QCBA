@@ -1,7 +1,7 @@
 Package: qCBA
 Title: Quantitative Classification by Association Rules
-Version: 0.5
-Date: 2020-11-09
+Version: 0.5.2
+Date: 2021-06-17
 Author: Tomas Kliegr
 Maintainer: Tomas Kliegr <kliegr@gmail.com>
 Description: CBA postprocessing algorithm that creates smaller models for datasets containing quantitative (numerical) attributes. Article describing QCBA is published in Tomas Kliegr (2017) <arXiv:1711.10166>. The package can also postprocess results of the SBRL package, which is no longer in CRAN, but can be obtained from <https://github.com/cran/sbrl>.

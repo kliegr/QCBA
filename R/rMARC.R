@@ -8,6 +8,7 @@
 library(arules)
 library(rJava)
 library(arc)
+require(arulesCBA)
 
 #' qCBARuleModel
 #'
@@ -73,12 +74,11 @@ qcbaHumTemp <- function()
   data_discr[,3] <- as.factor(data_raw[,3])
 
   txns <- as(data_discr, "transactions")
+  classAtt="Class"
+  appearance <- getAppearance(data_discr, classAtt)
   rules <- apriori(txns, parameter = list(confidence = 0.5, support= 3/nrow(data_discr), minlen=1, maxlen=3), appearance=appearance)
   print("Seed list of rules")
   inspect(rules)
-
-  classAtt="Class"
-  appearance <- getAppearance(data_discr, classAtt)
   rmCBA <- cba_manual(data_raw,  rules, txns, appearance$rhs, classAtt, cutp= list(), pruning_options=NULL)
   print("CBA classifier")
   inspect(rmCBA@rules)
