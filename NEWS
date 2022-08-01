@@ -1,3 +1,8 @@
+qCBA v0.5.2.1 (Release date: 2022-08-01)
+==============
+Changes
+* Added support for converting new types of arulesCBA models (e.g., CPAR, FOIL) to qCBA datastructures
+
 qCBA v0.5.1 (Release date: 2020-11-09)
 ==============
 Changes

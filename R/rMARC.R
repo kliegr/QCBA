@@ -254,18 +254,37 @@ arulesCBA2arcCBAModel <- function(arulesCBAModel, cutPoints, rawDataset, classAt
   # this should be fine according to https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Suggested-packages
   
   CBAmodel <- CBARuleModel()
-  #add default rule
+  ruleCount<-length(arulesCBAModel$rules)
+  #check if last rule in the classifier has no conditions (default rule)
+  #if it is not a default rule, try to add one.
+  if (sum(arulesCBAModel$rules@lhs@data[,ruleCount])>0)
+  {
+    #Both LHS and RHS in arules have the same dimension. 
+    #positions 1 to number of distinct items in LHS are used for RHS
+    #remaining positions are used for RHS items
+    if ("default" %in% attributes(arulesCBAModel)$names)
+    {
+      itemCount<-nrow(arulesCBAModel$rules@lhs@data) #total for LHS and RHS items
+      emptyLHS<-rep(FALSE,itemCount)
+      arulesCBAModel$rules@lhs@data <- as(cbind(arulesCBAModel$rules@lhs@data,emptyLHS),"ngCMatrix")
+      RHSLevels<-nlevels(arulesCBAModel$default)
+      rhs <-emptyLHS
+      positionOfDefaultRuleInRHSLevels<-as.numeric(arulesCBAModel$default)
+      #RHS for default rule has only one bit on which corresponds to the position
+      #of the default rule in the item vector
+      rhs[itemCount - RHSLevels+positionOfDefaultRuleInRHSLevels] <- TRUE
+      arulesCBAModel$rules@rhs@data <- as(cbind(arulesCBAModel$rules@rhs@data,rhs),"ngCMatrix")
+      #arules data frame does not contain quality metrics for the default rule
+      arulesCBAModel$rules@quality <- rbind(arulesCBAModel$rules@quality, c(0,0,0,0) )
+      message("Last rule added based on default specification in the passed model ")
+    }
+    else
+    {
+      warning("Last rule is not a default rule with empty antecedent and could 
+      not be automatically added as 'default' attribute is missing")
+    }
+  }
   CBAmodel@rules <- arulesCBAModel$rules
-  
-  # the following code was necessary for older arulesCBA versions
-  #emptyrhs<-rep(FALSE,NROW(arulesCBAModel$class))
-  #emptylhs<-rep(FALSE,NROW(arulesCBAModel$rules@lhs@data)-NROW(arulesCBAModel$class))
-  #CBAmodel@rules@lhs@data<-as(cbind(arulesCBAModel$rules@lhs@data,c(emptylhs,emptyrhs)),"ngCMatrix")
-  #rhs<-emptyrhs
-  #rhs[which(arulesCBAModel$default  == arulesCBAModel$class ) ]<- TRUE
-  #CBAmodel@rules@rhs@data<-as(cbind(arulesCBAModel$rules@rhs@data,c(emptylhs,rhs)),"ngCMatrix")
-  #arules data frame does not contain quality metrics for the default rule
-  #CBAmodel@rules@quality <- rbind(CBAmodel@rules@quality, c(0,0,0,0) )
   CBAmodel@cutp <- cutPoints
   CBAmodel@classAtt <- classAtt
   if (missing(attTypes))
