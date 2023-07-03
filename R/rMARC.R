@@ -37,7 +37,7 @@ qCBARuleModel <- setClass("qCBARuleModel",
 
 #' rCBARuleModel
 #'
-#' @description  This class represents an CBA rule-based classifier, where rules are represented as string vectors in a data frame
+#' @description  This class represents a CBA rule-based classifier, where rules are represented as string vectors in a data frame
 #' @name customCBARuleModel-class
 #' @rdname customCBARuleModel-class
 #' @exportClass customCBARuleModel
@@ -236,7 +236,6 @@ rcbaModel2CBARuleModel <- function(rcbaModel, cutPoints, classAtt, rawDataset, a
 #' if (! requireNamespace("arulesCBA", quietly = TRUE)) {
 #'  message("Please install arulesCBA: install.packages('arulesCBA')")
 #' }  else {
-#'  message("The following code might cause the 'pruning exception' rCBA error on some installations")
 #'  classAtt <- "Species"
 #'  discrModel <- discrNumeric(iris, classAtt)
 #'  irisDisc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
