@@ -536,12 +536,13 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly", defaultRuleOve
   else
   {
     #parse results into R structures
-    extRulesArray <- .jcall(hjw, "[[Ljava/lang/String;", "getRules", evalArray=FALSE)
+    extRulesArray <- .jcall(hjw, "[[Ljava/lang/String;", "getRulesBasicStatsLength", evalArray=FALSE)
     extRules <- .jevalArray(extRulesArray,simplify=TRUE)
-    colnames(extRules) <- c("rules","support","confidence")
+    colnames(extRules) <- c("rules","support","confidence","condition_count")
     extRulesFrame<-as.data.frame(extRules,stringsAsFactors=FALSE)
     extRulesFrame$support<-as.numeric(extRulesFrame$support)
     extRulesFrame$confidence<-as.numeric(extRulesFrame$confidence)
+    extRulesFrame$condition_count<-as.numeric(extRulesFrame$condition_count)
     if (createHistorySlot)
     {
       extRulesHistoryArray <- .jcall(hjw, "[[Ljava/lang/String;", "getRuleHistory", evalArray=FALSE)
@@ -556,7 +557,7 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly", defaultRuleOve
     rm@rules <- extRulesFrame
     if (computeOrderedStats)
     {
-      message("computing orderedConf and orderedSupp")
+      #message("computing orderedConf and orderedSupp")
       firingIDs_train <- predict(rm,datadf,outputFiringRuleIDs=TRUE)
       prediction_train <- predict(rm,datadf)
       ordered_conf <- c()
@@ -735,3 +736,4 @@ mapDataTypes<- function (Rtypes)
   newTypes[Rtypes=="integer"] <-"numerical"
   return(newTypes)
 }
+

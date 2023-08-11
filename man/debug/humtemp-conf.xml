@@ -1,13 +1,13 @@
 <!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd"><properties>
 <entry key="Method">extend</entry>
-<entry key="RulesPath">/home/tomas/temp/QCBA/man//home/tomas/temp/QCBA/man/debug/humptemp.arules</entry>
-<entry key="TrainDataPath">/home/tomas/temp/QCBA/man/debug/humtemp.csv</entry>
+<entry key="RulesPath">humptemp.arules</entry>
+<entry key="TrainDataPath">humtemp.csv</entry>
 <entry key="ExtendType">numericOnly</entry>
 <entry key="AttributePruning">TRUE</entry>
 <entry key="Trimming">TRUE</entry>
 <entry key="DefaultRuleOverlapPruning">rangeBased</entry>
 <entry key="Postpruning">cba</entry>
-<entry key="DataTypes">integer,integer,integer</entry>
+<entry key="DataTypes">integer;integer;integer</entry>
 <entry key="TargetAttribute">Class</entry>
-<entry key="OutputPath">/home/tomas/temp/QCBA/man/debug/humtemp-qcba.arules</entry>
+<entry key="OutputPath">humtemp-qcba.arules</entry>
 </properties>

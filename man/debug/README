@@ -1,0 +1,3 @@
+To run this debug configuration, run 
+java QCBA.jar humtemp-conf.xml 
+setting this folder as a working directory. 

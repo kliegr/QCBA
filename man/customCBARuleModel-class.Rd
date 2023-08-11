@@ -6,7 +6,7 @@
 \alias{customCBARuleModel}
 \title{rCBARuleModel}
 \description{
-This class represents an CBA rule-based classifier, where rules are represented as string vectors in a data frame
+This class represents a CBA rule-based classifier, where rules are represented as string vectors in a data frame
 }
 \section{Slots}{
 

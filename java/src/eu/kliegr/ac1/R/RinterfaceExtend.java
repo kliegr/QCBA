@@ -128,11 +128,14 @@ public class RinterfaceExtend extends Rinterface {
 
     }
 
+    
     /**
      *
      * @return @throws Exception
+     * 
+     * There is apparently a bug in this procedure
      */
-    public String[][] getRules() throws Exception {
+    public String[][] getRules_ExtendedStats() throws Exception {
         if (isAnnotationEnabled | isFuzzificationEnabled) {
             throw new Exception("Fuzzified or annotated rules cannot be exported to R, use saveToFile()!");
         }
@@ -153,7 +156,9 @@ public class RinterfaceExtend extends Rinterface {
         return df;
     }
     
-     public String[][] ___getRules() throws Exception {
+
+    
+     public String[][] getRulesBasicStats() throws Exception {
         if (isAnnotationEnabled | isFuzzificationEnabled) {
             throw new Exception("Fuzzified or annotated rules cannot be exported to R, use saveToFile()!");
         }
@@ -167,6 +172,26 @@ public class RinterfaceExtend extends Rinterface {
             df[i][0] = r.getRule().getRuleAsArulesString();
             df[i][1] = Double.toString(r.getRuleQuality().getRelativeSupport());
             df[i++][2] = Double.toString(r.getRuleQuality().getConfidence());
+        }
+
+        return df;
+    }
+     
+          public String[][] getRulesBasicStatsLength() throws Exception {
+        if (isAnnotationEnabled | isFuzzificationEnabled) {
+            throw new Exception("Fuzzified or annotated rules cannot be exported to R, use saveToFile()!");
+        }
+
+        int ruleCount = extendRulesObj.getExtendedRules().size();
+
+        String[][] df = new String[ruleCount][4];
+
+        int i = 0;
+        for (ExtendRule r : extendRulesObj.getExtendedRules()) {
+            df[i][0] = r.getRule().getRuleAsArulesString();
+            df[i][1] = Double.toString(r.getRuleQuality().getRelativeSupport());
+            df[i][2] = Double.toString(r.getRuleQuality().getConfidence());
+            df[i++][3] = Double.toString(r.getAntecedentLength());
         }
 
         return df;
@@ -194,23 +219,5 @@ public class RinterfaceExtend extends Rinterface {
         return result;
     }    
 
-    /**
-     *
-     * @return @throws Exception
-     */
-    public Object[][] getRules2() throws Exception {
-        int ruleCount = extendRulesObj.getExtendedRules().size();
-
-        Object[][] df = new Object[ruleCount][3];
-
-        int i = 0;
-        for (ExtendRule r : extendRulesObj.getExtendedRules()) {
-            df[i][0] = r.getRule().getRuleAsArulesString();
-            df[i][1] = (double) r.getRuleQuality().getRelativeSupport();
-            df[i++][2] = (double) r.getRuleQuality().getConfidence();
-        }
-
-        return df;
-    }
 
 }

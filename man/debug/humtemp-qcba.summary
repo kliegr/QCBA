@@ -1,0 +1,11 @@
+Number of rules to extend:6
+Number of extended rules :4
+
+ ***Performance [ms]***
+Total:179
+Config load:2
+Load data:12
+Load rules:34
+Sort rules:0
+Extend rules:115
+Save rules:15
