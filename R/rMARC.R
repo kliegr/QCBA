@@ -6,6 +6,7 @@
 #' @importFrom stats predict
 #' @importFrom stats as.formula
 #' @importFrom arulesCBA CBA CMAR CPAR PRM FOIL2
+#' @importFrom methods is
 
 library(arules)
 library(rJava)
@@ -238,6 +239,8 @@ rcbaModel2CBARuleModel <- function(rcbaModel, cutPoints, classAtt, rawDataset, a
 #' if (! requireNamespace("arulesCBA", quietly = TRUE)) {
 #'  message("Please install arulesCBA: install.packages('arulesCBA')")
 #' }  else {
+#' 
+#' \donttest{ # skip incoming CRAN checks due to time limit
 #'  classAtt <- "Species"
 #'  discrModel <- discrNumeric(iris, classAtt)
 #'  irisDisc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
@@ -247,7 +250,7 @@ rcbaModel2CBARuleModel <- function(rcbaModel, cutPoints, classAtt, rawDataset, a
 #'  qCBAmodel <- qcba(cbaRuleModel=CBAmodel,datadf=iris)
 #'  print(qCBAmodel@rules)
 #'  }
-#' 
+#' }
 #' 
 arulesCBA2arcCBAModel <- function(arulesCBAModel, cutPoints, rawDataset, classAtt, attTypes )
 {
@@ -482,14 +485,14 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly", defaultRuleOve
   classAtt=cbaRuleModel@classAtt
 
   #reshape R data for Java call IF necessary
-  if (class(cbaRuleModel)=="CBARuleModel")
+  if (is(cbaRuleModel,"CBARuleModel"))
   {
     #  the passed object in rmCBA@rules was created by arules package, reshape necessary
     rules=cbaRuleModel@rules
     rulesFrame <- as(rules,"data.frame")
     rulesFrame$rules <- as.character(rulesFrame$rules)
   }
-  else if (class(cbaRuleModel)=="customCBARuleModel")
+  else if (is(cbaRuleModel,"customCBARuleModel"))
   {
     rulesFrame=cbaRuleModel@rules
     message("Using customCBARuleModel")
@@ -773,13 +776,13 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
 #' test <- df_all[(1+train_proportion*tot_rows):tot_rows,]
 #' # learn with default metaparameter values
 #' algs<-c("CBA","CPAR") 
-#' # omitting algs would use all base rule learners (may take several seconds)
 #' stats<-benchmarkQCBA(train,test,class,algs = algs)
 #' print(stats)
 #' # print relative change of QCBA results over baseline algorithms 
 #' print(stats[,(length(algs)+1):(length(algs)*2)]/stats[,0:length(algs)]-1)
-#' 
-#' # EXAMPLE 2: As Example 1 but data are discretized externally
+#' \donttest{ # skip incoming CRAN checks due to time limit
+#' # EXAMPLE 2: As Example 1 but data are discretized externally and all
+#' # default base rule learners are used
 #' 
 #' # Discretize numerical predictors using built-in discretization
 #' # This performs supervised, entropy-based discretization (Fayyad and Irani, 1993)
@@ -787,7 +790,8 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
 #' dis_model <- discrNumeric(train, class)
 #' train_disc <- as.data.frame(lapply(dis_model$Disc.data, as.factor))
 #' test_disc <- applyCuts(test, dis_model$cutp, infinite_bounds=TRUE, labels=TRUE)
-#' stats<-benchmarkQCBA(train,test,class,train_disc,test_disc,dis_model$cutp,algs = algs)
+#' # omitting algs uses all default base rule learners (may take several seconds)
+#' stats<-benchmarkQCBA(train,test,class,train_disc,test_disc,dis_model$cutp)
 #' print(stats)
 #' 
 #' # EXAMPLE 3: pass custom metaparameters to selected base rule learner,
@@ -803,6 +807,7 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
 #' inspect(output$CPAR[[1]])
 #' message("QCBA model")
 #' print(output$CPAR_QCBA[[1]])
+#' }
 
 benchmarkQCBA <- function(train,test, classAtt,train_disc=NULL, test_disc=NULL, cutPoints=NULL,
                           algs = c("CBA","CMAR","CPAR","PRM","FOIL2"), iterations=2, rounding_places=3, return_models = FALSE, debug_prints = FALSE, ...

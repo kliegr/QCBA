@@ -86,13 +86,13 @@ train <- df_all[1:(train_proportion*tot_rows),]
 test <- df_all[(1+train_proportion*tot_rows):tot_rows,]
 # learn with default metaparameter values
 algs<-c("CBA","CPAR") 
-# omitting algs would use all base rule learners (may take several seconds)
 stats<-benchmarkQCBA(train,test,class,algs = algs)
 print(stats)
 # print relative change of QCBA results over baseline algorithms 
 print(stats[,(length(algs)+1):(length(algs)*2)]/stats[,0:length(algs)]-1)
-
-# EXAMPLE 2: As Example 1 but data are discretized externally
+\donttest{ # skip incoming CRAN checks due to time limit
+# EXAMPLE 2: As Example 1 but data are discretized externally and all
+# default base rule learners are used
 
 # Discretize numerical predictors using built-in discretization
 # This performs supervised, entropy-based discretization (Fayyad and Irani, 1993)
@@ -100,7 +100,8 @@ print(stats[,(length(algs)+1):(length(algs)*2)]/stats[,0:length(algs)]-1)
 dis_model <- discrNumeric(train, class)
 train_disc <- as.data.frame(lapply(dis_model$Disc.data, as.factor))
 test_disc <- applyCuts(test, dis_model$cutp, infinite_bounds=TRUE, labels=TRUE)
-stats<-benchmarkQCBA(train,test,class,train_disc,test_disc,dis_model$cutp,algs = algs)
+# omitting algs uses all default base rule learners (may take several seconds)
+stats<-benchmarkQCBA(train,test,class,train_disc,test_disc,dis_model$cutp)
 print(stats)
 
 # EXAMPLE 3: pass custom metaparameters to selected base rule learner,
@@ -116,6 +117,7 @@ message("CPAR model")
 inspect(output$CPAR[[1]])
 message("QCBA model")
 print(output$CPAR_QCBA[[1]])
+}
 }
 \seealso{
 [qcba()] which this function wraps.
