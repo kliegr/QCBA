@@ -76,39 +76,36 @@ from \pkg{arulesCBA} and apply QCBA to postprocess them.
 
 # Define input dataset and target variable 
 df_all <-datasets::iris
-class <- "Species"
+classAtt <- "Species"
 
 # Create train/test partition using built-in R functions
 tot_rows<-nrow(df_all)  
 train_proportion<-2/3
 df_all <- df_all[sample(tot_rows),]
-train <- df_all[1:(train_proportion*tot_rows),]
-test <- df_all[(1+train_proportion*tot_rows):tot_rows,]
+trainFold <- df_all[1:(train_proportion*tot_rows),]
+testFold <- df_all[(1+train_proportion*tot_rows):tot_rows,]
 # learn with default metaparameter values
-algs<-c("CBA","CPAR") 
-stats<-benchmarkQCBA(train,test,class,algs = algs)
+stats<-benchmarkQCBA(trainFold,testFold,classAtt)
 print(stats)
 # print relative change of QCBA results over baseline algorithms 
-print(stats[,(length(algs)+1):(length(algs)*2)]/stats[,0:length(algs)]-1)
-\donttest{ # skip incoming CRAN checks due to time limit
-# EXAMPLE 2: As Example 1 but data are discretized externally and all
-# default base rule learners are used
+print(stats[,6:10]/stats[,0:5]-1)
+
+# EXAMPLE 2: As Example 1 but data are discretizated externally
 
 # Discretize numerical predictors using built-in discretization
 # This performs supervised, entropy-based discretization (Fayyad and Irani, 1993)
 # of all numerical predictor variables with 3 or more distinct numerical values
-dis_model <- discrNumeric(train, class)
-train_disc <- as.data.frame(lapply(dis_model$Disc.data, as.factor))
-test_disc <- applyCuts(test, dis_model$cutp, infinite_bounds=TRUE, labels=TRUE)
-# omitting algs uses all default base rule learners (may take several seconds)
-stats<-benchmarkQCBA(train,test,class,train_disc,test_disc,dis_model$cutp)
+discrModel <- discrNumeric(trainFold, classAtt)
+train_disc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
+test_disc <- applyCuts(testFold, discrModel$cutp, infinite_bounds=TRUE, labels=TRUE)
+stats<-benchmarkQCBA(trainFold,testFold,classAtt,train_disc,test_disc,discrModel$cutp)
 print(stats)
 
 # EXAMPLE 3: pass custom metaparameters to selected base rule learner,
 # then postprocess with QCBA, evaluate, and return both models
 
 # use only CBA as a base learner, return rule lists.
-output<-benchmarkQCBA(train,test,class,train_disc,test_disc,dis_model$cutp, 
+output<-benchmarkQCBA(trainFold,testFold,classAtt,train_disc,test_disc,discrModel$cutp, 
                      CBA=list("support"=0.05,"confidence"=0.5),algs = c("CPAR"),
                      return_models=TRUE)
 message("Evaluation statistics")
@@ -117,7 +114,6 @@ message("CPAR model")
 inspect(output$CPAR[[1]])
 message("QCBA model")
 print(output$CPAR_QCBA[[1]])
-}
 }
 \seealso{
 [qcba()] which this function wraps.

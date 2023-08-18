@@ -6,7 +6,6 @@
 #' @importFrom stats predict
 #' @importFrom stats as.formula
 #' @importFrom arulesCBA CBA CMAR CPAR PRM FOIL2
-#' @importFrom methods is
 
 library(arules)
 library(rJava)
@@ -239,8 +238,6 @@ rcbaModel2CBARuleModel <- function(rcbaModel, cutPoints, classAtt, rawDataset, a
 #' if (! requireNamespace("arulesCBA", quietly = TRUE)) {
 #'  message("Please install arulesCBA: install.packages('arulesCBA')")
 #' }  else {
-#' 
-#' \donttest{ # skip incoming CRAN checks due to time limit
 #'  classAtt <- "Species"
 #'  discrModel <- discrNumeric(iris, classAtt)
 #'  irisDisc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
@@ -250,7 +247,7 @@ rcbaModel2CBARuleModel <- function(rcbaModel, cutPoints, classAtt, rawDataset, a
 #'  qCBAmodel <- qcba(cbaRuleModel=CBAmodel,datadf=iris)
 #'  print(qCBAmodel@rules)
 #'  }
-#' }
+#' 
 #' 
 arulesCBA2arcCBAModel <- function(arulesCBAModel, cutPoints, rawDataset, classAtt, attTypes )
 {
@@ -485,14 +482,14 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly", defaultRuleOve
   classAtt=cbaRuleModel@classAtt
 
   #reshape R data for Java call IF necessary
-  if (is(cbaRuleModel,"CBARuleModel"))
+  if (class(cbaRuleModel)=="CBARuleModel")
   {
     #  the passed object in rmCBA@rules was created by arules package, reshape necessary
     rules=cbaRuleModel@rules
     rulesFrame <- as(rules,"data.frame")
     rulesFrame$rules <- as.character(rulesFrame$rules)
   }
-  else if (is(cbaRuleModel,"customCBARuleModel"))
+  else if (class(cbaRuleModel)=="customCBARuleModel")
   {
     rulesFrame=cbaRuleModel@rules
     message("Using customCBARuleModel")
@@ -683,19 +680,19 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
     if (confScoreType =="ordered" & !("orderedConf" %in% colnames(ruleModel@rules)))
     {
       message("orderedConf has not been precomputed, have you trained qcba with 
-              computeOrderedStats=TRUE ?")
-      confPositionInVector<-3
+              computeOrderedStats=TRUE? Falling back to standard global confidence")
+      confPositionInVector<-which(colnames(ruleModel@rules)=="confidence")
     }
     else if (confScoreType =="ordered")
     {
-      confPositionInVector<-4
+      confPositionInVector<-which(colnames(ruleModel@rules)=="orderedConf")
     }
     else
     {
-      confPositionInVector<-3
+      confPositionInVector<-which(colnames(ruleModel@rules)=="confidence")
       if (confScoreType !="global")
       {
-        message("Unrecognized confScoreType, using value global")
+        message("Unrecognized confScoreType, falling back to standard global confidence")
       }
     }
     # The method uses confidence of the firing rule (as was computed on the entire training data)
@@ -766,39 +763,36 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
 #' 
 #' # Define input dataset and target variable 
 #' df_all <-datasets::iris
-#' class <- "Species"
+#' classAtt <- "Species"
 #'
 #' # Create train/test partition using built-in R functions
 #' tot_rows<-nrow(df_all)  
 #' train_proportion<-2/3
 #' df_all <- df_all[sample(tot_rows),]
-#' train <- df_all[1:(train_proportion*tot_rows),]
-#' test <- df_all[(1+train_proportion*tot_rows):tot_rows,]
+#' trainFold <- df_all[1:(train_proportion*tot_rows),]
+#' testFold <- df_all[(1+train_proportion*tot_rows):tot_rows,]
 #' # learn with default metaparameter values
-#' algs<-c("CBA","CPAR") 
-#' stats<-benchmarkQCBA(train,test,class,algs = algs)
+#' stats<-benchmarkQCBA(trainFold,testFold,classAtt)
 #' print(stats)
 #' # print relative change of QCBA results over baseline algorithms 
-#' print(stats[,(length(algs)+1):(length(algs)*2)]/stats[,0:length(algs)]-1)
-#' \donttest{ # skip incoming CRAN checks due to time limit
-#' # EXAMPLE 2: As Example 1 but data are discretized externally and all
-#' # default base rule learners are used
+#' print(stats[,6:10]/stats[,0:5]-1)
+#' 
+#' # EXAMPLE 2: As Example 1 but data are discretizated externally
 #' 
 #' # Discretize numerical predictors using built-in discretization
 #' # This performs supervised, entropy-based discretization (Fayyad and Irani, 1993)
 #' # of all numerical predictor variables with 3 or more distinct numerical values
-#' dis_model <- discrNumeric(train, class)
-#' train_disc <- as.data.frame(lapply(dis_model$Disc.data, as.factor))
-#' test_disc <- applyCuts(test, dis_model$cutp, infinite_bounds=TRUE, labels=TRUE)
-#' # omitting algs uses all default base rule learners (may take several seconds)
-#' stats<-benchmarkQCBA(train,test,class,train_disc,test_disc,dis_model$cutp)
+#' discrModel <- discrNumeric(trainFold, classAtt)
+#' train_disc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
+#' test_disc <- applyCuts(testFold, discrModel$cutp, infinite_bounds=TRUE, labels=TRUE)
+#' stats<-benchmarkQCBA(trainFold,testFold,classAtt,train_disc,test_disc,discrModel$cutp)
 #' print(stats)
 #' 
 #' # EXAMPLE 3: pass custom metaparameters to selected base rule learner,
 #' # then postprocess with QCBA, evaluate, and return both models
 #' 
 #' # use only CBA as a base learner, return rule lists.
-#' output<-benchmarkQCBA(train,test,class,train_disc,test_disc,dis_model$cutp, 
+#' output<-benchmarkQCBA(trainFold,testFold,classAtt,train_disc,test_disc,discrModel$cutp, 
 #'                      CBA=list("support"=0.05,"confidence"=0.5),algs = c("CPAR"),
 #'                      return_models=TRUE)
 #' message("Evaluation statistics")
@@ -807,7 +801,6 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
 #' inspect(output$CPAR[[1]])
 #' message("QCBA model")
 #' print(output$CPAR_QCBA[[1]])
-#' }
 
 benchmarkQCBA <- function(train,test, classAtt,train_disc=NULL, test_disc=NULL, cutPoints=NULL,
                           algs = c("CBA","CMAR","CPAR","PRM","FOIL2"), iterations=2, rounding_places=3, return_models = FALSE, debug_prints = FALSE, ...

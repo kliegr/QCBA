@@ -614,32 +614,25 @@ predictionBASE <- predict(rmBASE,test_disc) # CPAR (arulesCBA) predict function
 baseModel_arc <- arulesCBA2arcCBAModel(rmBASE, cutPoints,  trainFold, classAtt)
 rmQCBA_NOATTPR <- qcba(cbaRuleModel=baseModel_arc,datadf=trainFold,attributePruning = FALSE)
 predictionQCBA_NOATTPR <- predict(rmQCBA_NOATTPR,testFold)
-acc_qcba_no_att_pr <- CBARuleModelAccuracy(predictionQCBA_NOATTPR, y_true)
-condition_count_qcba_no_att_pr<-rmQCBA_NOATTPR@rules$condition_count
-rule_count_qcba_no_att_pr<-rmQCBA_NOATTPR@ruleCount
 ```
 #### Postprocess with QCBA with attribute pruning enabled
-The accuracy of the model and the average number of conditions (literals) per rule:
 ```{r message=FALSE}
 baseModel_arc <- arulesCBA2arcCBAModel(rmBASE, cutPoints,  trainFold, classAtt)
 rmQCBA <- qcba(cbaRuleModel=baseModel_arc,datadf=trainFold,attributePruning = TRUE)
 predictionQCBA <- predict(rmQCBA,testFold)
-acc <- CBARuleModelAccuracy(predictionQCBA, y_true)
-condition_count_qcba_no_att_pr<-rmQCBA@rules$condition_count
-avg_length_qcba <-sum(rmQCBA@rules$condition_count)/rmQCBA@ruleCount
 ```
 #### Compare the three models
 ```{r message=FALSE}
-  print(paste("CPAR: Number of rules: ",length(rmBASE$rules),", total conditions :",round(sum(rmBASE$rules@lhs@data),2), ", accuracy on test data: ",round(CBARuleModelAccuracy(predictionBASE, y_true),2)))
-  print(paste("QCBA (NO ATT PR.): Number of rules: ",nrow(rmQCBA_NOATTPR@rules),", average number of conditions per rule :",rmQCBA_NOATTPR@rules$condition_count, ", accuracy on test data: ",round(CBARuleModelAccuracy(predictionQCBA_NOATTPR, y_true),2)))
-  print(paste("QCBA (ATT PR.): Number of rules: ",nrow(rmQCBA@rules),", average number of conditions per rule :",rmQCBA@rules$condition_count, ", accuracy on test data: ",round(CBARuleModelAccuracy(predictionQCBA, y_true),2)))
+  print(paste0("CPAR: Number of rules: ",length(rmBASE$rules),", total conditions:",sum(rmBASE$rules@lhs@data), ", accuracy on test data: ",round(CBARuleModelAccuracy(predictionBASE, y_true),2)))
+  print(paste0("QCBA (NO ATT PR.): Number of rules: ",nrow(rmQCBA_NOATTPR@rules),", total conditions:",sum(rmQCBA_NOATTPR@rules$condition_count), ", accuracy on test data: ",round(CBARuleModelAccuracy(predictionQCBA_NOATTPR, y_true),2)))
+  print(paste0("QCBA (ATT PR.): Number of rules: ",nrow(rmQCBA@rules),", total conditions:",sum(rmQCBA@rules$condition_count), ", accuracy on test data: ",round(CBARuleModelAccuracy(predictionQCBA, y_true),2)))
 ```
 
 The QCBA postprocessing with attribute pruning enabled results in a model that is more accurate and smaller than a QCBA model with attribute pruning disabled.
 
 It should be noted that attribute pruning is performed as a second  step in QCBA after refitting. The result of QCBA model with attribute pruning enabled and without it can thus differ substantially, also, as a consequence, affecting the range of literals.
 
-# Part 3: advanced options {#part3}
+# Part 3: Advanced options {#part3}
 
 ### Speeding up conditional accept
 The default value of the minCondImprovement parameter is -1. This parameter value ensures exhaustive search for extensions, but can be slow on large datasets or datasets with many distinct values. The closer this parameter value will be to 0, the faster the execution will generally be. 
@@ -811,4 +804,69 @@ write(x, file = qcbaFilePath,
       append = FALSE, sep = ",")
 print(paste("Run as: ", "java -jar QCBA.jar ", qcbaFilePath, sep=""))
 print(paste("QCBA prediction will be written to:",outputPath))
+```
+
+### ROC and AUC curves
+The first example uses the iris dataset.
+```{r message=FALSE}
+  set.seed(7)
+  library(ROCR)
+  library(qCBA)
+  twoClassIris<-datasets::iris[1:100,]
+  twoClassIris <- twoClassIris[sample(nrow(twoClassIris)),]
+  #twoClassIris$Species<-as.factor(as.character(iris$Species))
+  trainFold <- twoClassIris[1:75,]
+  testFold <- twoClassIris[76:nrow(twoClassIris),]
+  classAtt <- "Species"
+  rmCBA <- cba(trainFold, classAtt=classAtt)
+  rmqCBA <- qcba(cbaRuleModel=rmCBA, datadf=trainFold)
+  confidencesQCBA <- predict(rmqCBA,testFold,outputConfidenceScores=TRUE,positiveClass="versicolor")
+  #it is importat that the first level is different from positiveClass specified in the line above
+  roc_pred <- ROCR::prediction(confidencesQCBA, factor(testFold[[classAtt]]))
+  roc_qcba = ROCR::performance(roc_pred, "tpr", "fpr")
+  plot(roc_qcba, lwd=2, colorize=TRUE)
+  lines(x=c(0, 1), y=c(0, 1), col="black", lwd=1)
+  auc = ROCR::performance(roc_pred, "auc")
+  auc = unlist(auc@y.values)
+  auc
+```
+The second example is on the adult dataset, which is more difficult than iris. In this way, we obtain varied confidence scores for the ROC plot.
+First, get results from CBA:
+```{r message=FALSE}
+library(ROCR)
+set.seed(101)
+classitems <- c("income=small","income=large")
+adult <- read.table('https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data', 
+                    sep = ',', fill = F, strip.white = T, col.names = c('age', 'workclass', 'fnlwgt', 'educatoin', 
+                                                                        'educatoin_num', 'marital_status', 'occupation', 'relationship', 'race', 'sex', 
+                                                                        'capital_gain', 'capital_loss', 'hours_per_week', 'native_country', 'income'))
+split = sample(c(TRUE, FALSE), nrow(adult), replace=TRUE, prob=c(0.75, 0.25))
+
+trainFold <- adult[split,]
+testFold <- adult[!split,]
+
+classAtt <- "income"
+positiveClass<-">50K"
+rmCBA <- cba(trainFold, classAtt, list(target_rule_count = 1000))
+confidence_scores_cba <- predict(rmCBA, testFold, outputConfidenceScores=TRUE,positiveClass=positiveClass)
+
+pred_cba <- ROCR::prediction(confidence_scores_cba, factor(testFold[[classAtt]]))
+roc_cba <- ROCR::performance(pred_cba, "tpr", "fpr")
+ROCR::plot(roc_cba, lwd=2, colorize=TRUE)
+lines(x=c(0, 1), y=c(0, 1), col="black", lwd=1)
+auc_cba <- ROCR::performance(pred_cba, "auc")
+auc_cba <- unlist(auc_cba@y.values)
+auc_cba
+```
+Then, for QCBA:
+```{r message=FALSE}
+rmqCBA <- qcba(cbaRuleModel=rmCBA, datadf=trainFold)
+confidencesQCBA <- predict(rmqCBA,testFold,outputConfidenceScores=TRUE,positiveClass=positiveClass)
+roc_pred <- ROCR::prediction(confidencesQCBA, factor(testFold[[classAtt]]))
+roc_qcba = ROCR::performance(roc_pred, "tpr", "fpr")
+plot(roc_qcba, lwd=2, colorize=TRUE)
+lines(x=c(0, 1), y=c(0, 1), col="black", lwd=1)
+auc_qcba = ROCR::performance(roc_pred, "auc")
+auc_qcba = unlist(auc_qcba@y.values)
+auc_qcba
 ```
