@@ -36,6 +36,7 @@ Introduces advanced  options:
 * **Speeding up execution on large datasets **
 * **Invoking directly Java-based QCBA backend**
 * **Experimental multi-rule classification**
+* **Generating ROC curve and computing AUC**
 
 #  Part 1: how to build CBA and QCBA model {#part1}
 
@@ -806,7 +807,7 @@ print(paste("Run as: ", "java -jar QCBA.jar ", qcbaFilePath, sep=""))
 print(paste("QCBA prediction will be written to:",outputPath))
 ```
 
-### ROC and AUC curves
+### Generating ROC curve and computing AUC
 The first example uses the iris dataset.
 ```{r message=FALSE}
   set.seed(7)

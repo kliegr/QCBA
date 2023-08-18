@@ -162,4 +162,8 @@ Note that QCBA is not generally guaranteed to improve the accuracy of input mode
 ### Documentation
  - [Reference manual](https://cran.r-project.org/web/packages/qCBA/qCBA.pdf)
  - [Research article](https://link.springer.com/article/10.1007/s10489-022-04370-x)
- - [Tutorial](http://nb.vse.cz/~klit01/qcba/tutorial.html)(sources [here](https://github.com/kliegr/QCBA/blob/master/man/tutorial.Rmd)).
+ - [Tutorial](http://nb.vse.cz/~klit01/qcba/tutorial.html) (sources [here](https://github.com/kliegr/QCBA/blob/master/man/tutorial.Rmd)).
+ 
+### Additional resources
+ - [arc package](https://github.com/kliegr/arc) sister project implementing the Classification-based on association rules (CBA) classification algorithm
+ - [arcbench](https://github.com/kliegr/arcbench) sister project for benchmarking QCBA and arc against a number of other rule learning algorithms on a battery of datasets
