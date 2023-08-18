@@ -1,23 +1,24 @@
 # Quantitative CBA
 
-[![](http://cranlogs.r-pkg.org/badges/qCBA)](http://cran.rstudio.com/web/packages/qCBA/index.html)
 [![](https://www.r-pkg.org/badges/version/qCBA)](https://cran.r-project.org/web/packages/qCBA/index.html)
-
-
-
-
-[Quantitative CBA (QCBA)](https://arxiv.org/abs/1711.10166) is a postprocessing algorithm for association rule classification algorithm CBA, which implements a number of 
-optimization steps to improve handling of quantitative (numerical) attributes. The viable properties of these rule lists that make CBA classification  models most comprehensible among all association rule classification algorithms, such as one-rule classification and crisp rules, are retained. The postprocessing is conceptually fast, because it is performed on a relatively small number of rules that passed the pruning steps, and  can be adapted also for multi-rule classification algorithms. Benchmarks show about 50% decrease in the total size of the model as measured by the total number of conditions in all rules. Model accuracy generally remains on the same level as for CBA with QCBA even providing small improvement over CBA on 11 of the 22 datasets involved in our benchmark. 
-
-
- ```
-Kliegr, Tomas. "Quantitative CBA: Small and Comprehensible Association Rule Classification Models." arXiv preprint arXiv:1711.10166 (2017).
- ```
  
 The [arc](https://github.com/kliegr/arc) package is used for generation of the CBA classifier, which is postprocessed by the QCBA R package.
 
-## Feature Tutorial
-The [tutorial](http://nb.vse.cz/~klit01/qcba/tutorial.html)  visually demonstrates all the optimization steps in QCBA:
+[Quantitative CBA (QCBA)](https://link.springer.com/article/10.1007/s10489-022-04370-x) is a postprocessing algorithm for association rule classification algorithm CBA, which implements a number of 
+optimization steps to improve handling of quantitative (numerical) attributes. As a result, the rule-based classifiers become typically smaller and often more accurate. The QCBA approach is described in:
+ ```
+Tomas Kliegr and Ebroul Izquierdo. "Quantitative CBA: Small and Comprehensible Association Rule Classification Models." Applied Intelligence https://link.springer.com/article/10.1007/s10489-022-04370-x (2023).
+ ```
+
+## Inputs for  QCBA
+- Rule model (rule list/set) learnt by an arbitrary rule learning algorithm on prediscretized data
+- Raw dataset (before discretization) 
+
+## Output for  QCBA
+- Rule list: rules are sorted. Tthe first  rule matching a given instances is used to classify it.
+
+## How QCBA works?
+QCBA obtains a rule model from an arbitrary rule learning algorithm and postprocesses using the following algorithms:
 
 - **Refitting rules** Literals originally aligned to borders of the discretized  regions are refit to finer grid.
 - **Attribute pruning** Remove redundant attributes from rules. 
@@ -26,19 +27,14 @@ The [tutorial](http://nb.vse.cz/~klit01/qcba/tutorial.html)  visually demonstrat
 - **Data coverage pruning** Remove some of the newly redundant rules
 - **Default rule overlap pruning** Some rules that classify into the same class as the default rule in the end of the classifier can be removed. 
 
-The R Markdown source for this tutorial is located [here](https://github.com/kliegr/QCBA/blob/master/man/tutorial.Rmd). Note that while GitHub displays the syntax, it does not run the code or even display the knitted HTML. For this reason, it is recommended to view the tutorial [outside github](http://nb.vse.cz/~klit01/qcba/tutorial.html).
+These algorithms are explained in the [article](https://link.springer.com/article/10.1007/s10489-022-04370-x) and in an interactive [tutorial](http://nb.vse.cz/~klit01/qcba/tutorial.html)(sources [here](https://github.com/kliegr/QCBA/blob/master/man/tutorial.Rmd)).
 
-## Prerequisites
-The qCBA package depends on Java 8, and correctly installed [rJava](https://cran.r-project.org/web/packages/rJava/index.html) package. On Linux, even if you have Java installed, it [might be necessary](https://stackoverflow.com/questions/3311940/r-rjava-package-install-failing) to install it again with
-```bash
-apt-get install r-cran-rjava
-```
-
-For instructions on how to setup rJava please refer to [rJava documentation](https://cran.r-project.org/web/packages/rJava/index.html) .
 ## Installation
-The package version available on CRAN is [![](https://www.r-pkg.org/badges/version/qCBA)](https://cran.r-project.org/web/packages/qCBA/index.html).
+First, you need to have correctly installed [rJava](https://cran.r-project.org/web/packages/rJava/index.html) package. 
+For instructions on how to setup rJava please refer to [rJava documentation](https://cran.r-project.org/web/packages/rJava/index.html).
+Note a common issue with installing and configuring rJava can be resolved according to these [instructions](https://stackoverflow.com/questions/3311940/r-rjava-package-install-failing).
 
-The latest version can be installed from the R environment using the devtools package.
+The latest version can be installed from the R environment with:
 ```R
 devtools::install_github("kliegr/QCBA")
 ```
@@ -53,8 +49,11 @@ set.seed(111)
 allData <- datasets::iris[sample(nrow(datasets::iris)),]
 trainFold <- allData[1:100,]
 testFold <- allData[101:nrow(datasets::iris),]
-rmCBAiris <- cba(trainFold, classAtt="Species")
-inspect(rmCBAiris@rules)
+classAtt<-"Species"
+y_true <-testFold[[classAtt]]
+rmCBA <- cba(trainFold, classAtt=class)
+predictionBASE <- predict(rmCBA,testFold)
+inspect(rmCBA@rules)
 ```
 The model:
 
@@ -67,23 +66,22 @@ The model:
 
 The statistics:
 ```R
-library(stringr)
-prediction_iris <- predict(rmCBAiris,testFold)
-acc <- CBARuleModelAccuracy(prediction_iris, testFold[[rmCBAiris@classAtt]])
-avgRuleLengthCBA <- sum(rmCBAiris@rules@lhs@data)/length(rmCBAiris@rules)
-print(paste("Number of rules: ",length(rmCBAiris@rules),", average number of conditions per rule :",round(avgRuleLengthCBA,2), ", accuracy on test data: ",round(acc,2)))
+ print(paste0(
+ "Number of rules: ",length(rmCBA$rules), ", ",
+ "Total conditions: ",rmCBA$rules@lhs@data, ", ", 
+ "Accuracy: ", round(CBARuleModelAccuracy(predictionBASE, y_true),2)))
 ```
 Returns:
 
-      Number of rules:  5 , average number of conditions per rule : 1.6 , accuracy on test data:  0.94
+      Number of rules: 5, Total conditions: 8, Accuracy: 0.94
 
 ### QCBA model
 Learn a QCBA model.
 ```R
 library(qCBA)
-rmCBA4QCBAiris <- cba(trainFold, classAtt="Species",pruning_options=list(default_rule_pruning=FALSE))
-rmqCBAiris <- qcba(cbaRuleModel=rmCBA4QCBAiris,datadf=trainFold)
-print(rmqCBAiris@rules)
+rmQCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
+predictionQCBA <- predict(rmQCBA,testFold)
+print(rmQCBA@rules)
 ``` 
 The model:
 
@@ -95,13 +93,11 @@ The model:
 
 The statistics:
 ```R
-prediction_iris <- predict(rmqCBAiris,testFold)
-acc <- CBARuleModelAccuracy(prediction_iris, testFold[[rmqCBAiris@classAtt]])
-avgRuleLengthQCBA <- (sum(unlist(lapply(rmqCBAiris@rules[1],str_count,pattern=",")))+
-                              # assuming the last rule has antecedent length zero - not counting its length
-                              nrow(rmqCBAiris@rules)-1)/nrow(rmqCBAiris@rules)
-print(paste("Number of rules: ",nrow(rmqCBAiris@rules),", average number of conditions per rule :",avgRuleLengthQCBA, ", accuracy on test data: ",round(acc,2)))
-``` 
+ print(paste0(
+ "Number of rules: ",length(rmQCBA$rules), ", ",
+ "Total conditions: ",rmQCBA@rules$condition_count, ", ", 
+ "Accuracy: ", round(CBARuleModelAccuracy(predictionQCBA, y_true),2)))
+```
 Returns:
 
     Number of rules:  4 , average number of conditions per rule : 1 , accuracy on test data:  0.96

@@ -34,10 +34,8 @@ Visually demonstrates all the optimization steps in QCBA:
 Introduces advanced  options:
 
 * **Speeding up execution on large datasets **
-* **Debugging qCBA code**
-* **Experimental multirule classificaion**
-
-## What this tutorial does NOT show - how to setup qcba
+* **Invoking directly Java-based QCBA backend**
+* **Experimental multi-rule classification**
 
 #  Part 1: how to build CBA and QCBA model {#part1}
 
@@ -87,7 +85,7 @@ In this case, we perform simple equidistant binning.
   hum_unique_vals <- setdiff(unique(Humidity),hum_breaks)
   data_discr[,1] <- cut(Temperature,breaks=temp_breaks)
   data_discr[,2] <- cut(Humidity,breaks=hum_breaks)
-  #change interval syntax from (15,20] to (15;20], which is required by MARC
+  #change interval syntax from (15,20] to (15;20], which is required by QCBA R package
   data_discr[,1] <- as.factor(unlist(lapply(data_discr[,1], function(x) {gsub(",", ";", x)})))
   data_discr[,2] <- as.factor(unlist(lapply(data_discr[,2], function(x) {gsub(",", ";", x)})))
   
@@ -148,7 +146,7 @@ inspect(rules)
 ```
 
 The rules can be visualized in the feature space as rectangular regions. 
-<span style="color:red">Class 1 is coded  as red</span>, <span style="color:green">Class 2 as green</span> and <span style="color:blue">Class 4  as blue region</span>.
+<span style="color:red">Class 1 is coded  as red</span>, <span style="color:green">Class 2 as green</span>,  <span style="color:black">Class 3 as black</span>, and <span style="color:blue">Class 4  as blue region</span>.
 
 ```{r}
 interesting_rule <- 5
@@ -245,7 +243,7 @@ This means that the rules will be:
 ```{r message=FALSE}
 classAtt="Class"
   appearance <- getAppearance(data_discr, classAtt)
-  # Note that we are calling `cba_manual()` instead of cba() because we want for demonstration purposes to construct the classifier from a user-generated rule list.
+  # Note that we are calling `cba_manual()` instead of cba() because we want - for demonstration purposes - to construct the classifier from a externally-generated rule list.
   rmCBA <- cba_manual(data_raw,  rules, txns, appearance$rhs, classAtt, cutp = list(),pruning_options=list(default_rule_pruning=FALSE))
 ```
 
@@ -253,8 +251,8 @@ Explanation of the key settings:
 
 * **cba_manual** instead of **cba**: The reason why we invoke *cba_manual* from the *arc* package is that  *cba_manual*  allows to supply custom list of rules from which the CBA model will be built. An alternative option would be to directly invoke the *cba* function, which would also perform association rule learning as well as data discretization:
 `rmCBA_auto <- cba(humtemp, classAtt="Class")`
-* **cutp = list()**. cutp specifies list of cutpoints used to discretize data. For demonstration purposes we performed discretization of data as part of preprocessing, therefore no cutpoints are specified.
-* **default_rule_pruning=FALSE**. While default rule pruning is a part of the CBA process, we obtained better results if it is disabled if the model is to be postprocessed by QCBA.  Within QCBA, rules will be first optimized and then subject to default rule pruning.
+* **cutp = list()**: cutp specifies list of cutpoints used to discretize data. For demonstration purposes we performed discretization of data as part of preprocessing, therefore no cutpoints are specified.
+* **default_rule_pruning=FALSE**: While default rule pruning is a part of the CBA process, we obtained slightly better results if it is disabled. This outputs more rules to be later optimized by QCBA.  Within QCBA, rules will be first optimized and then subject to default rule pruning.
 
 
 In this case, CBA did not remove any rule, but added a default rule to the end. This ensures that the rule list covers every possible instance.
@@ -272,7 +270,7 @@ plotRules(rmCBA@rules)
 ```
 
 The accuracy of this model on training data:
-```{r results='hide', message=FALSE}
+```{r}
 
   prediction_cba<-predict(rmCBA,data_discr,discretize=FALSE)
   acc_cba <- CBARuleModelAccuracy(prediction_cba, data_discr[[classAtt]])
@@ -329,10 +327,10 @@ The steps taken by QCBA to create the model shown above:
 
 1. **Refit** the data to *finer grid*: this grid has steps corresponding to all unique attribute values appearing in the training data.
 3. **Attribute pruning**: Remove redundant attributes from rules. Attribute is considered redundant if its removal does not decrease rule confidence. 
-4. **Trimming** (optional): the literals in discovered rules are trimmed so that they do not contain regions not covered by data.
-5. **Extension**: the ranges of literals in the body of each rule are extended. The range of each literal is increased one literal and one boundary at a time. The extension is generally accepted only if it improves rule confidence. To overcome local minima, the extension process can provisionally accept drop in confidence compared to the seed rule
-6. **Postpruning**: second iteration of data coverage pruning
-7. **Default rule overlap  pruning**:  Default rule overlap iterates through all rules classifying into the same class as the default rule. These rules all overlap with the default rule and are thus *candidates* for pruning. They can be removed only if their removal will not change the classification of the instances (or regions -- second type of default overlap pruning) they cover by rules that are below them.
+4. **Trimming** (optional): Value ranges (intervals) in rule conditions are adjusted so that they do not contain regions not covered by data.
+5. **Extension**: the ranges of literals in the body of each rule are extended to increase coverage. 
+6. **Postpruning**: second iteration of pruning, which may remove some rules made redundant using the previous steps.
+7. **Default rule overlap  pruning**:  Default rule overlap iterates through all rules classifying into the same class as the default rule. These rules all overlap with the default rule and are thus *candidates* for pruning. They can be removed only if their removal will not change the classification of the instances (or regions -- second type of default overlap pruning) they cover by rules that have a lower priority.
 
 All steps will be demonstrated in detail in the following. Unlike other optimizations, attribute pruning is demonstrated on the Iris dataset (HumTemp with only 2 predictors is not suitable).
 
@@ -474,7 +472,7 @@ for (i in 1:nrow(extendHistory)) {
 ```
 
 ### Postpruning 
-As a result of the extension process, the data matched by the individual rules change. Within postprocessing, the extended rules are resorted and pruned again using CBA data coverage pruning.
+As a result of the extension process, the data matched by the individual rules change. Within postprocessing, the extended rules are resorted and pruned again using CBA data coverage pruning. Note that the default rule at the end is automatically updated.
 
 Result of the extension process:
 ```{r message=FALSE}
@@ -487,7 +485,7 @@ Result of postpruning:
 rmqCBA_pruned <- qcba(cbaRuleModel=rmCBA,datadf=data_raw, extendType="numericOnly",trim_literal_boundaries = TRUE, postpruning = "cba",  defaultRuleOverlapPruning="noPruning", createHistorySlot=TRUE,loglevel = "WARNING")
 print(rmqCBA_pruned@rules)
 ```
-Last two rules with non-empty antecedent were replaced by data coverage pruning by the default rule:
+Last two rules with non-empty antecedent were replaced using data coverage pruning by the default rule:
 ```{r}
 rmqCBA@rules[4:5,1]
 ```
@@ -588,98 +586,58 @@ plotHumTempRule(rmqCBA@rules,8)
 ### Attribute pruning 
 Attribute pruning is an optimization step in QCBA which considers removing all attribute-value pairs (literals) in all rules in the classifier. The removal is confirmed if a rule created without the literal has at least the accuracy of the original rule. The optimization is performed in a greedy manner, processing all rules in the sort order. Attributes are processed in arbitrary order. 
 
-To demonstrate attribute pruning, we need to use dataset with higher number of attributes than `humtemp` dataset has. Let's use the iris dataset.
+To demonstrate attribute pruning, we need to use dataset with higher number of attributes than `humtemp` dataset has and also different base rule classifier than CBA, as attribute pruning is ineffective on CBA according to our experiments. We will use **CPAR** from arulesCBA as the baseline classifier and the **iris** dataset. 
+
 For initial demonstration, we will turn off all optimizations in QCBA that follow after attribute pruning  (i.e. trimming, postpruning, default rule pruning).
 
-#### Baseline CBA model
 
+#### Prepare data
 ```{r message=FALSE}
-set.seed(111)
+set.seed(54)
 allData <- datasets::iris[sample(nrow(datasets::iris)),]
 trainFold <- allData[1:100,]
 testFold <- allData[101:nrow(datasets::iris),]
-rmCBAiris <- cba(trainFold, classAtt="Species")
-inspect(rmCBAiris@rules)
+classAtt <- "Species"
+discrModel <- discrNumeric(trainFold, classAtt)
+train_disc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
+cutPoints <- discrModel$cutp
+test_disc <- applyCuts(testFold, cutPoints, infinite_bounds=TRUE, labels=TRUE)
+y_true <-testFold[[classAtt]]
 ```
+#### Learn and evaluate CPAR model
+```{r message=FALSE}
+rmBASE <- CPAR(train_disc, formula=as.formula(paste(classAtt,"~ .")))
+predictionBASE <- predict(rmBASE,test_disc) # CPAR (arulesCBA) predict function 
+```
+#### Postprocess with QCBA with attribute pruning disabled
+```{r message=FALSE}
+baseModel_arc <- arulesCBA2arcCBAModel(rmBASE, cutPoints,  trainFold, classAtt)
+rmQCBA_NOATTPR <- qcba(cbaRuleModel=baseModel_arc,datadf=trainFold,attributePruning = FALSE)
+predictionQCBA_NOATTPR <- predict(rmQCBA_NOATTPR,testFold)
+acc_qcba_no_att_pr <- CBARuleModelAccuracy(predictionQCBA_NOATTPR, y_true)
+condition_count_qcba_no_att_pr<-rmQCBA_NOATTPR@rules$condition_count
+rule_count_qcba_no_att_pr<-rmQCBA_NOATTPR@ruleCount
+```
+#### Postprocess with QCBA with attribute pruning enabled
 The accuracy of the model and the average number of conditions (literals) per rule:
 ```{r message=FALSE}
-library(stringr)
-prediction_iris <- predict(rmCBAiris,testFold)
-acc <- CBARuleModelAccuracy(prediction_iris, testFold[[rmCBAiris@classAtt]])
-avgRuleLengthCBA <- sum(rmCBAiris@rules@lhs@data)/length(rmCBAiris@rules)
-print(paste("Number of rules: ",length(rmCBAiris@rules),", average number of conditions per rule :",round(avgRuleLengthCBA,2), ", accuracy on test data: ",round(acc,2)))
+baseModel_arc <- arulesCBA2arcCBAModel(rmBASE, cutPoints,  trainFold, classAtt)
+rmQCBA <- qcba(cbaRuleModel=baseModel_arc,datadf=trainFold,attributePruning = TRUE)
+predictionQCBA <- predict(rmQCBA,testFold)
+acc <- CBARuleModelAccuracy(predictionQCBA, y_true)
+condition_count_qcba_no_att_pr<-rmQCBA@rules$condition_count
+avg_length_qcba <-sum(rmQCBA@rules$condition_count)/rmQCBA@ruleCount
 ```
-#### Baseline QCBA model
+#### Compare the three models
 ```{r message=FALSE}
-rmCBA4QCBAiris <- cba(trainFold, classAtt="Species",pruning_options=list(default_rule_pruning=FALSE))
-rmqCBAiris <- qcba(cbaRuleModel=rmCBA4QCBAiris,datadf=trainFold,attributePruning = FALSE)
-print(rmqCBAiris@rules)
-```
-Look also at the statistics.
-```{r message=FALSE}
-prediction_iris <- predict(rmqCBAiris,testFold)
-acc <- CBARuleModelAccuracy(prediction_iris, testFold[[rmqCBAiris@classAtt]])
-avgRuleLengthQCBA <- (sum(unlist(lapply(rmqCBAiris@rules[1],str_count,pattern=",")))+
-                              # assuming the last rule has antecedent length zero - not counting its length
-                              nrow(rmqCBAiris@rules)-1)/nrow(rmqCBAiris@rules)
-print(paste("Number of rules: ",nrow(rmqCBAiris@rules),", average number of conditions per rule :",avgRuleLengthQCBA, ", accuracy on test data: ",round(acc,2)))
-```
-This shows that QCBA leaves the CBA model untouched in terms of the number of literals (QCBA only refits literal ranges).
-
-#### QCBA model with attribute pruning 
-
-```{r message=FALSE}
-rmqCBAiris <- qcba(cbaRuleModel=rmCBA4QCBAiris,datadf=trainFold, attributePruning = TRUE)
-print(rmqCBAiris@rules)
+  print(paste("CPAR: Number of rules: ",length(rmBASE$rules),", total conditions :",round(sum(rmBASE$rules@lhs@data),2), ", accuracy on test data: ",round(CBARuleModelAccuracy(predictionBASE, y_true),2)))
+  print(paste("QCBA (NO ATT PR.): Number of rules: ",nrow(rmQCBA_NOATTPR@rules),", average number of conditions per rule :",rmQCBA_NOATTPR@rules$condition_count, ", accuracy on test data: ",round(CBARuleModelAccuracy(predictionQCBA_NOATTPR, y_true),2)))
+  print(paste("QCBA (ATT PR.): Number of rules: ",nrow(rmQCBA@rules),", average number of conditions per rule :",rmQCBA@rules$condition_count, ", accuracy on test data: ",round(CBARuleModelAccuracy(predictionQCBA, y_true),2)))
 ```
 
-```{r message=FALSE}
-prediction_iris <- predict(rmqCBAiris,testFold)
-acc <- CBARuleModelAccuracy(prediction_iris, testFold[[rmqCBAiris@classAtt]])
-avgRuleLengthQCBA <- (sum(unlist(lapply(rmqCBAiris@rules[1],str_count,pattern=",")))+
-                              # assuming the last rule has antecedent length zero - not counting its length
-                              nrow(rmqCBAiris@rules)-1)/nrow(rmqCBAiris@rules)
-print(paste("Number of rules: ",nrow(rmqCBAiris@rules),", average number of conditions per rule :",avgRuleLengthQCBA, ", accuracy on test data: ",round(acc,2)))
-```
+The QCBA postprocessing with attribute pruning enabled results in a model that is more accurate and smaller than a QCBA model with attribute pruning disabled.
 
-What we can observe is that 
-1) the confidence of all the rules remained the same (it can also increase).
-2) the accuracy of the complete classifier stays the same.
-3) The average number of literals dropped.
-
-#### Attribute pruning can not only remove literals, but also change  their range
-It should be noted that attribute pruning is performed as a second  step in QCBA after refitting. The result of QCBA model with attribute pruning enabled and without it can thus differ not only by the absence of some literals in the former.
-
-Full QCBA model without  attributePruning:
-
-```{r message=FALSE}
-rmqCBAiris <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,attributePruning = FALSE, trim_literal_boundaries=TRUE, extendType="numericOnly", postpruning="cba", defaultRuleOverlapPruning="transactionBased")
-print(rmqCBAiris@rules)
-```
-The same model with  attributePruning:
-
-```{r message=FALSE}
-rmqCBAiris <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,attributePruning = TRUE,trim_literal_boundaries=TRUE, extendType="numericOnly", postpruning="cba", defaultRuleOverlapPruning="transactionBased")
-print(rmqCBAiris@rules)
-```
-As you can notice, the ranges of Petal.Length attribute in the second rule differ.
-
-#### Attribute pruning - no change of of literals range
-Basic QCBA model without  attributePruning. All optimizations after attribute pruning are disabled. 
-
-```{r message=FALSE}
-rmqCBAiris <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,attributePruning = FALSE, trim_literal_boundaries=TRUE, extendType="noExtend", postpruning="cba", defaultRuleOverlapPruning="noPruning")
-print(rmqCBAiris@rules)
-```
-The same model with  attributePruning:
-
-```{r message=FALSE}
-rmqCBAiris <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,attributePruning = TRUE,trim_literal_boundaries=TRUE, extendType="noExtend", postpruning="cba", defaultRuleOverlapPruning="noPruning")
-print(rmqCBAiris@rules)
-```
-
-The ranges of all literals that survivid attribute pruning match the ranges in the model without attribute pruning.
-
+It should be noted that attribute pruning is performed as a second  step in QCBA after refitting. The result of QCBA model with attribute pruning enabled and without it can thus differ substantially, also, as a consequence, affecting the range of literals.
 
 # Part 3: advanced options {#part3}
 
@@ -687,6 +645,7 @@ The ranges of all literals that survivid attribute pruning match the ranges in t
 The default value of the minCondImprovement parameter is -1. This parameter value ensures exhaustive search for extensions, but can be slow on large datasets or datasets with many distinct values. The closer this parameter value will be to 0, the faster the execution will generally be. 
 
 ```{r}
+rmCBAiris <- cba(trainFold, classAtt="Species")
 start.time <- Sys.time()
 for (i in 1:100)
 {
@@ -699,27 +658,27 @@ message (paste("100 executions took:", round(end.time - start.time,2), " seconds
 start.time <- Sys.time()
 for (i in 1:100)
 {
- rmqCBA <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,extendType="numericOnly", minCondImprovement=-0.05, postpruning="cba", defaultRuleOverlapPruning="noPruning")
+ rmqCBA <- qcba(cbaRuleModel=rmCBAiris,datadf=trainFold,extendType="numericOnly", minCondImprovement=0.0, postpruning="cba", defaultRuleOverlapPruning="noPruning")
 }
 end.time <- Sys.time()
 message (paste("100 executions took:", round(end.time - start.time,2), " seconds"))
 ```
-Improvement in execution time gained  on this small dataset by changin  minCondImprovement from -1 to -0.05 is about 30%.
+Improvement in execution time gained  on this small dataset by changing the  minCondImprovement from -1 to 0.00 is about 10%.
 
-### Debugging qCBA execution in Java.
-The CBA model is passed by the R code to a Java .jar file, which performs the QCBA model learning. The QCBA model is then returned to R. 
+### Invoking directly Java-based QCBA backend 
+The CBA model is passed by the R code to a Java `QCBA.jar` file, which performs the QCBA model learning. The QCBA model is then returned to R. 
 
 
 ### humtemp dataset example
 
-1. Let's create "debug" folder, where we will store the rmCBA model.
+1. Let's create "debug" folder, where we will store the models.
 ```{r}
-        basePath <-  tempdir()
-        dir.create(file.path(basePath, "debug"), showWarnings = FALSE)
-        rulesPath <-paste(basePath,"debug","humtemp.arules",sep=.Platform$file.sep)
-        write.csv(as(rmCBA@rules,"data.frame"), rulesPath, row.names=TRUE,quote = TRUE)
-        outputDataPath <- paste(basePath,"debug",'humtemp.csv', sep=.Platform$file.sep)
-        write.csv(humtemp,file=outputDataPath,row.names=FALSE)
+basePath <-  tempdir()
+dir.create(file.path(basePath, "debug"), showWarnings = FALSE)
+rulesPath <-paste(basePath,"debug","humtemp.arules",sep=.Platform$file.sep)
+write.csv(as(rmCBA@rules,"data.frame"), rulesPath, row.names=TRUE,quote = TRUE)
+outputDataPath <- paste(basePath,"debug",'humtemp.csv', sep=.Platform$file.sep)
+write.csv(humtemp,file=outputDataPath,row.names=FALSE)
 ```
 
 Let's create the configuration file for QCBA. 
@@ -752,7 +711,7 @@ x=paste('<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">',
         write(x, file = qcbaFilePath,
               ncolumns = 1,
               append = FALSE, sep = ",")
-print(paste("Run as: ", "java -jar AC1.jar ", qcbaFilePath, sep=""))
+print(paste("Run as: ", "java -jar QCBA.jar ", qcbaFilePath, sep=""))
 print(paste("QCBA model will be written to:",outputPath))
 ```
 
@@ -799,11 +758,12 @@ qcbaFilePath <-paste(basePath,"debug","iris-conf.xml",sep=.Platform$file.sep)
 write(x, file = qcbaFilePath,
       ncolumns = 1,
       append = FALSE, sep = ",")
-print(paste("Run as: ", "java -jar AC1.jar ", qcbaFilePath, sep=""))
+print(paste("Run as: ", "java -jar QCBA.jar ", qcbaFilePath, sep=""))
 print(paste("QCBA model will be written to:",qcbaModelPath))
 ```
 
-####   iris - experimental multi rule classification
+####   Experimental multi-rule classifier
+Configuration for learning  QCBA rule set (mutliple rules used for classification) model
 ```{r}
 annotate =TRUE
 qcbaModelPath <- paste(basePath,"debug",'iris-qcba-mixture.xml', sep=.Platform$file.sep)
@@ -826,15 +786,16 @@ qcbaFilePath <-paste(basePath,"debug","iris-conf-mixture.xml",sep=.Platform$file
 write(x, file = qcbaFilePath,
       ncolumns = 1,
       append = FALSE, sep = ",")
-print(paste("Run as: ", "java -jar AC1.jar ", qcbaFilePath, sep=""))
+print(paste("Run as: ", "java -jar QCBA.jar ", qcbaFilePath, sep=""))
 print(paste("QCBA model will be written to:",qcbaModelPath))
 ```
 
-Applying the multi rule model
+Configuration for applying QCBA rule set model
 ```{r}
 testingType ="mixture"
 
 outputPath <- paste(basePath,"debug",'iris-qcba-mixture-predict.csv', sep=.Platform$file.sep)
+qcbaFilePath <-paste(basePath,"debug","iris-conf-mixture-predict.xml",sep=.Platform$file.sep)
 x=paste('<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">',
         "<properties>\n",
         "<entry key=\"Method\">test</entry>\n",
@@ -845,10 +806,9 @@ x=paste('<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">',
         "<entry key=\"TargetAttribute\">", classAtt,'</entry>\n',
         "<entry key=\"OutputPath\">", outputPath,'</entry>\n',
         "</properties>", sep="")
-qcbaFilePath <-paste(basePath,"debug","iris-conf-mixture-predict.xml",sep=.Platform$file.sep)
 write(x, file = qcbaFilePath,
       ncolumns = 1,
       append = FALSE, sep = ",")
-print(paste("Run as: ", "java -jar AC1.jar ", qcbaFilePath, sep=""))
+print(paste("Run as: ", "java -jar QCBA.jar ", qcbaFilePath, sep=""))
 print(paste("QCBA prediction will be written to:",outputPath))
 ```
