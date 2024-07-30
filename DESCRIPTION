@@ -1,6 +1,6 @@
 Package: qCBA
 Title: Quantitative Classification by Association Rules
-Version: 0.6.1
+Version: 0.7
 Date: 2024-07-29
 Author: Tomas Kliegr
 Maintainer: Tomas Kliegr <kliegr@gmail.com>
@@ -18,7 +18,7 @@ Depends:
     methods
 Suggests: 
     rCBA (>= 0.3.0),
-    stringr
+    sbrl (>= 1.4.0)
 SystemRequirements: Java (>= 8)
 URL: https://github.com/kliegr/QCBA
 BugReports: https://github.com/kliegr/QCBA/issues

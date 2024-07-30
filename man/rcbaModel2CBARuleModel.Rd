@@ -34,6 +34,7 @@ if (identical(Sys.getenv("NOT_CRAN"), "true")) {
  message(packageVersion("rCBA"))
  discrModel <- discrNumeric(iris, "Species")
  irisDisc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
+ 
  rCBAmodel <- rCBA::build(irisDisc,parallel=FALSE, sa=list(timeout=0.01))
  CBAmodel <- rcbaModel2CBARuleModel(rCBAmodel,discrModel$cutp,iris,"Species")
  qCBAmodel <- qcba(CBAmodel,iris)
