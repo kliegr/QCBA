@@ -222,7 +222,7 @@ public class GUHASerializerWithAnnotationSupport {
         AttributeValue first = rmi.getAttributeValues().get(0);
         AttributeValue last = rmi.getAttributeValues().get(rmi.getAttributeValues().size() - 1);
         Element NameEl = doc.createElement("Name");
-        NameEl.appendChild(doc.createTextNode("[" + first.toString() + ";" + last.toString() + "]"));
+        NameEl.appendChild(doc.createTextNode("[" + first.toString() + RuleMultiItem.INTERVAL_SEPARATOR + last.toString() + "]"));
         CategoryEl.appendChild(NameEl);
         Element DataEl = doc.createElement("Data");
         Element IntervalEl = doc.createElement("Interval");

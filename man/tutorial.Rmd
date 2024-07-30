@@ -80,17 +80,11 @@ In this case, we perform simple equidistant binning.
   #custom discretization
   data_raw <- humtemp
   data_discr <- humtemp
-  temp_breaks <- seq(from=15,to=45,by=5)
-  hum_breaks <- c(0,40,60,80,100)
-  temp_unique_vals <- setdiff(unique(Temperature),temp_breaks)
-  hum_unique_vals <- setdiff(unique(Humidity),hum_breaks)
-  data_discr[,1] <- cut(Temperature,breaks=temp_breaks)
-  data_discr[,2] <- cut(Humidity,breaks=hum_breaks)
-  #change interval syntax from (15,20] to (15;20], which is required by QCBA R package
-  data_discr[,1] <- as.factor(unlist(lapply(data_discr[,1], function(x) {gsub(",", ";", x)})))
-  data_discr[,2] <- as.factor(unlist(lapply(data_discr[,2], function(x) {gsub(",", ";", x)})))
   
-  data_discr[,3] <- as.factor(Class)
+  temp_breaks=seq(from = 15,to = 45,by = 5)
+  hum_breaks=c(0,40,60,80,100)
+  class_breaks=NULL #do not discretize the class attribute
+  data_discr=arc::applyCuts(humtemp, list(temp_breaks, hum_breaks, class_breaks), TRUE, TRUE)
   head(data_discr)
 
 ```

@@ -4,16 +4,16 @@
 \alias{rcbaModel2CBARuleModel}
 \title{rcbaModel2arcCBARuleModel Converts a model created by \pkg{rCBA} so that it can be passed to qCBA}
 \usage{
-rcbaModel2CBARuleModel(rcbaModel, cutPoints, classAtt, rawDataset, attTypes)
+rcbaModel2CBARuleModel(rcbaModel, cutPoints, rawDataset, classAtt, attTypes)
 }
 \arguments{
 \item{rcbaModel}{object returned  by rCBA::build}
 
 \item{cutPoints}{specification of cutpoints applied on the data before they were passed to  \code{rCBA::build}}
 
-\item{classAtt}{the name of the class attribute}
-
 \item{rawDataset}{the raw data (before discretization). This dataset is used to guess attribute types if attTypes is not passed}
+
+\item{classAtt}{the name of the class attribute}
 
 \item{attTypes}{vector of attribute types of the original data.  If set to null, you need to pass rawDataset.}
 }
@@ -35,7 +35,7 @@ if (identical(Sys.getenv("NOT_CRAN"), "true")) {
  discrModel <- discrNumeric(iris, "Species")
  irisDisc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
  rCBAmodel <- rCBA::build(irisDisc,parallel=FALSE, sa=list(timeout=0.01))
- CBAmodel <- rcbaModel2CBARuleModel(rCBAmodel,discrModel$cutp,"Species",iris)
+ CBAmodel <- rcbaModel2CBARuleModel(rCBAmodel,discrModel$cutp,iris,"Species")
  qCBAmodel <- qcba(CBAmodel,iris)
  print(qCBAmodel@rules)
  }

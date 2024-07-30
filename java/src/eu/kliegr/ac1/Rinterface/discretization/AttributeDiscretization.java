@@ -18,6 +18,7 @@
  */
 package eu.kliegr.ac1.Rinterface.discretization;
 
+import eu.kliegr.ac1.rule.RuleMultiItem;
 import java.util.ArrayList;
 import java.util.logging.Logger;
 
@@ -60,7 +61,7 @@ public class AttributeDiscretization {
     public String convert(String originalValue) {
         //BEWARE: Float.MIN_VALUE is positive:http://stackoverflow.com/questions/9746850/min-value-of-float-in-java-is-positive-why
         if (entireRange) {
-            return ("\"[" + -Float.MAX_VALUE + ";" + Float.MAX_VALUE + "]\"");
+            return ("\"[" + -Float.MAX_VALUE + RuleMultiItem.INTERVAL_SEPARATOR + Float.MAX_VALUE + "]\"");
         } else if (originalValue.isEmpty()) {
             return originalValue;
         } else if (cutOffpoints == null) {
@@ -77,11 +78,11 @@ public class AttributeDiscretization {
                         lowerBound = cutOffpoints[i - 1];
                     }
                     upperBound = cutOffpoints[i];
-                    return "\"(" + lowerBound + ";" + upperBound + "]\"";
+                    return "\"(" + lowerBound + RuleMultiItem.INTERVAL_SEPARATOR + upperBound + "]\"";
                 }
 
             }
-            return "\"(" + cutOffpoints[cutOffpoints.length - 1] + ";" + Float.MAX_VALUE + "]\"";
+            return "\"(" + cutOffpoints[cutOffpoints.length - 1] + RuleMultiItem.INTERVAL_SEPARATOR + Float.MAX_VALUE + "]\"";
 
         }
     }

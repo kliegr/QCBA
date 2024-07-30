@@ -67,7 +67,6 @@ public class DiscretizeWithR {
         tokenized.skip(1).forEach((items) -> {
             boolean skipThisEntry = false;
             for (int i = 0; i < items.length; i++) {
-
                 items[i] = CSVparser.removeEnclosingQuotes(items[i]);
                 items[i] = mapping[i].convert(items[i]);
                 if (items[i].isEmpty()) {

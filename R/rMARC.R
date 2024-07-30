@@ -179,8 +179,8 @@ getConfVectorForROC <- function(confidences, predictedClass, positiveClass)
 #' @export
 #' @param rcbaModel object returned  by rCBA::build
 #' @param cutPoints specification of cutpoints applied on the data before they were passed to  \code{rCBA::build}
-#' @param classAtt the name of the class attribute
 #' @param rawDataset the raw data (before discretization). This dataset is used to guess attribute types if attTypes is not passed
+#' @param classAtt the name of the class attribute
 #' @param attTypes vector of attribute types of the original data.  If set to null, you need to pass rawDataset.
 
 #' @examples
@@ -197,7 +197,7 @@ getConfVectorForROC <- function(confidences, predictedClass, positiveClass)
 #'  discrModel <- discrNumeric(iris, "Species")
 #'  irisDisc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
 #'  rCBAmodel <- rCBA::build(irisDisc,parallel=FALSE, sa=list(timeout=0.01))
-#'  CBAmodel <- rcbaModel2CBARuleModel(rCBAmodel,discrModel$cutp,"Species",iris)
+#'  CBAmodel <- rcbaModel2CBARuleModel(rCBAmodel,discrModel$cutp,iris,"Species")
 #'  qCBAmodel <- qcba(CBAmodel,iris)
 #'  print(qCBAmodel@rules)
 #'  }
@@ -205,7 +205,7 @@ getConfVectorForROC <- function(confidences, predictedClass, positiveClass)
 #' 
 
 #' 
-rcbaModel2CBARuleModel <- function(rcbaModel, cutPoints, classAtt, rawDataset, attTypes)
+rcbaModel2CBARuleModel <- function(rcbaModel, cutPoints, rawDataset, classAtt, attTypes)
 {
   # note that the example for this function generates a notice
   # this should be fine according to https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Suggested-packages
@@ -299,8 +299,7 @@ arulesCBA2arcCBAModel <- function(arulesCBAModel, cutPoints, rawDataset, classAt
   return (CBAmodel)
 }
 #' @title sbrlModel2arcCBARuleModel Converts a model created by \pkg{sbrl} so that it can be passed to qCBA
-#' @description Creates instance of  CBAmodel class from the \pkg{arc} package. SBRL package is no longer in CRAN,
-#' but can be obtained from https://github.com/cran/sbrl
+#' @description Creates instance of  CBAmodel class from the \pkg{arc} package. 
 #' Instance of  CBAmodel can then be passed to \link{qcba}
 #' @export
 #' @param sbrl_model object returned  by arulesCBA::CBA()
@@ -309,83 +308,77 @@ arulesCBA2arcCBAModel <- function(arulesCBAModel, cutPoints, rawDataset, classAt
 #' @param classAtt the name of the class attribute
 #' @param attTypes vector of attribute types of the original data.  If set to null, you need to pass rawDataset.
 #' @examples 
-#' # if (! requireNamespace("rCBA", quietly = TRUE)) {
-#' #  message("Please install rCBA to allow for sbrl model conversion")
-#' #   return()
-#' # } else if (! requireNamespace("sbrl", quietly = TRUE)) {
-#' #  message("Please install sbrl to allow for postprocessing of sbrl models")
-#' #} else
-#' #{
-#' #  library(sbrl)
-#' #  library(rCBA)
-#' #  #sbrl handles only binary problems, iris has 3 target classes - remove one class
-#' #  set.seed(111)
-#' #  allData <- datasets::iris[sample(nrow(datasets::iris)),]
-#' #  classToExclude<-"versicolor"
-#' #  allData <- allData[allData$Species!=classToExclude, ]
-#' #  # drop virginica level
-#' #  allData$Species <-allData$Species [, drop=TRUE]
-#' #  trainFold <- allData[1:50,]
-#' #  testFold <- allData[51:nrow(allData),]
-#' #  sbrlFixedLabel<-"label"
-#' #  origLabel<-"Species"
+#' if (! requireNamespace("rCBA", quietly = TRUE)) {
+#'   message("Please install rCBA to allow for sbrl model conversion")
+#'   return()
+#' } else if (! requireNamespace("sbrl", quietly = TRUE)) {
+#'   message("Please install sbrl to allow for postprocessing of sbrl models")
+#' } else
+#' {
+#' library(sbrl)
+#' library(rCBA)
+#' # sbrl handles only binary problems, iris has 3 target classes - remove one class
+#' set.seed(111)
+#' allData <- datasets::iris[sample(nrow(datasets::iris)),]
+#' classToExclude<-"versicolor"
+#' allData <- allData[allData$Species!=classToExclude, ]
+#' # drop virginica level
+#' allData$Species <-allData$Species [, drop=TRUE]
+#' trainFold <- allData[1:50,]
+#' testFold <- allData[51:nrow(allData),]
+#' sbrlFixedLabel<-"label"
+#' origLabel<-"Species"
 #' 
-#' #  orignames<-colnames(trainFold)
-#' #  orignames[which(orignames == origLabel)]<-sbrlFixedLabel
-#' #  colnames(trainFold)<-orignames
-#' #   colnames(testFold)<-orignames
+#' orignames<-colnames(trainFold)
+#' orignames[which(orignames == origLabel)]<-sbrlFixedLabel
+#' colnames(trainFold)<-orignames
+#' colnames(testFold)<-orignames
 #' 
-#' #  # to recode label to binary values:
-#' #  # first create dict mapping from original distinct class values to 0,1 
-#' #  origval<-levels(as.factor(trainFold$label))
-#' #  newval<-range(0,1)
-#' #  dict<-data.frame(origval,newval)
-#' #  # then apply dict to train and test fold
-#' #  trainFold$label<-dict[match(trainFold$label, dict$origval), 2]
-#' #  testFold$label<-dict[match(testFold$label, dict$origval), 2]
+#' # to recode label to binary values:
+#' # first create dict mapping from original distinct class values to 0,1 
+#' origval<-levels(as.factor(trainFold$label))
+#' newval<-range(0,1)
+#' dict<-data.frame(origval,newval)
+#' # then apply dict to train and test fold
+#' trainFold$label<-dict[match(trainFold$label, dict$origval), 2]
+#' testFold$label<-dict[match(testFold$label, dict$origval), 2]
 #' 
-#' #  # discretize training data
-#' #  trainFoldDiscTemp <- discrNumeric(trainFold, sbrlFixedLabel)
-#' #  trainFoldDiscCutpoints <- trainFoldDiscTemp$cutp
-#' #  trainFoldDisc <- as.data.frame(lapply(trainFoldDiscTemp$Disc.data, as.factor))
+#' # discretize training data
+#' trainFoldDiscTemp <- discrNumeric(trainFold, sbrlFixedLabel)
+#' trainFoldDiscCutpoints <- trainFoldDiscTemp$cutp
+#' trainFoldDisc <- as.data.frame(lapply(trainFoldDiscTemp$Disc.data, as.factor))
 #' 
-#' #  # discretize test data
-#' #  testFoldDisc <- applyCuts(testFold, trainFoldDiscCutpoints, infinite_bounds=TRUE, labels=TRUE)
-#' 
-#' #  # learn sbrl model
-#' #  sbrl_model <- sbrl(trainFoldDisc, iters=30000, pos_sign="0", 
-#' #                   neg_sign="1", rule_minlen=1, rule_maxlen=10, 
-#' #                    minsupport_pos=0.10, minsupport_neg=0.10, 
-#' #                   lambda=10.0, eta=1.0, alpha=c(1,1), nchain=10)
-#' #  # apply sbrl model on a test fold
-#' #  yhat <- predict(sbrl_model, testFoldDisc)
-#' #  yvals<- as.integer(yhat$V1>0.5)
-#' #  sbrl_acc<-mean(as.integer(yvals == testFoldDisc$label))
-#' #  message("SBRL RESULT")
-#' #  sbrl_model
-#' #  rm_sbrl<-sbrlModel2arcCBARuleModel(sbrl_model,trainFoldDiscCutpoints,trainFold,sbrlFixedLabel) 
-#' #  message(paste("sbrl acc=",sbrl_acc,"sbrl rule count=",nrow(sbrl_model$rs), "avg rule length", 
-#' #  sum(rm_sbrl@rules@lhs@data)/length(rm_sbrl@rules)))
-#' #  rmQCBA_sbrl <- qcba(cbaRuleModel=rm_sbrl,datadf=trainFold)
-#' #  prediction <- predict(rmQCBA_sbrl,testFold)
-#' #  acc_qcba_sbrl <- CBARuleModelAccuracy(prediction, testFold[[rmQCBA_sbrl@classAtt]])
-#' #  if (! requireNamespace("stringr", quietly = TRUE)) {
-#' #    message("Please install stringr to compute average rule length for QCBA")
-#' #    avg_rule_length <- NA
-#' #  } else
-#' #  {
-#' #    library(stringr)
-#' #    avg_rule_length <- (sum(unlist(lapply(rmQCBA_sbrl@rules[1],str_count,pattern=",")))+
-#' #                          # assuming the last rule has antecedent length zero 
-#' #                          nrow(rmQCBA_sbrl@rules)-1)/nrow(rmQCBA_sbrl@rules)
-#' #  }
-#' #  message("QCBA RESULT")
-#' #  rmQCBA_sbrl@rules
-#' #  message(paste("QCBA after SBRL acc=",acc_qcba_sbrl,"rule count=",
-#' #   rmQCBA_sbrl@ruleCount, "avg rule length",  avg_rule_length))
-#' #   unlink("tdata_R.label") # delete temp files created by SBRL
-#' #   unlink("tdata_R.out")
-#' # }
+#' # discretize test data
+#' testFoldDisc <- applyCuts(testFold, trainFoldDiscCutpoints, infinite_bounds=TRUE, labels=TRUE)
+#' # SBRL 1.4 crashes if features contain a space
+#' # even if these features are converted to factors,
+#' # to circumvent this, it is necessary to replace spaces
+#' trainFoldDisc <- as.data.frame(lapply(trainFoldDisc, function(x) gsub(" ", "", as.character(x))))
+#' for (name in names(trainFoldDisc)) {trainFoldDisc[name] <- as.factor(trainFoldDisc[,name])}
+#' # learn sbrl model, rule_minlen is increased to demonstrate the effect of postprocessing 
+#' sbrl_model <- sbrl(trainFoldDisc, iters=20000, pos_sign="0", 
+#' neg_sign="1", rule_minlen=3, rule_maxlen=5, minsupport_pos=0.05, minsupport_neg=0.05, 
+#' lambda=20.0, eta=5.0, nchain=25)
+#' # apply sbrl model on a test fold
+#' yhat <- predict(sbrl_model, testFoldDisc)
+#' yvals<- as.integer(yhat$V1>0.5)
+#' sbrl_acc<-mean(as.integer(yvals == testFoldDisc$label))
+#' message("SBRL RESULT")
+#' message(sbrl_model)
+#' rm_sbrl<-sbrlModel2arcCBARuleModel(sbrl_model,trainFoldDiscCutpoints,trainFold,sbrlFixedLabel) 
+#' message(paste("sbrl acc=",sbrl_acc,", sbrl rule count=",nrow(sbrl_model$rs), ", avg condition count (incl. default rule)", 
+#' sum(rm_sbrl@rules@lhs@data)/length(rm_sbrl@rules)))
+#' rmQCBA_sbrl <- qcba(cbaRuleModel=rm_sbrl,datadf=trainFold)
+#' prediction <- predict(rmQCBA_sbrl,testFold)
+#' acc_qcba_sbrl <- CBARuleModelAccuracy(prediction, testFold[[rmQCBA_sbrl@classAtt]])
+#' avg_rule_length <- rmQCBA_sbrl@rules$condition_count/nrow(rmQCBA_sbrl@rules)
+#' message("RESULT of QCBA postprocessing of SBRL")
+#' message(rmQCBA_sbrl@rules)
+#' message(paste("QCBA after SBRL acc=",acc_qcba_sbrl,", rule count=",
+#' rmQCBA_sbrl@ruleCount, ", avg condition count (incl. default rule)",  avg_rule_length))
+#' unlink("tdata_R.label") # delete temp files created by SBRL
+#' unlink("tdata_R.out")
+#' }
 
 sbrlModel2arcCBARuleModel <- function(sbrl_model, cutPoints, rawDataset, classAtt, attTypes)
 {
@@ -459,8 +452,6 @@ sbrlModel2arcCBARuleModel <- function(sbrl_model, cutPoints, rawDataset, classAt
 #' rmCBA <- cba(trainFold, classAtt="Species")
 #' rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
 #' print(rmqCBA@rules)
-
-
 
 qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly", defaultRuleOverlapPruning="transactionBased",attributePruning  = TRUE, trim_literal_boundaries=TRUE, continuousPruning=FALSE, postpruning="cba",fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-1,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE, timeExecution=FALSE, computeOrderedStats = TRUE)
 {

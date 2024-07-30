@@ -38,7 +38,6 @@ import java.util.logging.Logger;
 public class RuleMultiItem {
 
     private final static Logger LOGGER = Logger.getLogger(RuleMultiItem.class.getName());
-    //TODO: use consistently throughout code instead of hard coded ";"
 
     /**
      *
