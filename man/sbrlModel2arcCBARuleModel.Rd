@@ -45,7 +45,7 @@ if (identical(Sys.getenv("NOT_CRAN"), "true")) {
   allData <- datasets::iris[sample(nrow(datasets::iris)),]
   classToExclude<-"versicolor"
   allData <- allData[allData$Species!=classToExclude, ]
-  # drop virginica level
+  # drop the removed level
   allData$Species <-allData$Species [, drop=TRUE]
   trainFold <- allData[1:50,]
   testFold <- allData[51:nrow(allData),]
@@ -89,7 +89,8 @@ if (identical(Sys.getenv("NOT_CRAN"), "true")) {
   message("SBRL RESULT")
   message(sbrl_model)
   rm_sbrl<-sbrlModel2arcCBARuleModel(sbrl_model,trainFoldDiscCutpoints,trainFold,sbrlFixedLabel) 
-  message(paste("sbrl acc=",sbrl_acc,", sbrl rule count=",nrow(sbrl_model$rs), ", avg condition count (incl. default rule)", 
+  message(paste("sbrl acc=",sbrl_acc,", sbrl rule count=",nrow(sbrl_model$rs), ",
+  avg condition count (incl. default rule)", 
   sum(rm_sbrl@rules@lhs@data)/length(rm_sbrl@rules)))
   rmQCBA_sbrl <- qcba(cbaRuleModel=rm_sbrl,datadf=trainFold)
   prediction <- predict(rmQCBA_sbrl,testFold)

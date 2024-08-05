@@ -91,29 +91,32 @@ print(stats)
 print(stats[,6:10]/stats[,0:5]-1)
 
 # EXAMPLE 2: As Example 1 but data are discretizated externally
-
 # Discretize numerical predictors using built-in discretization
 # This performs supervised, entropy-based discretization (Fayyad and Irani, 1993)
 # of all numerical predictor variables with 3 or more distinct numerical values
-discrModel <- discrNumeric(trainFold, classAtt)
-train_disc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
-test_disc <- applyCuts(testFold, discrModel$cutp, infinite_bounds=TRUE, labels=TRUE)
-stats<-benchmarkQCBA(trainFold,testFold,classAtt,train_disc,test_disc,discrModel$cutp)
-print(stats)
-
+# This example could run for more than 5 seconds
+if (identical(Sys.getenv("NOT_CRAN"), "true")) {
+  discrModel <- discrNumeric(trainFold, classAtt)
+  train_disc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
+  test_disc <- applyCuts(testFold, discrModel$cutp, infinite_bounds=TRUE, labels=TRUE)
+  stats<-benchmarkQCBA(trainFold,testFold,classAtt,train_disc,test_disc,discrModel$cutp)
+  print(stats)
+}
 # EXAMPLE 3: pass custom metaparameters to selected base rule learner,
 # then postprocess with QCBA, evaluate, and return both models
-
+# This example could run for more than 5 seconds
+if (identical(Sys.getenv("NOT_CRAN"), "true")) {
 # use only CBA as a base learner, return rule lists.
-output<-benchmarkQCBA(trainFold,testFold,classAtt,train_disc,test_disc,discrModel$cutp, 
+  output<-benchmarkQCBA(trainFold,testFold,classAtt,train_disc,test_disc,discrModel$cutp, 
                      CBA=list("support"=0.05,"confidence"=0.5),algs = c("CPAR"),
                      return_models=TRUE)
-message("Evaluation statistics")
-print(output$stats)
-message("CPAR model")
-inspect(output$CPAR[[1]])
-message("QCBA model")
-print(output$CPAR_QCBA[[1]])
+  message("Evaluation statistics")
+  print(output$stats)
+  message("CPAR model")
+  inspect(output$CPAR[[1]])
+  message("QCBA model")
+  print(output$CPAR_QCBA[[1]])
+}
 }
 \seealso{
 [qcba()] which this function wraps.

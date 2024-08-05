@@ -4,14 +4,14 @@
 \name{customCBARuleModel-class}
 \alias{customCBARuleModel-class}
 \alias{customCBARuleModel}
-\title{rCBARuleModel}
+\title{customCBARuleModel}
 \description{
-This class represents a CBA rule-based classifier, where rules are represented as string vectors in a data frame
+This class represents a rule-based classifier, where rules are represented as string vectors in a data frame
 }
 \section{Slots}{
 
 \describe{
-\item{\code{rules}}{dataframe output by \pkg{rCBA}}
+\item{\code{rules}}{dataframe with rules}
 
 \item{\code{cutp}}{list of cutpoints}
 

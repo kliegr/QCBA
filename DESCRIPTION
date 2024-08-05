@@ -1,7 +1,7 @@
 Package: qCBA
 Title: Quantitative Classification by Association Rules
-Version: 0.7
-Date: 2024-07-29
+Version: 0.9
+Date: 2024-08-05
 Author: Tomas Kliegr
 Maintainer: Tomas Kliegr <kliegr@gmail.com>
 Description: Implements the Quantitative Classification-based on

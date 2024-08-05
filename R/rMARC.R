@@ -6,6 +6,7 @@
 #' @importFrom stats predict
 #' @importFrom stats as.formula
 #' @importFrom arulesCBA CBA CMAR CPAR PRM FOIL2
+#' @importFrom methods is
 
 library(arules)
 library(rJava)
@@ -36,24 +37,23 @@ qCBARuleModel <- setClass("qCBARuleModel",
 )
 
 
-
-#' rCBARuleModel
+#' customCBARuleModel
 #'
-#' @description  This class represents a CBA rule-based classifier, where rules are represented as string vectors in a data frame
+#' @description  This class represents a rule-based classifier, where rules are represented as string vectors in a data frame
 #' @name customCBARuleModel-class
 #' @rdname customCBARuleModel-class
 #' @exportClass customCBARuleModel
-#' @slot rules dataframe output by \pkg{rCBA}
+#' @slot rules dataframe with rules
 #' @slot cutp list of cutpoints
 #' @slot classAtt name of the target class attribute
 #' @slot attTypes attribute types
 customCBARuleModel <- setClass("customCBARuleModel",
-                          slots = c(
-                            rules = "data.frame",
-                            cutp = "list",
-                            classAtt ="character",
-                            attTypes = "vector"
-                          )
+                               slots = c(
+                                 rules = "data.frame",
+                                 cutp = "list",
+                                 classAtt ="character",
+                                 attTypes = "vector"
+                               )
 )
 
 #' @title  Use the HumTemp dataset to test the one rule classification QCBA workflow.
@@ -327,7 +327,7 @@ arulesCBA2arcCBAModel <- function(arulesCBAModel, cutPoints, rawDataset, classAt
 #'   allData <- datasets::iris[sample(nrow(datasets::iris)),]
 #'   classToExclude<-"versicolor"
 #'   allData <- allData[allData$Species!=classToExclude, ]
-#'   # drop virginica level
+#'   # drop the removed level
 #'   allData$Species <-allData$Species [, drop=TRUE]
 #'   trainFold <- allData[1:50,]
 #'   testFold <- allData[51:nrow(allData),]
@@ -371,7 +371,8 @@ arulesCBA2arcCBAModel <- function(arulesCBAModel, cutPoints, rawDataset, classAt
 #'   message("SBRL RESULT")
 #'   message(sbrl_model)
 #'   rm_sbrl<-sbrlModel2arcCBARuleModel(sbrl_model,trainFoldDiscCutpoints,trainFold,sbrlFixedLabel) 
-#'   message(paste("sbrl acc=",sbrl_acc,", sbrl rule count=",nrow(sbrl_model$rs), ", avg condition count (incl. default rule)", 
+#'   message(paste("sbrl acc=",sbrl_acc,", sbrl rule count=",nrow(sbrl_model$rs), ",
+#'   avg condition count (incl. default rule)", 
 #'   sum(rm_sbrl@rules@lhs@data)/length(rm_sbrl@rules)))
 #'   rmQCBA_sbrl <- qcba(cbaRuleModel=rm_sbrl,datadf=trainFold)
 #'   prediction <- predict(rmQCBA_sbrl,testFold)
@@ -479,14 +480,14 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly", defaultRuleOve
   classAtt=cbaRuleModel@classAtt
 
   #reshape R data for Java call IF necessary
-  if (class(cbaRuleModel)=="CBARuleModel")
+  if (is(cbaRuleModel,"CBARuleModel"))
   {
     #  the passed object in rmCBA@rules was created by arules package, reshape necessary
     rules=cbaRuleModel@rules
     rulesFrame <- as(rules,"data.frame")
     rulesFrame$rules <- as.character(rulesFrame$rules)
   }
-  else if (class(cbaRuleModel)=="customCBARuleModel")
+  else if (is(cbaRuleModel,"customCBARuleModel"))
   {
     rulesFrame=cbaRuleModel@rules
     message("Using customCBARuleModel")
@@ -775,29 +776,32 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
 #' print(stats[,6:10]/stats[,0:5]-1)
 #' 
 #' # EXAMPLE 2: As Example 1 but data are discretizated externally
-#' 
 #' # Discretize numerical predictors using built-in discretization
 #' # This performs supervised, entropy-based discretization (Fayyad and Irani, 1993)
 #' # of all numerical predictor variables with 3 or more distinct numerical values
-#' discrModel <- discrNumeric(trainFold, classAtt)
-#' train_disc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
-#' test_disc <- applyCuts(testFold, discrModel$cutp, infinite_bounds=TRUE, labels=TRUE)
-#' stats<-benchmarkQCBA(trainFold,testFold,classAtt,train_disc,test_disc,discrModel$cutp)
-#' print(stats)
-#' 
+#' # This example could run for more than 5 seconds
+#' if (identical(Sys.getenv("NOT_CRAN"), "true")) {
+#'   discrModel <- discrNumeric(trainFold, classAtt)
+#'   train_disc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
+#'   test_disc <- applyCuts(testFold, discrModel$cutp, infinite_bounds=TRUE, labels=TRUE)
+#'   stats<-benchmarkQCBA(trainFold,testFold,classAtt,train_disc,test_disc,discrModel$cutp)
+#'   print(stats)
+#' }
 #' # EXAMPLE 3: pass custom metaparameters to selected base rule learner,
 #' # then postprocess with QCBA, evaluate, and return both models
-#' 
+#' # This example could run for more than 5 seconds
+#' if (identical(Sys.getenv("NOT_CRAN"), "true")) {
 #' # use only CBA as a base learner, return rule lists.
-#' output<-benchmarkQCBA(trainFold,testFold,classAtt,train_disc,test_disc,discrModel$cutp, 
+#'   output<-benchmarkQCBA(trainFold,testFold,classAtt,train_disc,test_disc,discrModel$cutp, 
 #'                      CBA=list("support"=0.05,"confidence"=0.5),algs = c("CPAR"),
 #'                      return_models=TRUE)
-#' message("Evaluation statistics")
-#' print(output$stats)
-#' message("CPAR model")
-#' inspect(output$CPAR[[1]])
-#' message("QCBA model")
-#' print(output$CPAR_QCBA[[1]])
+#'   message("Evaluation statistics")
+#'   print(output$stats)
+#'   message("CPAR model")
+#'   inspect(output$CPAR[[1]])
+#'   message("QCBA model")
+#'   print(output$CPAR_QCBA[[1]])
+#' }
 
 benchmarkQCBA <- function(train,test, classAtt,train_disc=NULL, test_disc=NULL, cutPoints=NULL,
                           algs = c("CBA","CMAR","CPAR","PRM","FOIL2"), iterations=2, rounding_places=3, return_models = FALSE, debug_prints = FALSE, ...
