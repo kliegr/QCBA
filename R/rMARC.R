@@ -39,8 +39,8 @@ qCBARuleModel <- setClass("qCBARuleModel",
 setMethod("show", "qCBARuleModel", function(object) {
   cat("qCBARuleModel object\n")
   cat("Number of rules:", object@ruleCount, "\n")
+  cat("Number of conditions:", sum(object@rules$condition_count), "\n")  
   cat("Class attribute:", object@classAtt, "\n")
-  cat("Rule path:", object@rulePath, "\n")
   cat("Attribute types:\n")
   print(object@attTypes)
   cat("Rules:\n")
