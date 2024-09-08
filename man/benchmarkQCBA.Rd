@@ -73,7 +73,8 @@ from \pkg{arulesCBA} and apply QCBA to postprocess them.
 \examples{
 # EXAMPLE 1: pass train and test folds, induce multiple base rule learners,
 # postprocess each with QCBA and return benchmarking results.
-
+\dontrun{
+if (identical(Sys.getenv("NOT_CRAN"), "true")) {
 # Define input dataset and target variable 
 df_all <-datasets::iris
 classAtt <- "Species"
@@ -89,24 +90,26 @@ stats<-benchmarkQCBA(trainFold,testFold,classAtt)
 print(stats)
 # print relative change of QCBA results over baseline algorithms 
 print(stats[,6:10]/stats[,0:5]-1)
-
+}}
 # EXAMPLE 2: As Example 1 but data are discretizated externally
 # Discretize numerical predictors using built-in discretization
 # This performs supervised, entropy-based discretization (Fayyad and Irani, 1993)
 # of all numerical predictor variables with 3 or more distinct numerical values
 # This example could run for more than 5 seconds
+\dontrun{
 if (identical(Sys.getenv("NOT_CRAN"), "true")) {
   discrModel <- discrNumeric(trainFold, classAtt)
   train_disc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
   test_disc <- applyCuts(testFold, discrModel$cutp, infinite_bounds=TRUE, labels=TRUE)
   stats<-benchmarkQCBA(trainFold,testFold,classAtt,train_disc,test_disc,discrModel$cutp)
   print(stats)
-}
+}}
 # EXAMPLE 3: pass custom metaparameters to selected base rule learner,
 # then postprocess with QCBA, evaluate, and return both models
 # This example could run for more than 5 seconds
 if (identical(Sys.getenv("NOT_CRAN"), "true")) {
 # use only CBA as a base learner, return rule lists.
+\dontrun{
   output<-benchmarkQCBA(trainFold,testFold,classAtt,train_disc,test_disc,discrModel$cutp, 
                      CBA=list("support"=0.05,"confidence"=0.5),algs = c("CPAR"),
                      return_models=TRUE)
@@ -116,6 +119,7 @@ if (identical(Sys.getenv("NOT_CRAN"), "true")) {
   inspect(output$CPAR[[1]])
   message("QCBA model")
   print(output$CPAR_QCBA[[1]])
+}
 }
 }
 \seealso{

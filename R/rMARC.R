@@ -36,6 +36,16 @@ qCBARuleModel <- setClass("qCBARuleModel",
                       )
 )
 
+setMethod("show", "qCBARuleModel", function(object) {
+  cat("qCBARuleModel object\n")
+  cat("Number of rules:", object@ruleCount, "\n")
+  cat("Class attribute:", object@classAtt, "\n")
+  cat("Rule path:", object@rulePath, "\n")
+  cat("Attribute types:\n")
+  print(object@attTypes)
+  cat("Rules:\n")
+  print(object@rules)
+})
 
 #' customCBARuleModel
 #'
@@ -192,6 +202,7 @@ getConfVectorForROC <- function(confidences, predictedClass, positiveClass)
 #' # This will run only outside a CRAN test, if the environment variable  NOT_CRAN is set to true
 #' # This environment variable is set by devtools
 #' if (identical(Sys.getenv("NOT_CRAN"), "true")) {
+#' \dontrun{
 #'  library(rCBA)
 #'  message(packageVersion("rCBA"))
 #'  discrModel <- discrNumeric(iris, "Species")
@@ -201,6 +212,7 @@ getConfVectorForROC <- function(confidences, predictedClass, positiveClass)
 #'  CBAmodel <- rcbaModel2CBARuleModel(rCBAmodel,discrModel$cutp,iris,"Species")
 #'  qCBAmodel <- qcba(CBAmodel,iris)
 #'  print(qCBAmodel@rules)
+#'  }
 #'  }
 #'}
 #' 
@@ -239,6 +251,7 @@ rcbaModel2CBARuleModel <- function(rcbaModel, cutPoints, rawDataset, classAtt, a
 #' if (! requireNamespace("arulesCBA", quietly = TRUE)) {
 #'  message("Please install arulesCBA: install.packages('arulesCBA')")
 #' }  else {
+#' \dontrun{
 #'  classAtt <- "Species"
 #'  discrModel <- discrNumeric(iris, classAtt)
 #'  irisDisc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
@@ -248,7 +261,7 @@ rcbaModel2CBARuleModel <- function(rcbaModel, cutPoints, rawDataset, classAtt, a
 #'  qCBAmodel <- qcba(cbaRuleModel=CBAmodel,datadf=iris)
 #'  print(qCBAmodel@rules)
 #'  }
-#' 
+#' }
 #' 
 arulesCBA2arcCBAModel <- function(arulesCBAModel, cutPoints, rawDataset, classAtt, attTypes )
 {
@@ -430,7 +443,7 @@ sbrlModel2arcCBARuleModel <- function(sbrl_model, cutPoints, rawDataset, classAt
 #' rules will be annotated with probability distributions and optionally fuzzy borders. The intended use of such models is multi-rule classification.
 #' The \link{predict} function automatically determines whether the input model is a CBA model or an annotated model.
 #' @export
-#' @param cbaRuleModel a \link{CBARuleModel}
+#' @param cbaRuleModel a \link[arc]{CBARuleModel}
 #' @param datadf data frame with training data
 #' @param extendType  possible extend types - numericOnly or noExtend
 #' @param defaultRuleOverlapPruning pruning removing rules made redundant by the default rule; possible values: \code{noPruning}, \code{transactionBased}, \code{rangeBased}, \code{transactionBasedAsFirstStep}
@@ -454,11 +467,13 @@ sbrlModel2arcCBARuleModel <- function(sbrl_model, cutPoints, rawDataset, classAt
 #' @return Object of class \link{qCBARuleModel}.
 #'
 #' @examples
+#' \dontrun{
 #' allData <- datasets::iris[sample(nrow(datasets::iris)),]
 #' trainFold <- allData[1:100,]
 #' rmCBA <- cba(trainFold, classAtt="Species")
 #' rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
 #' print(rmqCBA@rules)
+#' }
 
 qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly", defaultRuleOverlapPruning="transactionBased",attributePruning  = TRUE, trim_literal_boundaries=TRUE, continuousPruning=FALSE, postpruning="cba",fuzzification=FALSE, annotate=FALSE, ruleOutputPath, minImprovement=0,minCondImprovement=-1,minConf = 0.5,  extensionStrategy="ConfImprovementAgainstLastConfirmedExtension", loglevel = "WARNING", createHistorySlot=FALSE, timeExecution=FALSE, computeOrderedStats = TRUE)
 {
@@ -605,6 +620,7 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly", defaultRuleOve
 #' @export
 #' @method predict qCBARuleModel
 #' @examples
+#' \dontrun{
 #' allData <- datasets::iris[sample(nrow(datasets::iris)),]
 #' trainFold <- allData[1:100,]
 #' testFold <- allData[101:nrow(datasets::iris),]
@@ -619,7 +635,7 @@ qcba <- function(cbaRuleModel,  datadf, extendType="numericOnly", defaultRuleOve
 #' message(rmqCBA@rules[firingRuleIDs[2],1])
 #' message("The second instance is")
 #' message(testFold[2,])
-#' 
+#' }
 #' @seealso \link{qcba}
 #'
 #'
@@ -758,7 +774,8 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
 #' @examples
 #' # EXAMPLE 1: pass train and test folds, induce multiple base rule learners,
 #' # postprocess each with QCBA and return benchmarking results.
-#' 
+#' \dontrun{
+#' if (identical(Sys.getenv("NOT_CRAN"), "true")) {
 #' # Define input dataset and target variable 
 #' df_all <-datasets::iris
 #' classAtt <- "Species"
@@ -774,24 +791,26 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
 #' print(stats)
 #' # print relative change of QCBA results over baseline algorithms 
 #' print(stats[,6:10]/stats[,0:5]-1)
-#' 
+#' }}
 #' # EXAMPLE 2: As Example 1 but data are discretizated externally
 #' # Discretize numerical predictors using built-in discretization
 #' # This performs supervised, entropy-based discretization (Fayyad and Irani, 1993)
 #' # of all numerical predictor variables with 3 or more distinct numerical values
 #' # This example could run for more than 5 seconds
+#' \dontrun{
 #' if (identical(Sys.getenv("NOT_CRAN"), "true")) {
 #'   discrModel <- discrNumeric(trainFold, classAtt)
 #'   train_disc <- as.data.frame(lapply(discrModel$Disc.data, as.factor))
 #'   test_disc <- applyCuts(testFold, discrModel$cutp, infinite_bounds=TRUE, labels=TRUE)
 #'   stats<-benchmarkQCBA(trainFold,testFold,classAtt,train_disc,test_disc,discrModel$cutp)
 #'   print(stats)
-#' }
+#' }}
 #' # EXAMPLE 3: pass custom metaparameters to selected base rule learner,
 #' # then postprocess with QCBA, evaluate, and return both models
 #' # This example could run for more than 5 seconds
 #' if (identical(Sys.getenv("NOT_CRAN"), "true")) {
 #' # use only CBA as a base learner, return rule lists.
+#' \dontrun{
 #'   output<-benchmarkQCBA(trainFold,testFold,classAtt,train_disc,test_disc,discrModel$cutp, 
 #'                      CBA=list("support"=0.05,"confidence"=0.5),algs = c("CPAR"),
 #'                      return_models=TRUE)
@@ -801,6 +820,7 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
 #'   inspect(output$CPAR[[1]])
 #'   message("QCBA model")
 #'   print(output$CPAR_QCBA[[1]])
+#' }
 #' }
 
 benchmarkQCBA <- function(train,test, classAtt,train_disc=NULL, test_disc=NULL, cutPoints=NULL,

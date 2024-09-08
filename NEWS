@@ -1,3 +1,10 @@
+qCBA v1.0.1 (Release date: 2024-09-08)
+* Added print option for qCBARuleModel
+
+qCBA v1.0 (Release date: 2024-08-26)
+* Updates for CRAN release (disable long running examples)
+* Minor bug fixes (supress incorrect warning in benchmarkQCBA())
+
 qCBA v0.7 (Release date: 2024-07-31)
 * Updated SBRL example to match new SBRL version 1.4
 

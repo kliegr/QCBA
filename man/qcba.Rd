@@ -27,7 +27,7 @@ qcba(
 )
 }
 \arguments{
-\item{cbaRuleModel}{a \link{CBARuleModel}}
+\item{cbaRuleModel}{a \link[arc]{CBARuleModel}}
 
 \item{datadf}{data frame with training data}
 
@@ -78,9 +78,11 @@ rules will be annotated with probability distributions and optionally fuzzy bord
 The \link{predict} function automatically determines whether the input model is a CBA model or an annotated model.
 }
 \examples{
+\dontrun{
 allData <- datasets::iris[sample(nrow(datasets::iris)),]
 trainFold <- allData[1:100,]
 rmCBA <- cba(trainFold, classAtt="Species")
 rmqCBA <- qcba(cbaRuleModel=rmCBA,datadf=trainFold)
 print(rmqCBA@rules)
+}
 }

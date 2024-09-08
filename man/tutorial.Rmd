@@ -93,7 +93,6 @@ In this case, we perform simple equidistant binning.
   data_discr[,3] <- as.factor(Class)
   head(data_discr)
 
-
 ```
 The discretization splits the data space into rectangular regions. Given that we have two attributes, the discovered rule can only correspond to a rectangular region with *borders aligned to the grid*. If we had more than two attributes, the discovered rule would delimit a hypercube.
 
@@ -323,7 +322,7 @@ The accuracy of this model on training data:
 ```
 On the training data, QCBA provides the same accuracy as CBA but with fewer rules.
 
-#  Part 2: explaining optimization steps in QCBA {#part2}
+#  Part 2: explaining optimization steps in QCBA {#part1}
 
 The steps taken by QCBA to create the model shown above:
 

@@ -45,6 +45,7 @@ Applies \link{qcba} rule model on provided data.
 Automatically detects whether one-rule or  multi-rule classification is used
 }
 \examples{
+\dontrun{
 allData <- datasets::iris[sample(nrow(datasets::iris)),]
 trainFold <- allData[1:100,]
 testFold <- allData[101:nrow(datasets::iris),]
@@ -59,7 +60,7 @@ message("The second instance in testFold was classified by the following rule")
 message(rmqCBA@rules[firingRuleIDs[2],1])
 message("The second instance is")
 message(testFold[2,])
-
+}
 }
 \seealso{
 \link{qcba}

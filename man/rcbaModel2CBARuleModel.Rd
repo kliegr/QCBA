@@ -30,6 +30,7 @@ if (! requireNamespace("rCBA", quietly = TRUE)) {
 # This will run only outside a CRAN test, if the environment variable  NOT_CRAN is set to true
 # This environment variable is set by devtools
 if (identical(Sys.getenv("NOT_CRAN"), "true")) {
+\dontrun{
  library(rCBA)
  message(packageVersion("rCBA"))
  discrModel <- discrNumeric(iris, "Species")
@@ -39,6 +40,7 @@ if (identical(Sys.getenv("NOT_CRAN"), "true")) {
  CBAmodel <- rcbaModel2CBARuleModel(rCBAmodel,discrModel$cutp,iris,"Species")
  qCBAmodel <- qcba(CBAmodel,iris)
  print(qCBAmodel@rules)
+ }
  }
 }
 

@@ -1,14 +1,17 @@
 Package: qCBA
-Title: Quantitative Classification by Association Rules
-Version: 0.9
-Date: 2024-08-05
-Author: Tomas Kliegr
-Maintainer: Tomas Kliegr <kliegr@gmail.com>
+Title: Postprocessing of Rule Classification Models Learnt on Quantized Data
+Version: 1.0.1
+Date: 2024-08-26
+Maintainer: Tomáš Kliegr <kliegr@gmail.com>
 Description: Implements the Quantitative Classification-based on
-    Association Rules (QCBA)  algorithm (Tomáš Kliegr and Ebroul Izquierdo (2023) <doi:10.1007/s10489-022-04370-x>). 
+    Association Rules (QCBA)  algorithm (<doi:10.1007/s10489-022-04370-x>). 
     QCBA postprocesses rule classification models making them typically smaller and in some cases more accurate. 
-    Supported are CBA implementations from 'rCBA', 'arulesCBA' and 'arc' packages, and CPAR, CMAR, FOIL2 and PRM implementations 
-    from 'arulesCBA' package.
+    Supported are 'CBA' implementations from 'rCBA', 'arulesCBA' and 'arc' packages, and 'CPAR', 'CMAR', 'FOIL2' and 'PRM' implementations 
+    from 'arulesCBA' package and 'SBRL' implementation from the 'sbrl' package. The result of the post-processing is an ordered CBA-like rule list. 
+Authors@R: person(given = "Tomáš",
+                    family = "Kliegr",
+                    role = c("aut", "cre"),
+                    email = "kliegr@gmail.com")
 Depends:
     R (>= 2.7.0),
     arules (>= 1.7-4),
