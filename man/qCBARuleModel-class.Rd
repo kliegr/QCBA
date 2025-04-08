@@ -4,9 +4,19 @@
 \name{qCBARuleModel-class}
 \alias{qCBARuleModel-class}
 \alias{qCBARuleModel}
-\title{qCBARuleModel}
+\alias{show,qCBARuleModel-method}
+\title{QCBA Rule Model}
+\usage{
+\S4method{show}{qCBARuleModel}(object)
+}
+\arguments{
+\item{object}{An object of class \code{qCBARuleModel}}
+}
 \description{
 This class represents a QCBA rule-based classifier.
+}
+\details{
+qCBARuleModel
 }
 \section{Slots}{
 

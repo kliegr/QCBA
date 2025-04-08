@@ -41,7 +41,7 @@ if (identical(Sys.getenv("NOT_CRAN"), "true")) {
   library(sbrl)
   library(rCBA)
   # sbrl handles only binary problems, iris has 3 target classes - remove one class
-  set.seed(111)
+  set.seed(getOption("qcba.seed"))
   allData <- datasets::iris[sample(nrow(datasets::iris)),]
   classToExclude<-"versicolor"
   allData <- allData[allData$Species!=classToExclude, ]

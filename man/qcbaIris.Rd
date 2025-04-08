@@ -11,4 +11,6 @@ Accuracy.
 }
 \description{
 Learns a CBA classifier and performs all QCBA postprocessing steps
+This function uses a package-specific seed option, which can be overridden 
+with `options(qcba.seed = 42)`, where 42 is an example seed value
 }

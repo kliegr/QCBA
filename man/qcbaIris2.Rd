@@ -13,4 +13,6 @@ Accuracy.
 Learns a CBA classifier, and then transforms it  to a multirule classifier,
  including rule annotation and fuzzification. Applies the learnt model with rule mixture classification.
 The model  is saved to a temporary file.
+This function uses a package-specific seed option, which can be overridden 
+with `options(qcba.seed = 42)`, where 42 is an example seed value
 }

@@ -1,7 +1,7 @@
 Package: qCBA
 Title: Postprocessing of Rule Classification Models Learnt on Quantized Data
-Version: 1.0.1
-Date: 2024-08-26
+Version: 1.0.2
+Date: 2025-04-03
 Maintainer: Tomáš Kliegr <kliegr@gmail.com>
 Description: Implements the Quantitative Classification-based on
     Association Rules (QCBA)  algorithm (<doi:10.1007/s10489-022-04370-x>). 

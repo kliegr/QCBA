@@ -1,20 +1,8 @@
-#' @import arc
-#' @import utils
-#' @importFrom methods as new
-#' @importFrom rJava .jcall .jnew .jarray .jevalArray
-#' @importFrom arules apriori inspect
-#' @importFrom stats predict
-#' @importFrom stats as.formula
-#' @importFrom arulesCBA CBA CMAR CPAR PRM FOIL2
-#' @importFrom methods is
 
-library(arules)
-library(rJava)
-library(arc)
-require(arulesCBA)
+
 
 #' qCBARuleModel
-#'
+#' @title QCBA Rule Model
 #' @description  This class represents a QCBA rule-based classifier.
 #' @name qCBARuleModel-class
 #' @rdname qCBARuleModel-class
@@ -36,6 +24,26 @@ qCBARuleModel <- setClass("qCBARuleModel",
                       )
 )
 
+.onAttach <- function(libname, pkgname) {
+  if (is.null(getOption("qcba.seed"))) {
+    options(qcba.seed = 111)
+    set.seed(getOption("qcba.seed"))
+  }
+}
+
+#' @import arc
+#' @import utils
+#' @importFrom methods as new show
+#' @importFrom rJava .jcall .jnew .jarray .jevalArray
+#' @importFrom arules apriori inspect
+#' @importFrom stats predict
+#' @importFrom stats as.formula
+#' @importFrom arulesCBA CBA CMAR CPAR PRM FOIL2
+#' @importFrom methods is
+
+#' @rdname qCBARuleModel-class
+#' @param object An object of class \code{qCBARuleModel}
+#' @exportMethod show
 setMethod("show", "qCBARuleModel", function(object) {
   cat("qCBARuleModel object\n")
   cat("Number of rules:", object@ruleCount, "\n")
@@ -112,6 +120,8 @@ qcbaHumTemp <- function()
 
 #' @title  Use the \link{iris} dataset to the test QCBA workflow.
 #' @description Learns a CBA classifier and performs all QCBA postprocessing steps
+#' This function uses a package-specific seed option, which can be overridden 
+#' with `options(qcba.seed = 42)`, where 42 is an example seed value
 #'
 #' @return Accuracy.
 #' @export
@@ -119,7 +129,7 @@ qcbaHumTemp <- function()
 #'
 qcbaIris <- function()
 {
-  set.seed(111)
+  set.seed(getOption("qcba.seed"))
   allData <- datasets::iris[sample(nrow(datasets::iris)),]
   trainFold <- allData[1:100,]
   testFold <- allData[101:nrow(datasets::iris),]
@@ -136,14 +146,15 @@ qcbaIris <- function()
 #' @description Learns a CBA classifier, and then transforms it  to a multirule classifier,
 #'  including rule annotation and fuzzification. Applies the learnt model with rule mixture classification.
 #' The model  is saved to a temporary file.
-#'
+#' This function uses a package-specific seed option, which can be overridden 
+#' with `options(qcba.seed = 42)`, where 42 is an example seed value
 #' @return Accuracy.
 #' @export
 #'
 #'
 qcbaIris2 <- function()
 {
-  set.seed(111)
+  set.seed(getOption("qcba.seed"))
   allData <- datasets::iris[sample(nrow(datasets::iris)),]
   trainFold <- allData[1:100,]
   testFold <- allData[101:nrow(datasets::iris),]
@@ -336,7 +347,7 @@ arulesCBA2arcCBAModel <- function(arulesCBAModel, cutPoints, rawDataset, classAt
 #'   library(sbrl)
 #'   library(rCBA)
 #'   # sbrl handles only binary problems, iris has 3 target classes - remove one class
-#'   set.seed(111)
+#'   set.seed(getOption("qcba.seed"))
 #'   allData <- datasets::iris[sample(nrow(datasets::iris)),]
 #'   classToExclude<-"versicolor"
 #'   allData <- allData[allData$Species!=classToExclude, ]
@@ -444,7 +455,7 @@ sbrlModel2arcCBARuleModel <- function(sbrl_model, cutPoints, rawDataset, classAt
 #' The \link{predict} function automatically determines whether the input model is a CBA model or an annotated model.
 #' @export
 #' @param cbaRuleModel a \link[arc]{CBARuleModel}
-#' @param datadf data frame with training data
+#' @param datadf data frame with training data. Empty strings, \code{NA} and \code{null} values are considered as missing values.    
 #' @param extendType  possible extend types - numericOnly or noExtend
 #' @param defaultRuleOverlapPruning pruning removing rules made redundant by the default rule; possible values: \code{noPruning}, \code{transactionBased}, \code{rangeBased}, \code{transactionBasedAsFirstStep}
 #' @param attributePruning remove redundant attributes
@@ -755,6 +766,7 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
 #' @param return_models boolean indicating if also learnt rule lists
 #' (baseline and postprocessed) should be  included in model output 
 #' @param debug_prints print debug information such as rule lists 
+#' @param seed random seed value 
 #' @param ... Parameters for base learners, the name of the argument is the base
 #' learner (one of `algs` values) and value is a list of parameters to pass. 
 #' To specify parameters for QCBA pass "QCBA". See also Example 3.
@@ -824,9 +836,9 @@ predict.qCBARuleModel <- function(object, newdata, testingType,loglevel = "WARNI
 #' }
 
 benchmarkQCBA <- function(train,test, classAtt,train_disc=NULL, test_disc=NULL, cutPoints=NULL,
-                          algs = c("CBA","CMAR","CPAR","PRM","FOIL2"), iterations=2, rounding_places=3, return_models = FALSE, debug_prints = FALSE, ...
+                          algs = c("CBA","CMAR","CPAR","PRM","FOIL2"), iterations=2, rounding_places=3, return_models = FALSE, debug_prints = FALSE, seed = 1, ...
 ){
-  set.seed(1)
+  set.seed(seed)
   algcombinations<-c(algs,paste0(algs,"_QCBA"))
   df_stats <- data.frame(matrix(rep(0,length(algs)*2), ncol = length(algcombinations), nrow = 4), row.names = c("accuracy","rulecount","modelsize", "buildtime"))
   returnList=list()
@@ -936,4 +948,5 @@ mapDataTypes<- function (Rtypes)
   newTypes[Rtypes=="integer"] <-"numerical"
   return(newTypes)
 }
+
 

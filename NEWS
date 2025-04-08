@@ -1,3 +1,8 @@
+qCBA v1.0.2 (Release date: 2025-04-03)
+* Added possibility to redefine seed for qcbaIris(), qcbaIris2() and benchmarkQCBA
+* Removed unnecessary library and require calls from package source
+* the show method for the S4 class qCBARuleModel is now exported
+ 
 qCBA v1.0.1 (Release date: 2024-09-08)
 * Added print option for qCBARuleModel
 

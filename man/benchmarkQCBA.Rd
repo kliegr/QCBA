@@ -18,6 +18,7 @@ benchmarkQCBA(
   rounding_places = 3,
   return_models = FALSE,
   debug_prints = FALSE,
+  seed = 1,
   ...
 )
 }
@@ -48,6 +49,8 @@ specified number of decimal places}
 (baseline and postprocessed) should be  included in model output}
 
 \item{debug_prints}{print debug information such as rule lists}
+
+\item{seed}{random seed value}
 
 \item{...}{Parameters for base learners, the name of the argument is the base
 learner (one of `algs` values) and value is a list of parameters to pass. 
